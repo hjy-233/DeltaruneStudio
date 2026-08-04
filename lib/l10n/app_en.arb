@@ -1,0 +1,189 @@
+{
+  "@@locale": "en",
+  "appTitle": "Deltarune Studio",
+  "newProject": "New",
+  "open": "Open",
+  "save": "Save",
+  "saveDirty": "Save *",
+  "saveAs": "Save As",
+  "room": "Room",
+  "importBackgroundShort": "Import BG",
+  "audio": "Audio",
+  "actor": "Actor",
+  "doorTrigger": "Door Trigger",
+  "mainCanvas": "Main Canvas",
+  "play": "Play",
+  "stop": "Stop",
+  "pause": "Pause",
+  "canvasObjects": "Canvas Objects",
+  "trigger": "Trigger",
+  "import": "Import",
+  "prop": "Prop",
+  "assets": "Assets",
+  "builtInAssets": "Built-in Assets",
+  "searchBuiltIns": "Search built-ins",
+  "builtInAssetsCount": "{shown} / {total} shown",
+  "@builtInAssetsCount": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "addBuiltInAsset": "Add built-in asset",
+  "importAsset": "Import asset",
+  "importBackground": "Import Background",
+  "importProp": "Import Prop",
+  "importCharacterAsset": "Import Character Asset",
+  "importAudio": "Import Audio",
+  "noImportedAssets": "No imported assets",
+  "characters": "Characters",
+  "expressionsCount": "{count} expressions",
+  "@expressionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "character": "Character",
+  "background": "Background",
+  "triggerPoint": "Trigger Point",
+  "missing": "Missing",
+  "eventChains": "Event Chains",
+  "addEventChain": "Add event chain",
+  "eventsCount": "{count} events",
+  "@eventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createOrSelectChain": "Create or select a chain.",
+  "addEvent": "Add Event",
+  "addNode": "Add Node",
+  "characterMove": "Character Move",
+  "wait": "Wait",
+  "changeExpression": "Change Expression",
+  "dialogue": "Dialogue",
+  "fadeOut": "Fade Out",
+  "cameraFollow": "Camera Follow",
+  "cameraFocus": "Camera Focus",
+  "playSound": "Play Sound",
+  "playBgm": "Play BGM",
+  "expression": "Expression",
+  "fade": "Fade",
+  "canvasJump": "Canvas Jump",
+  "noAssetSelected": "No asset selected",
+  "noEvent": "No event",
+  "noActiveEvent": "No active event",
+  "scratchProject": "Scratch project",
+  "inspector": "Inspector",
+  "quickActions": "Quick Actions",
+  "addRoom": "Add Room",
+  "addActor": "Add Actor",
+  "addDoorTrigger": "Add Door Trigger",
+  "createEventChain": "Create Event Chain",
+  "addMoveEvent": "Add Move Event",
+  "selectSomething": "Select a canvas object, path node, event, asset, or character.",
+  "missingObject": "Missing object.",
+  "missingTrigger": "Missing trigger.",
+  "missingEventChain": "Missing event chain.",
+  "missingEvent": "Missing event.",
+  "missingPathNode": "Missing path node.",
+  "missingAsset": "Missing asset.",
+  "missingCharacter": "Missing character.",
+  "characterInstance": "Character Instance",
+  "propObject": "Prop Object",
+  "backgroundObject": "Background Object",
+  "name": "Name",
+  "facing": "Facing",
+  "initialExpression": "Initial expression",
+  "visual": "Visual",
+  "builtInRoom": "Built-in room",
+  "builtIn": "Built-in",
+  "locked": "Locked",
+  "interactable": "Interactable",
+  "advancedPosition": "Advanced Position",
+  "back": "Back",
+  "front": "Front",
+  "bottom": "Bottom",
+  "top": "Top",
+  "delete": "Delete",
+  "eventChain": "Event Chain",
+  "linkedDoor": "Linked Door",
+  "triggerPointHelp": "Path nodes can link directly to this trigger. When the actor reaches the node, this chain runs.",
+  "pathNode": "Path Node",
+  "speed": "Speed",
+  "shake": "Shake",
+  "addPathNode": "Add Path Node",
+  "duration": "Duration",
+  "speaker": "Speaker",
+  "text": "Text",
+  "portrait": "Portrait",
+  "dialogueStyle": "Dialogue Style",
+  "dialogueStyleRegular": "Classic White",
+  "dialogueStyleDarkWorld": "Dark World",
+  "target": "Target",
+  "mode": "Mode",
+  "canvasMarker": "Canvas marker",
+  "deleteEvent": "Delete Event",
+  "waitSeconds": "Wait seconds",
+  "linkedTrigger": "Linked Trigger",
+  "none": "None",
+  "deleteNode": "Delete Node",
+  "asset": "Asset",
+  "missingFile": "Missing file",
+  "kind": "Kind",
+  "path": "Path",
+  "assetInUse": "Asset In Use",
+  "deleteAsset": "Delete Asset",
+  "characterDefinition": "Character Definition",
+  "defaultSpeed": "Default speed",
+  "defaultShake": "Default shake",
+  "expressions": "Expressions",
+  "addExpression": "Add Expression",
+  "pointX": "Point X",
+  "pointY": "Point Y",
+  "width": "W",
+  "height": "H",
+  "scale": "Scale",
+  "zoomPercent": "Zoom {percent}%",
+  "@zoomPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "triggerLinkLabel": "-> trigger",
+  "moveDescription": "{count} nodes, speed {speed}, shake {shake}",
+  "@moveDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "speed": {
+        "type": "double"
+      },
+      "shake": {
+        "type": "double"
+      }
+    }
+  },
+  "nodeCoordinates": "x {x}, y {y}",
+  "@nodeCoordinates": {
+    "placeholders": {
+      "x": {
+        "type": "String"
+      },
+      "y": {
+        "type": "String"
+      }
+    }
+  }
+}
