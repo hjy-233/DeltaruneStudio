@@ -1,0 +1,275 @@
+[
+  {
+    "id": "dialogue_sound_0000",
+    "name": "snd_dadtxt",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_dadtxt.wav",
+    "sourcePath": "Dialogue/Sound/snd_dadtxt.wav"
+  },
+  {
+    "id": "dialogue_sound_0001",
+    "name": "snd_text",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_text.wav",
+    "sourcePath": "Dialogue/Sound/snd_text.wav"
+  },
+  {
+    "id": "dialogue_sound_0002",
+    "name": "snd_tv_voice_short",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short.wav"
+  },
+  {
+    "id": "dialogue_sound_0003",
+    "name": "snd_tv_voice_short_10",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_10.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_10.wav"
+  },
+  {
+    "id": "dialogue_sound_0004",
+    "name": "snd_tv_voice_short_2",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_2.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_2.wav"
+  },
+  {
+    "id": "dialogue_sound_0005",
+    "name": "snd_tv_voice_short_3",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_3.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_3.wav"
+  },
+  {
+    "id": "dialogue_sound_0006",
+    "name": "snd_tv_voice_short_4",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_4.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_4.wav"
+  },
+  {
+    "id": "dialogue_sound_0007",
+    "name": "snd_tv_voice_short_5",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_5.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_5.wav"
+  },
+  {
+    "id": "dialogue_sound_0008",
+    "name": "snd_tv_voice_short_6",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_6.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_6.wav"
+  },
+  {
+    "id": "dialogue_sound_0009",
+    "name": "snd_tv_voice_short_7",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_7.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_7.wav"
+  },
+  {
+    "id": "dialogue_sound_0010",
+    "name": "snd_tv_voice_short_8",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_8.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_8.wav"
+  },
+  {
+    "id": "dialogue_sound_0011",
+    "name": "snd_tv_voice_short_9",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_tv_voice_short_9.wav",
+    "sourcePath": "Dialogue/Sound/snd_tv_voice_short_9.wav"
+  },
+  {
+    "id": "dialogue_sound_0012",
+    "name": "snd_txger",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txger.wav",
+    "sourcePath": "Dialogue/Sound/snd_txger.wav"
+  },
+  {
+    "id": "dialogue_sound_0013",
+    "name": "snd_txtal",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtal.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtal.wav"
+  },
+  {
+    "id": "dialogue_sound_0014",
+    "name": "snd_txtasg",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtasg.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtasg.wav"
+  },
+  {
+    "id": "dialogue_sound_0015",
+    "name": "snd_txtber",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtber.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtber.wav"
+  },
+  {
+    "id": "dialogue_sound_0016",
+    "name": "snd_txtcar",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtcar.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtcar.wav"
+  },
+  {
+    "id": "dialogue_sound_0017",
+    "name": "snd_txtecho",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtecho.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtecho.wav"
+  },
+  {
+    "id": "dialogue_sound_0018",
+    "name": "snd_txtjack_high_cute",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtjack_high_cute.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtjack_high_cute.wav"
+  },
+  {
+    "id": "dialogue_sound_0019",
+    "name": "snd_txtjack_low2",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtjack_low2.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtjack_low2.wav"
+  },
+  {
+    "id": "dialogue_sound_0020",
+    "name": "snd_txtjok",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtjok.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtjok.wav"
+  },
+  {
+    "id": "dialogue_sound_0021",
+    "name": "snd_txtlan",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtlan.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtlan.wav"
+  },
+  {
+    "id": "dialogue_sound_0022",
+    "name": "snd_txtnoe",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtnoe.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtnoe.wav"
+  },
+  {
+    "id": "dialogue_sound_0023",
+    "name": "snd_txtpap",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtpap.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtpap.wav"
+  },
+  {
+    "id": "dialogue_sound_0024",
+    "name": "snd_txtq",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtq.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtq.wav"
+  },
+  {
+    "id": "dialogue_sound_0025",
+    "name": "snd_txtq_2",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtq_2.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtq_2.wav"
+  },
+  {
+    "id": "dialogue_sound_0026",
+    "name": "snd_txtq_alt",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtq_alt.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtq_alt.wav"
+  },
+  {
+    "id": "dialogue_sound_0027",
+    "name": "snd_txtral",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtral.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtral.wav"
+  },
+  {
+    "id": "dialogue_sound_0028",
+    "name": "snd_txtrud",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtrud.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtrud.wav"
+  },
+  {
+    "id": "dialogue_sound_0029",
+    "name": "snd_txtrx1",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtrx1.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtrx1.wav"
+  },
+  {
+    "id": "dialogue_sound_0030",
+    "name": "snd_txtrx2",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtrx2.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtrx2.wav"
+  },
+  {
+    "id": "dialogue_sound_0031",
+    "name": "snd_txtrx3",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtrx3.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtrx3.wav"
+  },
+  {
+    "id": "dialogue_sound_0032",
+    "name": "snd_txtsans",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtsans.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtsans.wav"
+  },
+  {
+    "id": "dialogue_sound_0033",
+    "name": "snd_txtspam",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtspam.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtspam.wav"
+  },
+  {
+    "id": "dialogue_sound_0034",
+    "name": "snd_txtspam2",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtspam2.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtspam2.wav"
+  },
+  {
+    "id": "dialogue_sound_0035",
+    "name": "snd_txtsus",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtsus.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtsus.wav"
+  },
+  {
+    "id": "dialogue_sound_0036",
+    "name": "snd_txtsusral",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtsusral.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtsusral.wav"
+  },
+  {
+    "id": "dialogue_sound_0037",
+    "name": "snd_txttor",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txttor.wav",
+    "sourcePath": "Dialogue/Sound/snd_txttor.wav"
+  },
+  {
+    "id": "dialogue_sound_0038",
+    "name": "snd_txtund",
+    "kind": "audio",
+    "assetPath": "assets/dialogue/sound/snd_txtund.wav",
+    "sourcePath": "Dialogue/Sound/snd_txtund.wav"
+  }
+]
