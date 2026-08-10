@@ -54,6 +54,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pause => 'Pause';
 
   @override
+  String get settings => 'Settings';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get languageSystem => 'System';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageChinese => 'Chinese';
+
+  @override
+  String get englishDialogueTypewriterByWord =>
+      'English dialogue appears by word';
+
+  @override
+  String get englishDialogueTypewriterByWordHelp =>
+      'When the app language is English and the dialogue text is English, the typewriter reveal advances one word at a time.';
+
+  @override
   String get canvasObjects => 'Canvas Objects';
 
   @override
@@ -166,6 +192,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playBgm => 'Play BGM';
+
+  @override
+  String get playVideo => 'Play Video';
+
+  @override
+  String get startFollow => 'Start Follow';
+
+  @override
+  String get stopFollow => 'Stop Follow';
 
   @override
   String get expression => 'Expression';
@@ -287,6 +322,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventChain => 'Event Chain';
+
+  @override
+  String get triggerMode => 'Trigger Mode';
+
+  @override
+  String get triggerModeTriggerPoint => 'Trigger Point';
+
+  @override
+  String get triggerModeAlways => 'Always';
 
   @override
   String get linkedDoor => 'Linked Door';

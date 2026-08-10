@@ -2,11 +2,19 @@ import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/editor/editor_selection.dart';
 import 'package:deltarune_studio/editor/studio_workspace.dart';
+import 'package:deltarune_studio/l10n/event_labels.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+String _triggerModeLabel(AppLocalizations l10n, EventChainTriggerMode mode) {
+  return switch (mode) {
+    EventChainTriggerMode.triggerPoint => l10n.triggerModeTriggerPoint,
+    EventChainTriggerMode.always => l10n.triggerModeAlways,
+  };
+}
 
 class EventChainPanel extends ConsumerWidget {
   const EventChainPanel({
@@ -71,7 +79,8 @@ class EventChainPanel extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text(
-                            l10n.eventsCount(candidate.events.length),
+                            '${_triggerModeLabel(l10n, candidate.triggerMode)} · '
+                            '${l10n.eventsCount(candidate.events.length)}',
                           ),
                           onTap: () => controller.selectChain(candidate.id),
                         ),
@@ -232,6 +241,21 @@ class _AddEventMenu extends StatelessWidget {
           child: Text(l10n.characterMove),
         ),
         PopupMenuItem(
+          value: StudioEvent.characterStartFollow(
+            id: StudioIds.event(),
+            followerObjectId: sampleCharacterId ?? '',
+            leaderObjectId: sampleCharacterId ?? '',
+          ),
+          child: Text(l10n.startFollow),
+        ),
+        PopupMenuItem(
+          value: StudioEvent.characterStopFollow(
+            id: StudioIds.event(),
+            followerObjectId: sampleCharacterId ?? '',
+          ),
+          child: Text(l10n.stopFollow),
+        ),
+        PopupMenuItem(
           value: StudioEvent.characterWait(id: StudioIds.event(), duration: 1),
           child: Text(l10n.wait),
         ),
@@ -246,7 +270,6 @@ class _AddEventMenu extends StatelessWidget {
         PopupMenuItem(
           value: StudioEvent.dialogueSay(
             id: StudioIds.event(),
-            speaker: 'Kris',
             text: '...',
             style: DialogueStyle.regular,
             duration: 2,
@@ -282,6 +305,10 @@ class _AddEventMenu extends StatelessWidget {
         PopupMenuItem(
           value: StudioEvent.audioPlayBgm(id: StudioIds.event(), assetId: ''),
           child: Text(l10n.playBgm),
+        ),
+        PopupMenuItem(
+          value: StudioEvent.videoPlay(id: StudioIds.event(), assetId: ''),
+          child: Text(l10n.playVideo),
         ),
       ],
       child: DecoratedBox(
@@ -417,18 +444,7 @@ class _EventCard extends ConsumerWidget {
   }
 
   String _title(AppLocalizations l10n, StudioEvent event) {
-    return event.map(
-      characterMove: (_) => l10n.characterMove,
-      characterWait: (_) => l10n.wait,
-      characterChangeExpression: (_) => l10n.expression,
-      dialogueSay: (_) => l10n.dialogue,
-      cameraFollow: (_) => l10n.cameraFollow,
-      cameraFocus: (_) => l10n.cameraFocus,
-      sceneFade: (_) => l10n.fade,
-      sceneChange: (_) => l10n.canvasJump,
-      audioPlayBgm: (_) => l10n.playBgm,
-      audioPlaySound: (_) => l10n.playSound,
-    );
+    return eventLabel(l10n, event);
   }
 
   String _description(AppLocalizations l10n, StudioEvent event) {
@@ -438,10 +454,12 @@ class _EventCard extends ConsumerWidget {
         value.path.speed,
         value.path.shake,
       ),
+      characterStartFollow: (value) =>
+          '${value.followerObjectId} -> ${value.leaderObjectId}, ${value.distance}px',
+      characterStopFollow: (value) => value.followerObjectId,
       characterWait: (value) => '${value.duration}s',
       characterChangeExpression: (value) => value.expressionId,
-      dialogueSay: (value) =>
-          '${value.speaker}: ${value.text} (${value.style.name})',
+      dialogueSay: (value) => '${value.text} (${value.style.name})',
       cameraFollow: (value) => value.targetObjectId,
       cameraFocus: (value) => value.target.toString(),
       sceneFade: (value) => '${value.mode.name}, ${value.duration}s',
@@ -449,6 +467,8 @@ class _EventCard extends ConsumerWidget {
       audioPlayBgm: (value) =>
           value.assetId.isEmpty ? l10n.noAssetSelected : value.assetId,
       audioPlaySound: (value) =>
+          value.assetId.isEmpty ? l10n.noAssetSelected : value.assetId,
+      videoPlay: (value) =>
           value.assetId.isEmpty ? l10n.noAssetSelected : value.assetId,
     );
   }

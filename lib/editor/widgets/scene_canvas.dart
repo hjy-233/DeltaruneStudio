@@ -1,18 +1,21 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/editor/editor_selection.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
-import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
 import 'package:deltarune_studio/runtime/runtime_world.dart';
+import 'package:deltarune_studio/shared_render/studio_rendering.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path/path.dart' as p;
 
 final canvasCursorProvider = StateProvider<Offset?>((ref) => null);
@@ -37,20 +40,23 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
   Transform2D? _dragObjectStartTransform;
   Transform2D? _resizeStartTransform;
   PathNode? _dragNodeStart;
+  Offset? _marqueeStart;
+  Offset? _marqueeEnd;
 
   @override
   Widget build(BuildContext context) {
     final preview = ref.watch(previewControllerProvider);
     final world = preview.world;
-    final builtIns = ref.watch(builtInAssetLibraryProvider).valueOrNull;
-    final useRuntime = preview.isPlaying;
-    final scene = useRuntime
-        ? world?.scene ?? widget.ready.currentScene
-        : widget.ready.currentScene;
-    final objects = useRuntime ? world?.objects : null;
+    final useRuntime = world != null;
+    final scene = useRuntime ? world.scene : widget.ready.currentScene;
+    final objects = useRuntime ? world.objects : null;
     final hideDebug = preview.cleanPreview;
-    final selectedMove = _selectedMoveEvent(widget.ready);
+    final selectedMove = _dragNode == null
+        ? _selectedMoveEvent(widget.ready)
+        : _moveEventForPathSelection(widget.ready, _dragNode!) ??
+              _selectedMoveEvent(widget.ready);
     final previewMove = _previewMoveEvent(selectedMove);
+    final visibleMoves = _visibleMoveEvents(widget.ready, previewMove);
     final previewTransforms = _previewTransforms();
     final l10n = AppLocalizations.of(context)!;
 
@@ -73,8 +79,11 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTapDown: (details) {
+            if (useRuntime || preview.cleanPreview) {
+              return;
+            }
             final scenePoint = _toScene(details.localPosition);
-            final nodeHit = _hitTestPathNode(selectedMove, scenePoint);
+            final nodeHit = _hitTestPathNode(visibleMoves, scenePoint);
             if (nodeHit != null) {
               ref
                   .read(studioControllerProvider.notifier)
@@ -86,47 +95,76 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
               return;
             }
             final hit = _hitTest(scene.objects, scenePoint);
-            ref.read(studioControllerProvider.notifier).selectObject(hit);
+            final controller = ref.read(studioControllerProvider.notifier);
+            if (hit != null && HardwareKeyboard.instance.isShiftPressed) {
+              controller.toggleObjectSelection(hit);
+            } else {
+              controller.selectObject(hit);
+            }
           },
           onPanStart: (details) {
+            if (useRuntime || preview.cleanPreview) {
+              return;
+            }
             final scenePoint = _toScene(details.localPosition);
+            final hit = _hitTest(scene.objects, scenePoint);
+            if (hit == null && HardwareKeyboard.instance.isShiftPressed) {
+              setState(() {
+                _marqueeStart = scenePoint;
+                _marqueeEnd = scenePoint;
+                _dragDelta = Offset.zero;
+              });
+              return;
+            }
             _resizeCorner = _hitTestResizeHandle(
               scene.objects,
               widget.ready.selectedObjectId,
               scenePoint,
             );
             if (_resizeCorner != null) {
-              _resizeObjectId = widget.ready.selectedObjectId;
-              _resizeStartTransform = _objectById(
+              final selectedObject = _objectById(
                 scene.objects,
-                _resizeObjectId,
-              )?.objectTransform;
+                widget.ready.selectedObjectId,
+              );
+              if (selectedObject == null || _isObjectLocked(selectedObject)) {
+                _resizeCorner = null;
+              } else {
+                _resizeObjectId = widget.ready.selectedObjectId;
+                _resizeStartTransform = selectedObject.objectTransform;
+              }
               _dragDelta = Offset.zero;
               return;
             }
-            _dragNode = _hitTestPathNode(selectedMove, scenePoint);
+            _dragNode = _hitTestPathNode(visibleMoves, scenePoint);
             if (_dragNode != null) {
               ref.read(studioControllerProvider.notifier).select(_dragNode);
-              _dragNodeStart = _nodeById(selectedMove, _dragNode!.nodeId);
+              _dragNodeStart = _nodeBySelection(visibleMoves, _dragNode!);
               _dragDelta = Offset.zero;
               return;
             }
-            _dragObjectId = _hitTest(scene.objects, scenePoint);
+            _dragObjectId = hit;
             ref
                 .read(studioControllerProvider.notifier)
                 .selectObject(_dragObjectId);
-            _dragObjectStartTransform = _objectById(
-              scene.objects,
-              _dragObjectId,
-            )?.objectTransform;
+            final dragObject = _objectById(scene.objects, _dragObjectId);
+            _dragObjectStartTransform =
+                dragObject == null || _isObjectLocked(dragObject)
+                ? null
+                : dragObject.objectTransform;
             _dragDelta = Offset.zero;
           },
           onPanUpdate: (details) {
-            if (preview.isPlaying) {
+            if (useRuntime || preview.cleanPreview) {
               return;
             }
             final resizeId = _resizeObjectId;
             final resizeCorner = _resizeCorner;
+            if (_marqueeStart != null) {
+              setState(() {
+                _marqueeEnd = _toScene(details.localPosition);
+              });
+              return;
+            }
             if (resizeId != null && resizeCorner != null) {
               setState(() {
                 _dragDelta += details.delta / _scale;
@@ -150,7 +188,17 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
             });
           },
           onPanEnd: (_) {
+            if (useRuntime || preview.cleanPreview) {
+              return;
+            }
             final controller = ref.read(studioControllerProvider.notifier);
+            final marqueeStart = _marqueeStart;
+            final marqueeEnd = _marqueeEnd;
+            if (marqueeStart != null && marqueeEnd != null) {
+              controller.selectObjects(
+                _objectsInMarquee(scene.objects, marqueeStart, marqueeEnd),
+              );
+            }
             final resizeId = _resizeObjectId;
             final resizeCorner = _resizeCorner;
             final resizeStart = _resizeStartTransform;
@@ -203,13 +251,15 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
               _dragObjectStartTransform = null;
               _resizeStartTransform = null;
               _dragNodeStart = null;
+              _marqueeStart = null;
+              _marqueeEnd = null;
             });
           },
           child: ClipRect(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final size = Size(constraints.maxWidth, constraints.maxHeight);
-                final effectivePan = useRuntime && world != null
+                final effectivePan = useRuntime
                     ? _runtimePan(world, size)
                     : _pan;
                 return Stack(
@@ -218,60 +268,82 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
                       child: ColoredBox(color: Colors.black),
                     ),
                     Positioned.fill(
-                      child: _AssetImageLayer(
-                        ready: widget.ready,
-                        scene: scene,
-                        runtimeObjects: objects,
-                        previewTransforms: previewTransforms,
-                        currentTime: world?.currentTime ?? 0,
-                        pan: effectivePan,
-                        scale: _scale,
-                        foreground: false,
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: _AssetImageLayer(
-                        ready: widget.ready,
-                        scene: scene,
-                        runtimeObjects: objects,
-                        previewTransforms: previewTransforms,
-                        currentTime: world?.currentTime ?? 0,
-                        pan: effectivePan,
-                        scale: _scale,
-                        foreground: true,
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _ScenePainter(
+                      child: RepaintBoundary(
+                        child: _AssetImageLayer(
+                          ready: widget.ready,
                           scene: scene,
                           runtimeObjects: objects,
-                          selectedObjectId: widget.ready.selectedObjectId,
-                          selectedMove: previewMove,
                           previewTransforms: previewTransforms,
-                          selection: widget.ready.selection,
-                          activeMoveEventId: useRuntime
-                              ? world?.activeMoveEventId
-                              : null,
-                          activeMoveProgress: useRuntime
-                              ? world?.activeMoveProgress ?? 0
-                              : 0,
-                          triggerLinkLabel: l10n.triggerLinkLabel,
+                          currentTime: world?.currentTime ?? 0,
                           pan: effectivePan,
                           scale: _scale,
-                          fadeOpacity: useRuntime ? world?.fadeOpacity ?? 0 : 0,
-                          currentTime: useRuntime ? world?.currentTime ?? 0 : 0,
-                          ready: widget.ready,
-                          hideDebug: hideDebug,
+                          foreground: false,
                         ),
                       ),
                     ),
-                    if (useRuntime && world?.dialogue != null)
-                      Positioned.fill(
-                        child: _DialogueOverlay(
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: _AssetImageLayer(
                           ready: widget.ready,
-                          dialogue: world!.dialogue!,
-                          builtIns: builtIns,
+                          scene: scene,
+                          runtimeObjects: objects,
+                          previewTransforms: previewTransforms,
+                          currentTime: world?.currentTime ?? 0,
+                          pan: effectivePan,
+                          scale: _scale,
+                          foreground: true,
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: CustomPaint(
+                          painter: _ScenePainter(
+                            scene: scene,
+                            runtimeObjects: objects,
+                            selectedObjectId: widget.ready.selectedObjectId,
+                            selectedMoves: visibleMoves,
+                            previewTransforms: previewTransforms,
+                            selection: widget.ready.selection,
+                            activeMoveEventId: useRuntime
+                                ? world.activeMoveEventId
+                                : null,
+                            activeMoveProgress: useRuntime
+                                ? world.activeMoveProgress
+                                : 0,
+                            triggerLinkLabel: l10n.triggerLinkLabel,
+                            pan: effectivePan,
+                            scale: _scale,
+                            fadeOpacity: useRuntime ? world.fadeOpacity : 0,
+                            currentTime: useRuntime ? world.currentTime : 0,
+                            ready: widget.ready,
+                            hideDebug: hideDebug,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (useRuntime && world.dialogue != null)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: _DialogueOverlay(
+                            ready: widget.ready,
+                            dialogue: world.dialogue!,
+                          ),
+                        ),
+                      ),
+                    if (useRuntime && world.activeVideo != null)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: _VideoOverlay(
+                            ready: widget.ready,
+                            video: world.activeVideo!,
+                            isPlaying: preview.isPlaying,
+                            onCompleted: preview.cleanPreview
+                                ? () => ref
+                                      .read(previewControllerProvider.notifier)
+                                      .completeActiveVideo(widget.ready)
+                                : null,
+                          ),
                         ),
                       ),
                     Positioned(
@@ -293,6 +365,17 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
                         ),
                       ),
                     ),
+                    if (_marqueeStart != null && _marqueeEnd != null)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            painter: _MarqueePainter(
+                              start: _toViewport(_marqueeStart!, effectivePan),
+                              end: _toViewport(_marqueeEnd!, effectivePan),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 );
               },
@@ -305,15 +388,49 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
 
   Offset _toScene(Offset local) => (local - _pan) / _scale;
 
+  Offset _toViewport(Offset scenePoint, Offset pan) =>
+      scenePoint * _scale + pan;
+
+  List<String> _objectsInMarquee(
+    List<SceneObject> objects,
+    Offset start,
+    Offset end,
+  ) {
+    final rect = Rect.fromPoints(start, end);
+    return objects
+        .where((object) {
+          final transform = object.objectTransform;
+          final objectRect = Rect.fromLTWH(
+            transform.x,
+            transform.y,
+            transform.width * transform.scale,
+            transform.height * transform.scale,
+          );
+          return rect.overlaps(objectRect) || rect.contains(objectRect.center);
+        })
+        .map((object) => object.objectId)
+        .toList(growable: false);
+  }
+
   Offset _runtimePan(RuntimeWorld world, Size viewportSize) {
     final target = _cameraTarget(world);
     if (target == null) {
       return _pan;
     }
-    return Offset(
-      viewportSize.width / 2 - target.dx * _scale,
-      viewportSize.height / 2 - target.dy * _scale,
+    final cameraSize = _cameraViewportSize(viewportSize);
+    final cameraOrigin = Offset(
+      (viewportSize.width - cameraSize.width) / 2,
+      (viewportSize.height - cameraSize.height) / 2,
     );
+    return Offset(
+      cameraOrigin.dx + cameraSize.width / 2 - target.dx * _scale,
+      cameraOrigin.dy + cameraSize.height / 2 - target.dy * _scale,
+    );
+  }
+
+  Size _cameraViewportSize(Size viewportSize) {
+    final width = math.min(viewportSize.width, viewportSize.height * 4 / 3);
+    return Size(width, width * 3 / 4);
   }
 
   Offset? _cameraTarget(RuntimeWorld world) {
@@ -453,13 +570,19 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
     return null;
   }
 
-  PathNode? _nodeById(SelectedMoveEvent? selectedMove, String nodeId) {
-    if (selectedMove == null) {
-      return null;
-    }
-    for (final node in selectedMove.event.path.nodes) {
-      if (node.id == nodeId) {
-        return node;
+  PathNode? _nodeBySelection(
+    List<SelectedMoveEvent> moves,
+    PathNodeSelection selection,
+  ) {
+    for (final move in moves) {
+      if (move.chainId != selection.chainId ||
+          move.event.id != selection.eventId) {
+        continue;
+      }
+      for (final node in move.event.path.nodes) {
+        if (node.id == selection.nodeId) {
+          return node;
+        }
       }
     }
     return null;
@@ -482,23 +605,28 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
   }
 
   PathNodeSelection? _hitTestPathNode(
-    SelectedMoveEvent? selectedMove,
+    List<SelectedMoveEvent> moves,
     Offset point,
   ) {
-    if (selectedMove == null) {
-      return null;
-    }
-    for (final node in selectedMove.event.path.nodes.reversed) {
-      final rect = Rect.fromCircle(center: Offset(node.x, node.y), radius: 9);
-      if (rect.contains(point)) {
-        return PathNodeSelection(
-          selectedMove.chainId,
-          selectedMove.event.id,
-          node.id,
-        );
+    for (final move in moves.reversed) {
+      for (final node in move.event.path.nodes.reversed) {
+        final rect = Rect.fromCircle(center: Offset(node.x, node.y), radius: 9);
+        if (rect.contains(point)) {
+          return PathNodeSelection(move.chainId, move.event.id, node.id);
+        }
       }
     }
     return null;
+  }
+
+  bool _isObjectLocked(SceneObject object) {
+    return object.map(
+      characterInstance: (value) => value.locked,
+      prop: (value) => value.locked,
+      background: (value) => value.locked,
+      triggerPoint: (value) => value.locked,
+      triggerArea: (value) => value.locked,
+    );
   }
 
   _ResizeCorner? _hitTestResizeHandle(
@@ -604,6 +732,38 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
     }
     return null;
   }
+
+  SelectedMoveEvent? _moveEventForPathSelection(
+    StudioReady ready,
+    PathNodeSelection selection,
+  ) {
+    final event = ready.eventById(selection.chainId, selection.eventId);
+    if (event is! CharacterMoveEvent) {
+      return null;
+    }
+    return SelectedMoveEvent(chainId: selection.chainId, event: event);
+  }
+
+  List<SelectedMoveEvent> _visibleMoveEvents(
+    StudioReady ready,
+    SelectedMoveEvent? previewMove,
+  ) {
+    final selection = ready.selection;
+    if (selection is EventChainSelection) {
+      final chain = ready.chainById(selection.chainId);
+      if (chain == null) {
+        return const [];
+      }
+      return [
+        for (final event in chain.events)
+          if (event is CharacterMoveEvent)
+            previewMove != null && previewMove.event.id == event.id
+                ? previewMove
+                : SelectedMoveEvent(chainId: chain.id, event: event),
+      ];
+    }
+    return previewMove == null ? const [] : [previewMove];
+  }
 }
 
 final class SelectedMoveEvent {
@@ -653,9 +813,6 @@ class _AssetImageLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final projectDirectory = ready.projectDirectory;
-    if (projectDirectory == null) {
-      return const SizedBox.shrink();
-    }
     final children = <Widget>[];
     for (final object in scene.objects) {
       final isForeground =
@@ -664,17 +821,24 @@ class _AssetImageLayer extends StatelessWidget {
         continue;
       }
       final runtimeObject = runtimeObjects?[object.objectId];
-      final assetId = _imageAssetIdForObject(object, runtimeObject);
+      final assetId = imageAssetIdForObject(
+        ready: ready,
+        object: object,
+        runtimeObject: runtimeObject,
+        currentTime: currentTime,
+      );
       final asset = ready.assetById(assetId);
-      if (asset == null || asset.kind == AssetKind.audio) {
+      if (asset == null ||
+          asset.kind == AssetKind.audio ||
+          asset.kind == AssetKind.video) {
         continue;
       }
       final transform =
           runtimeObject?.transform ??
           previewTransforms[object.objectId] ??
           object.objectTransform;
-      final file = File(p.join(projectDirectory.path, asset.relativePath));
-      if (!file.existsSync()) {
+      final image = _imageForAsset(asset, projectDirectory);
+      if (image == null) {
         continue;
       }
       children.add(
@@ -683,12 +847,7 @@ class _AssetImageLayer extends StatelessWidget {
           top: transform.y,
           width: transform.width * transform.scale,
           height: transform.height * transform.scale,
-          child: Image.file(
-            file,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.none,
-            isAntiAlias: false,
-          ),
+          child: image,
         ),
       );
     }
@@ -710,140 +869,160 @@ class _AssetImageLayer extends StatelessWidget {
     );
   }
 
-  String? _imageAssetIdForObject(
-    SceneObject object,
-    RuntimeObject? runtimeObject,
-  ) {
-    return object.maybeMap(
-      prop: (value) => value.assetId,
-      background: (value) => value.assetId,
-      characterInstance: (value) {
-        final character = ready.characterById(value.characterId);
-        if (character == null || character.animations.isEmpty) {
-          return null;
-        }
-        final facing = runtimeObject?.facing ?? value.facing;
-        final facingFrames = character.animations
-            .where((animation) => animation.direction == facing)
-            .toList();
-        final neutralFrames = character.animations
-            .where((animation) => animation.direction == null)
-            .toList();
-        final frames = facingFrames.isNotEmpty
-            ? facingFrames
-            : neutralFrames.isNotEmpty
-            ? neutralFrames
-            : character.animations;
-        if (frames.length == 1) {
-          return frames.first.assetId;
-        }
-        final frameIndex = ((currentTime / 0.22).floor()) % frames.length;
-        return frames[frameIndex].assetId;
-      },
-      orElse: () => null,
+  Widget? _imageForAsset(AssetRef asset, Directory? projectDirectory) {
+    if (asset.kind == AssetKind.audio || asset.kind == AssetKind.video) {
+      return null;
+    }
+    final dataUri = asset.dataUri;
+    if (dataUri != null && dataUri.isNotEmpty) {
+      return Image.memory(
+        _bytesFromDataUri(dataUri),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.none,
+        isAntiAlias: false,
+        gaplessPlayback: true,
+      );
+    }
+    if (projectDirectory == null) {
+      return null;
+    }
+    final file = File(p.join(projectDirectory.path, asset.relativePath));
+    if (!file.existsSync()) {
+      return null;
+    }
+    return Image.file(
+      file,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none,
+      isAntiAlias: false,
+      gaplessPlayback: true,
     );
   }
 }
 
 class _DialogueOverlay extends StatelessWidget {
-  const _DialogueOverlay({
-    required this.ready,
-    required this.dialogue,
-    required this.builtIns,
-  });
+  const _DialogueOverlay({required this.ready, required this.dialogue});
 
   final StudioReady ready;
   final DialogueBoxState dialogue;
-  final BuiltInAssetLibrary? builtIns;
 
   @override
   Widget build(BuildContext context) {
     final portraitFile = _portraitFile();
-    final borderAssets = _DialogueBorderAssets.fromBuiltIns(builtIns);
+    final portraitAsset = ready.assetById(dialogue.portraitAssetId);
+    final template = dialogueTemplateForStyle(dialogue.style);
+    final visibleCharacters =
+        dialogue.visibleCharacters ?? dialogue.text.length;
+    final visibleText = dialogue.text.substring(
+      0,
+      visibleCharacters.clamp(0, dialogue.text.length),
+    );
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final width = math
-              .min(760.0, constraints.maxWidth - 96)
-              .clamp(320.0, 760.0);
-          const height = 148.0;
-          final hasPortrait = portraitFile != null;
-          return Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 32),
-              child: SizedBox(
-                width: width,
-                height: height,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: _DialogueBorder(
-                        style: dialogue.style,
-                        assets: borderAssets,
-                      ),
-                    ),
-                    if (hasPortrait)
-                      Positioned(
-                        left: 28,
-                        top: 32,
-                        width: 72,
-                        height: 76,
-                        child: Image.file(
-                          portraitFile,
-                          fit: BoxFit.contain,
+          final cameraWidth = math.min(
+            constraints.maxWidth,
+            constraints.maxHeight * 4 / 3,
+          );
+          final cameraHeight = cameraWidth * 3 / 4;
+          final cameraLeft = (constraints.maxWidth - cameraWidth) / 2;
+          final cameraTop = (constraints.maxHeight - cameraHeight) / 2;
+          final boxWidth = math.max(280.0, cameraWidth - 28);
+          final scale = boxWidth / template.width;
+          final boxHeight = template.height * scale;
+          final hasPortrait =
+              portraitFile != null || portraitAsset?.dataUri != null;
+          return Stack(
+            children: [
+              Positioned(
+                left: cameraLeft + (cameraWidth - boxWidth) / 2,
+                top:
+                    cameraTop +
+                    cameraHeight -
+                    boxHeight -
+                    math.max(18, 20 * scale),
+                width: boxWidth,
+                height: boxHeight,
+                child: SizedBox(
+                  width: boxWidth,
+                  height: boxHeight,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          template.assetPath,
+                          fit: BoxFit.fill,
                           filterQuality: FilterQuality.none,
                           isAntiAlias: false,
-                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
                         ),
                       ),
-                    Positioned(
-                      left: hasPortrait ? 124 : 32,
-                      top: 28,
-                      right: 28,
-                      bottom: 24,
-                      child: DefaultTextStyle(
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          height: 1.35,
-                          letterSpacing: 0,
-                          shadows: dialogue.style == DialogueStyle.darkWorld
-                              ? const [
-                                  Shadow(
-                                    color: Color(0xff6666d9),
-                                    offset: Offset(2, 2),
-                                  ),
-                                ]
-                              : null,
+                      if (hasPortrait)
+                        Positioned(
+                          left: 28 * scale,
+                          top: 26 * scale,
+                          width: 108 * scale,
+                          height: 108 * scale,
+                          child: ClipRect(
+                            child: Center(
+                              child: SizedBox(
+                                width: 88 * scale,
+                                height: 88 * scale,
+                                child: _PortraitImage(
+                                  file: portraitFile,
+                                  dataUri: portraitAsset?.dataUri,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        child: Text(
-                          '* ${dialogue.text}',
-                          softWrap: true,
-                          overflow: TextOverflow.fade,
-                        ),
-                      ),
-                    ),
-                    if (dialogue.speaker.trim().isNotEmpty)
                       Positioned(
-                        left: hasPortrait ? 124 : 32,
-                        bottom: 14,
-                        child: Text(
-                          dialogue.speaker,
+                        left: (hasPortrait ? 146 : 42) * scale,
+                        top: 36 * scale,
+                        right: 42 * scale,
+                        bottom: 30 * scale,
+                        child: DefaultTextStyle(
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.72),
-                            fontSize: 12,
+                            color: Colors.white,
+                            fontFamily: 'PhoenixPixel',
+                            fontSize: 24 * scale,
+                            height: 1.35,
                             letterSpacing: 0,
+                            shadows: dialogue.style == DialogueStyle.darkWorld
+                                ? const [
+                                    Shadow(
+                                      color: Color(0xff6666d9),
+                                      offset: Offset(2, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text.rich(
+                            _dialogueTextSpan(visibleText),
+                            softWrap: true,
+                            overflow: TextOverflow.fade,
                           ),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           );
         },
       ),
+    );
+  }
+
+  TextSpan _dialogueTextSpan(String text) {
+    final lines = text.split('\n');
+    return TextSpan(
+      children: [
+        for (var index = 0; index < lines.length; index += 1) ...[
+          if (index > 0) const TextSpan(text: '\n'),
+          TextSpan(text: '* ${lines[index]}'),
+        ],
+      ],
     );
   }
 
@@ -858,284 +1037,213 @@ class _DialogueOverlay extends StatelessWidget {
   }
 }
 
-class _DialogueBorder extends StatefulWidget {
-  const _DialogueBorder({required this.style, required this.assets});
+class _VideoOverlay extends StatefulWidget {
+  const _VideoOverlay({
+    required this.ready,
+    required this.video,
+    required this.isPlaying,
+    required this.onCompleted,
+  });
 
-  final DialogueStyle style;
-  final _DialogueBorderAssets? assets;
+  final StudioReady ready;
+  final VideoPlaybackState video;
+  final bool isPlaying;
+  final VoidCallback? onCompleted;
 
   @override
-  State<_DialogueBorder> createState() => _DialogueBorderState();
+  State<_VideoOverlay> createState() => _VideoOverlayState();
 }
 
-class _DialogueBorderState extends State<_DialogueBorder> {
-  _LoadedDialogueBorder? _loaded;
-  Timer? _timer;
-  int _frame = 0;
+class _VideoOverlayState extends State<_VideoOverlay> {
+  late final Player _player;
+  late final VideoController _controller;
+  StreamSubscription<bool>? _completedSubscription;
+  String? _openedSource;
+  double? _lastSeekSeconds;
+  bool _sentCompleted = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
-    if (widget.style == DialogueStyle.darkWorld) {
-      _startTimer();
-    }
+    _player = Player();
+    _controller = VideoController(_player);
+    unawaited(_player.setPlaylistMode(PlaylistMode.none));
+    _completedSubscription = _player.stream.completed.listen((completed) {
+      if (!completed || _sentCompleted) {
+        return;
+      }
+      _sentCompleted = true;
+      widget.onCompleted?.call();
+    });
+    _syncVideo();
   }
 
   @override
-  void didUpdateWidget(covariant _DialogueBorder oldWidget) {
+  void didUpdateWidget(covariant _VideoOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.assets != widget.assets) {
-      _load();
-    }
-    if (oldWidget.style != widget.style) {
-      if (widget.style == DialogueStyle.darkWorld) {
-        _startTimer();
-      } else {
-        _timer?.cancel();
-        _timer = null;
-      }
-    }
+    _syncVideo();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    unawaited(_completedSubscription?.cancel());
+    _player.dispose();
     super.dispose();
-  }
-
-  void _startTimer() {
-    _timer ??= Timer.periodic(const Duration(milliseconds: 125), (_) {
-      if (mounted) {
-        setState(() => _frame += 1);
-      }
-    });
-  }
-
-  Future<void> _load() async {
-    final assets = widget.assets;
-    if (assets == null) {
-      setState(() => _loaded = null);
-      return;
-    }
-    final top = await _decodeFile(assets.topPath);
-    final left = await _decodeFile(assets.leftPath);
-    final corners = <ui.Image>[];
-    for (final path in assets.cornerPaths) {
-      corners.add(await _decodeFile(path));
-    }
-    if (!mounted) {
-      return;
-    }
-    setState(
-      () => _loaded = _LoadedDialogueBorder(
-        top: top,
-        left: left,
-        corners: corners,
-      ),
-    );
-  }
-
-  Future<ui.Image> _decodeFile(String path) async {
-    final bytes = await File(path).readAsBytes();
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    codec.dispose();
-    return frame.image;
   }
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _DialogueBorderPainter(
-        style: widget.style,
-        loaded: _loaded,
-        frame: _frame,
+    return IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cameraWidth = math.min(
+            constraints.maxWidth,
+            constraints.maxHeight * 4 / 3,
+          );
+          final cameraHeight = cameraWidth * 3 / 4;
+          final cameraLeft = (constraints.maxWidth - cameraWidth) / 2;
+          final cameraTop = (constraints.maxHeight - cameraHeight) / 2;
+          final source = _videoSource();
+          return Stack(
+            children: [
+              Positioned(
+                left: cameraLeft,
+                top: cameraTop,
+                width: cameraWidth,
+                height: cameraHeight,
+                child: ColoredBox(
+                  color: Colors.black,
+                  child: source == null
+                      ? const Center(child: Icon(Icons.movie))
+                      : Video(
+                          controller: _controller,
+                          fit: BoxFit.contain,
+                          controls: NoVideoControls,
+                        ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
+
+  void _syncVideo() {
+    final source = _videoSource();
+    if (source == null) {
+      _openedSource = null;
+      unawaited(_player.stop());
+      return;
+    }
+    if (_openedSource != source) {
+      _openedSource = source;
+      _lastSeekSeconds = null;
+      _sentCompleted = false;
+      unawaited(_player.open(Media(source), play: widget.isPlaying));
+    }
+    final shouldSeek =
+        !widget.isPlaying ||
+        _lastSeekSeconds == null ||
+        (widget.video.localTime - _lastSeekSeconds!).abs() > 0.35;
+    if (shouldSeek) {
+      _lastSeekSeconds = widget.video.localTime;
+      unawaited(
+        _player.seek(
+          Duration(milliseconds: (widget.video.localTime * 1000).round()),
+        ),
+      );
+    }
+    if (widget.isPlaying) {
+      unawaited(_player.play());
+    } else {
+      unawaited(_player.pause());
+    }
+  }
+
+  String? _videoSource() {
+    final asset = widget.ready.assetById(widget.video.assetId);
+    if (asset == null) {
+      return null;
+    }
+    final dataUri = asset.dataUri;
+    if (dataUri != null && dataUri.isNotEmpty) {
+      return dataUri;
+    }
+    final directory = widget.ready.projectDirectory;
+    if (directory == null) {
+      return null;
+    }
+    final file = File(p.join(directory.path, asset.relativePath));
+    if (!file.existsSync()) {
+      return null;
+    }
+    return file.path;
+  }
 }
 
-final class _DialogueBorderAssets {
-  const _DialogueBorderAssets({
-    required this.topPath,
-    required this.leftPath,
-    required this.cornerPaths,
-  });
+class _PortraitImage extends StatelessWidget {
+  const _PortraitImage({required this.file, required this.dataUri});
 
-  final String topPath;
-  final String leftPath;
-  final List<String> cornerPaths;
+  final File? file;
+  final String? dataUri;
 
-  static _DialogueBorderAssets? fromBuiltIns(BuiltInAssetLibrary? library) {
-    if (library == null) {
-      return null;
+  @override
+  Widget build(BuildContext context) {
+    final uri = dataUri;
+    if (uri != null && uri.isNotEmpty) {
+      return Image.memory(
+        _bytesFromDataUri(uri),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.none,
+        isAntiAlias: false,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      );
     }
-    String? pathFor(String sourcePath) {
-      for (final asset in library.assets) {
-        if (asset.sourcePath == sourcePath) {
-          return asset.resolvedPath;
-        }
-      }
-      return null;
+    final localFile = file;
+    if (localFile == null) {
+      return const SizedBox.shrink();
     }
-
-    final top = pathFor('UI/HUD/Ch1/Text Box/spr_textbox_top_0.png');
-    final left = pathFor('UI/HUD/Ch1/Text Box/spr_textbox_left_0.png');
-    final corners = [
-      for (var index = 0; index < 8; index += 1)
-        pathFor('UI/HUD/Ch1/Text Box/spr_textbox_topleft_$index.png'),
-    ];
-    if (top == null || left == null || corners.any((path) => path == null)) {
-      return null;
-    }
-    return _DialogueBorderAssets(
-      topPath: top,
-      leftPath: left,
-      cornerPaths: corners.cast<String>(),
+    return Image.file(
+      localFile,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none,
+      isAntiAlias: false,
+      errorBuilder: (_, _, _) => const SizedBox.shrink(),
     );
   }
 }
 
-final class _LoadedDialogueBorder {
-  const _LoadedDialogueBorder({
-    required this.top,
-    required this.left,
-    required this.corners,
-  });
-
-  final ui.Image top;
-  final ui.Image left;
-  final List<ui.Image> corners;
+Uint8List _bytesFromDataUri(String dataUri) {
+  final comma = dataUri.indexOf(',');
+  if (comma < 0) {
+    return Uint8List(0);
+  }
+  return base64Decode(dataUri.substring(comma + 1));
 }
 
-class _DialogueBorderPainter extends CustomPainter {
-  const _DialogueBorderPainter({
-    required this.style,
-    required this.loaded,
-    required this.frame,
-  });
+class _MarqueePainter extends CustomPainter {
+  const _MarqueePainter({required this.start, required this.end});
 
-  final DialogueStyle style;
-  final _LoadedDialogueBorder? loaded;
-  final int frame;
+  final Offset start;
+  final Offset end;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
-    if (style == DialogueStyle.darkWorld && loaded != null) {
-      _drawDarkWorld(canvas, size, loaded!);
-      return;
-    }
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..isAntiAlias = false;
+    final rect = Rect.fromPoints(start, end);
+    canvas.drawRect(rect, Paint()..color = const Color(0x33ffaaa0));
     canvas.drawRect(
-      Rect.fromLTWH(4, 4, size.width - 8, size.height - 8),
-      paint,
+      rect,
+      Paint()
+        ..color = const Color(0xffffaaa0)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
     );
-  }
-
-  void _drawDarkWorld(Canvas canvas, Size size, _LoadedDialogueBorder border) {
-    final cornerFrame = (frame % border.corners.length).clamp(
-      0,
-      border.corners.length - 1,
-    );
-    final corner = border.corners[cornerFrame];
-    const cornerSize = 32.0;
-    const edgeSize = 32.0;
-    final paint = Paint()
-      ..filterQuality = FilterQuality.none
-      ..isAntiAlias = false;
-
-    for (var x = cornerSize; x < size.width - cornerSize; x += 2) {
-      _drawImage(canvas, border.top, Rect.fromLTWH(x, 0, 2, edgeSize), paint);
-      _drawImageFlipped(
-        canvas,
-        border.top,
-        Rect.fromLTWH(x, size.height - edgeSize, 2, edgeSize),
-        flipY: true,
-        paint: paint,
-      );
-    }
-    for (var y = cornerSize; y < size.height - cornerSize; y += 2) {
-      _drawImage(canvas, border.left, Rect.fromLTWH(0, y, edgeSize, 2), paint);
-      _drawImageFlipped(
-        canvas,
-        border.left,
-        Rect.fromLTWH(size.width - edgeSize, y, edgeSize, 2),
-        flipX: true,
-        paint: paint,
-      );
-    }
-
-    _drawImage(canvas, corner, const Rect.fromLTWH(0, 0, 32, 32), paint);
-    _drawImageFlipped(
-      canvas,
-      corner,
-      Rect.fromLTWH(size.width - cornerSize, 0, cornerSize, cornerSize),
-      flipX: true,
-      paint: paint,
-    );
-    _drawImageFlipped(
-      canvas,
-      corner,
-      Rect.fromLTWH(0, size.height - cornerSize, cornerSize, cornerSize),
-      flipY: true,
-      paint: paint,
-    );
-    _drawImageFlipped(
-      canvas,
-      corner,
-      Rect.fromLTWH(
-        size.width - cornerSize,
-        size.height - cornerSize,
-        cornerSize,
-        cornerSize,
-      ),
-      flipX: true,
-      flipY: true,
-      paint: paint,
-    );
-  }
-
-  void _drawImage(Canvas canvas, ui.Image image, Rect dst, Paint paint) {
-    canvas.drawImageRect(
-      image,
-      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-      dst,
-      paint,
-    );
-  }
-
-  void _drawImageFlipped(
-    Canvas canvas,
-    ui.Image image,
-    Rect dst, {
-    bool flipX = false,
-    bool flipY = false,
-    required Paint paint,
-  }) {
-    canvas.save();
-    canvas.translate(dst.left + (flipX ? dst.width : 0), dst.top);
-    canvas.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-    final localDst = Rect.fromLTWH(
-      0,
-      flipY ? -dst.height : 0,
-      dst.width,
-      dst.height,
-    );
-    _drawImage(canvas, image, localDst, paint);
-    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _DialogueBorderPainter oldDelegate) {
-    return oldDelegate.style != style ||
-        oldDelegate.loaded != loaded ||
-        oldDelegate.frame != frame;
+  bool shouldRepaint(covariant _MarqueePainter oldDelegate) {
+    return start != oldDelegate.start || end != oldDelegate.end;
   }
 }
 
@@ -1144,7 +1252,7 @@ class _ScenePainter extends CustomPainter {
     required this.scene,
     required this.runtimeObjects,
     required this.selectedObjectId,
-    required this.selectedMove,
+    required this.selectedMoves,
     required this.previewTransforms,
     required this.selection,
     required this.activeMoveEventId,
@@ -1161,7 +1269,7 @@ class _ScenePainter extends CustomPainter {
   final Scene scene;
   final Map<String, RuntimeObject>? runtimeObjects;
   final String? selectedObjectId;
-  final SelectedMoveEvent? selectedMove;
+  final List<SelectedMoveEvent> selectedMoves;
   final Map<String, Transform2D> previewTransforms;
   final EditorSelection? selection;
   final String? activeMoveEventId;
@@ -1189,7 +1297,7 @@ class _ScenePainter extends CustomPainter {
       _drawObject(canvas, object, runtimeObject);
     }
     if (!hideDebug) {
-      _drawSelectedPath(canvas);
+      _drawSelectedPaths(canvas);
     }
     for (final object in scene.objects) {
       if (object is BackgroundObject) {
@@ -1200,6 +1308,8 @@ class _ScenePainter extends CustomPainter {
     }
     canvas.restore();
 
+    _drawCameraFrame(canvas, size);
+
     if (fadeOpacity > 0) {
       canvas.drawRect(
         Offset.zero & size,
@@ -1208,18 +1318,93 @@ class _ScenePainter extends CustomPainter {
     }
   }
 
-  void _drawSelectedPath(Canvas canvas) {
-    final move = selectedMove;
-    if (move == null || move.event.path.nodes.isEmpty) {
-      return;
+  void _drawCameraFrame(Canvas canvas, Size size) {
+    final width = math.min(size.width, size.height * 4 / 3);
+    final height = width * 3 / 4;
+    final rect = Rect.fromLTWH(
+      (size.width - width) / 2,
+      (size.height - height) / 2,
+      width,
+      height,
+    );
+    final outside = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(Offset.zero & size)
+      ..addRect(rect);
+    if (hideDebug) {
+      _drawWarningStripes(canvas, outside, size);
+    } else {
+      canvas.drawPath(
+        outside,
+        Paint()
+          ..color = Colors.black.withValues(alpha: 0.28)
+          ..style = PaintingStyle.fill,
+      );
     }
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..color = const Color(0x99ffffff)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+    canvas.drawRect(
+      rect.deflate(1),
+      Paint()
+        ..color = const Color(0x66000000)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  void _drawWarningStripes(Canvas canvas, Path outside, Size size) {
+    canvas.save();
+    canvas.clipPath(outside);
+    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
+    final paint = Paint()
+      ..color = const Color(0xffffcf24)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 18;
+    for (var x = -size.height; x < size.width + size.height; x += 36) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        paint,
+      );
+    }
+    canvas.restore();
+  }
+
+  void _drawSelectedPaths(Canvas canvas) {
+    for (var moveIndex = 0; moveIndex < selectedMoves.length; moveIndex += 1) {
+      final move = selectedMoves[moveIndex];
+      if (move.event.path.nodes.isEmpty) {
+        continue;
+      }
+      _drawSelectedPath(canvas, move, _pathColor(moveIndex));
+    }
+  }
+
+  Color _pathColor(int index) {
+    const colors = [
+      Color(0xfff2c14e),
+      Color(0xff69d2e7),
+      Color(0xffa7db8d),
+      Color(0xffff8f7a),
+      Color(0xffc792ea),
+      Color(0xffffd166),
+    ];
+    return colors[index % colors.length];
+  }
+
+  void _drawSelectedPath(Canvas canvas, SelectedMoveEvent move, Color color) {
     final nodes = move.event.path.nodes;
     final activePreview = activeMoveEventId == move.event.id;
     final progressIndex = activePreview
         ? activeMoveProgress * math.max(1, nodes.length - 1)
         : 0.0;
     final linePaint = Paint()
-      ..color = const Color(0xfff2c14e)
+      ..color = color
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     var startPoint = Offset(nodes.first.x, nodes.first.y);
@@ -1247,7 +1432,7 @@ class _ScenePainter extends CustomPainter {
       canvas.drawCircle(
         Offset(node.x, node.y),
         selected ? 8 : 6,
-        Paint()..color = selected ? Colors.white : const Color(0xfff2c14e),
+        Paint()..color = selected ? Colors.white : color,
       );
       canvas.drawCircle(
         Offset(node.x, node.y),
@@ -1292,7 +1477,7 @@ class _ScenePainter extends CustomPainter {
       transform.width * transform.scale,
       transform.height * transform.scale,
     );
-    final isSelected = selectedObjectId == object.objectId;
+    final isSelected = selection.objectIds.contains(object.objectId);
 
     object.map(
       characterInstance: (value) {
@@ -1406,10 +1591,21 @@ class _ScenePainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5,
       );
-      if (object is BackgroundObject || object is CharacterInstanceObject) {
+      if (!_isObjectLocked(object) &&
+          (object is BackgroundObject || object is CharacterInstanceObject)) {
         _drawResizeHandles(canvas, rect);
       }
     }
+  }
+
+  bool _isObjectLocked(SceneObject object) {
+    return object.map(
+      characterInstance: (value) => value.locked,
+      prop: (value) => value.locked,
+      background: (value) => value.locked,
+      triggerPoint: (value) => value.locked,
+      triggerArea: (value) => value.locked,
+    );
   }
 
   void _drawResizeHandles(Canvas canvas, Rect rect) {
@@ -1437,28 +1633,20 @@ class _ScenePainter extends CustomPainter {
     if (character == null || character.animations.isEmpty) {
       return false;
     }
-    final assetId =
-        _AssetImageLayer(
-          ready: ready,
-          scene: scene,
-          runtimeObjects: runtimeObjects,
-          currentTime: currentTime,
-          pan: pan,
-          scale: scale,
-          foreground: true,
-          previewTransforms: previewTransforms,
-        )._imageAssetIdForObject(
-          SceneObject.characterInstance(
-            id: value.id,
-            name: value.name,
-            characterId: value.characterId,
-            transform: value.transform,
-            facing: value.facing,
-            initialExpression: value.initialExpression,
-            activity: value.activity,
-          ),
-          runtimeObject,
-        );
+    final assetId = imageAssetIdForObject(
+      ready: ready,
+      object: SceneObject.characterInstance(
+        id: value.id,
+        name: value.name,
+        characterId: value.characterId,
+        transform: value.transform,
+        facing: value.facing,
+        initialExpression: value.initialExpression,
+        activity: value.activity,
+      ),
+      runtimeObject: runtimeObject,
+      currentTime: currentTime,
+    );
     final asset = ready.assetById(assetId);
     final directory = ready.projectDirectory;
     if (asset == null || directory == null) {
@@ -1506,7 +1694,7 @@ class _ScenePainter extends CustomPainter {
     return oldDelegate.scene != scene ||
         oldDelegate.runtimeObjects != runtimeObjects ||
         oldDelegate.selectedObjectId != selectedObjectId ||
-        oldDelegate.selectedMove != selectedMove ||
+        oldDelegate.selectedMoves != selectedMoves ||
         oldDelegate.previewTransforms != previewTransforms ||
         oldDelegate.selection != selection ||
         oldDelegate.activeMoveEventId != activeMoveEventId ||

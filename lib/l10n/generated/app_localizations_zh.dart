@@ -54,6 +54,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pause => '暂停';
 
   @override
+  String get settings => '设置';
+
+  @override
+  String get close => '关闭';
+
+  @override
+  String get language => '语言';
+
+  @override
+  String get languageSystem => '跟随系统';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageChinese => '中文';
+
+  @override
+  String get englishDialogueTypewriterByWord => '英文对话按词出现';
+
+  @override
+  String get englishDialogueTypewriterByWordHelp =>
+      '当软件语言为英文且对话文本是英文时，打字机效果按词推进。';
+
+  @override
   String get canvasObjects => '画布对象';
 
   @override
@@ -166,6 +191,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get playBgm => '播放 BGM';
+
+  @override
+  String get playVideo => '播放视频';
+
+  @override
+  String get startFollow => '开始跟随';
+
+  @override
+  String get stopFollow => '停止跟随';
 
   @override
   String get expression => '表情';
@@ -286,6 +320,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get eventChain => '事件链';
+
+  @override
+  String get triggerMode => '触发方式';
+
+  @override
+  String get triggerModeTriggerPoint => '触发点触发';
+
+  @override
+  String get triggerModeAlways => '始终触发';
 
   @override
   String get linkedDoor => '链接到 Door';

@@ -1,13 +1,18 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/editor/editor_selection.dart';
+import 'package:deltarune_studio/editor/widgets/inspector_form_fields.dart';
+import 'package:deltarune_studio/l10n/event_labels.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
+import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
+import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -31,6 +36,10 @@ class InspectorPanel extends ConsumerWidget {
             ObjectSelection(:final objectId) => _ObjectInspector(
               ready: ready,
               object: ready.objectById(objectId),
+            ),
+            ObjectMultiSelection(:final objectIds) => _MultiObjectInspector(
+              ready: ready,
+              objectIds: objectIds,
             ),
             TriggerSelection(:final triggerId) => _TriggerInspector(
               ready: ready,
@@ -177,8 +186,8 @@ class _ObjectInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(_kindName(l10n, value)),
-        _StringField(
+        InspectorSectionTitle(_kindName(l10n, value)),
+        InspectorStringField(
           label: l10n.name,
           value: _objectName(value),
           onChanged: (name) =>
@@ -204,21 +213,13 @@ class _ObjectInspector extends ConsumerWidget {
           background: (background) => Column(
             children: [
               if (background.assetId.isEmpty)
-                _Info(label: l10n.visual, value: l10n.builtInRoom),
+                InspectorInfo(label: l10n.visual, value: l10n.builtInRoom),
               _AssetPicker(
                 ready: ready,
                 kind: AssetKind.background,
                 value: background.assetId,
                 onChanged: (assetId) => controller.updateObject(
                   background.copyWith(assetId: assetId),
-                ),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.locked),
-                value: background.locked,
-                onChanged: (locked) => controller.updateObject(
-                  background.copyWith(locked: locked),
                 ),
               ),
             ],
@@ -250,6 +251,13 @@ class _ObjectInspector extends ConsumerWidget {
             ready: ready,
             triggerId: triggerArea.triggerId,
           ),
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.locked),
+          value: _objectLocked(value),
+          onChanged: (locked) =>
+              controller.updateObject(_withObjectLocked(value, locked)),
         ),
         const SizedBox(height: 12),
         _TransformEditor(
@@ -321,6 +329,105 @@ class _ObjectInspector extends ConsumerWidget {
       triggerArea: (value) => value.copyWith(name: name),
     );
   }
+
+  bool _objectLocked(SceneObject object) {
+    return object.map(
+      characterInstance: (value) => value.locked,
+      prop: (value) => value.locked,
+      background: (value) => value.locked,
+      triggerPoint: (value) => value.locked,
+      triggerArea: (value) => value.locked,
+    );
+  }
+
+  SceneObject _withObjectLocked(SceneObject object, bool locked) {
+    return object.map(
+      characterInstance: (value) => value.copyWith(locked: locked),
+      prop: (value) => value.copyWith(locked: locked),
+      background: (value) => value.copyWith(locked: locked),
+      triggerPoint: (value) => value.copyWith(locked: locked),
+      triggerArea: (value) => value.copyWith(locked: locked),
+    );
+  }
+}
+
+class _MultiObjectInspector extends ConsumerWidget {
+  const _MultiObjectInspector({required this.ready, required this.objectIds});
+
+  final StudioReady ready;
+  final List<String> objectIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(studioControllerProvider.notifier);
+    final objects = objectIds
+        .map(ready.objectById)
+        .whereType<SceneObject>()
+        .toList(growable: false);
+    if (objects.isEmpty) {
+      return Text(AppLocalizations.of(context)!.missingObject);
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final allLocked = objects.every(_objectLocked);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InspectorSectionTitle('多选对象'),
+        InspectorInfo(label: '数量', value: '${objects.length}'),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.locked),
+          value: allLocked,
+          onChanged: (locked) => controller.setObjectsLocked(
+            objects.map((object) => object.objectId).toList(),
+            locked,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => controller.moveObjectsById(objectIds, -1, 0),
+              icon: const Icon(Icons.keyboard_arrow_left),
+              label: const Text('X -1'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => controller.moveObjectsById(objectIds, 1, 0),
+              icon: const Icon(Icons.keyboard_arrow_right),
+              label: const Text('X +1'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => controller.moveObjectsById(objectIds, 0, -1),
+              icon: const Icon(Icons.keyboard_arrow_up),
+              label: const Text('Y -1'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => controller.moveObjectsById(objectIds, 0, 1),
+              icon: const Icon(Icons.keyboard_arrow_down),
+              label: const Text('Y +1'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: controller.deleteSelectedObject,
+              icon: const Icon(Icons.delete),
+              label: Text(l10n.delete),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  bool _objectLocked(SceneObject object) {
+    return object.map(
+      characterInstance: (value) => value.locked,
+      prop: (value) => value.locked,
+      background: (value) => value.locked,
+      triggerPoint: (value) => value.locked,
+      triggerArea: (value) => value.locked,
+    );
+  }
 }
 
 class _TriggerReferenceEditor extends ConsumerWidget {
@@ -356,8 +463,8 @@ class _TriggerInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(l10n.triggerPoint),
-        _StringField(
+        InspectorSectionTitle(l10n.triggerPoint),
+        InspectorStringField(
           label: l10n.name,
           value: ready.triggerName(value),
           onChanged: (name) => controller.updateTrigger(_rename(value, name)),
@@ -439,12 +546,23 @@ class _ChainInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(l10n.eventChain),
-        _StringField(
+        InspectorSectionTitle(l10n.eventChain),
+        InspectorStringField(
           label: l10n.name,
           value: value.name,
           onChanged: (name) =>
               controller.updateEventChain(value.copyWith(name: name)),
+        ),
+        _DropdownField<EventChainTriggerMode>(
+          label: l10n.triggerMode,
+          value: value.triggerMode,
+          values: EventChainTriggerMode.values,
+          labelFor: (mode) => switch (mode) {
+            EventChainTriggerMode.triggerPoint => l10n.triggerModeTriggerPoint,
+            EventChainTriggerMode.always => l10n.triggerModeAlways,
+          },
+          onChanged: (mode) =>
+              controller.updateEventChain(value.copyWith(triggerMode: mode)),
         ),
         const SizedBox(height: 8),
         Text(
@@ -484,7 +602,7 @@ class _EventInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(_eventTitle(value)),
+        InspectorSectionTitle(eventLabel(l10n, value)),
         value.map(
           characterMove: (move) => Column(
             children: [
@@ -498,7 +616,7 @@ class _EventInspector extends ConsumerWidget {
                   move.copyWith(characterObjectId: id),
                 ),
               ),
-              _NumberField(
+              InspectorNumberField(
                 label: l10n.speed,
                 value: move.path.speed,
                 onChanged: (speed) => controller.updateEvent(
@@ -506,7 +624,7 @@ class _EventInspector extends ConsumerWidget {
                   move.copyWith(path: move.path.copyWith(speed: speed)),
                 ),
               ),
-              _NumberField(
+              InspectorNumberField(
                 label: l10n.shake,
                 value: move.path.shake,
                 onChanged: (shake) => controller.updateEvent(
@@ -537,7 +655,49 @@ class _EventInspector extends ConsumerWidget {
                 ),
             ],
           ),
-          characterWait: (wait) => _NumberField(
+          characterStartFollow: (follow) => Column(
+            children: [
+              _ObjectPicker(
+                ready: ready,
+                label: '跟随者',
+                value: follow.followerObjectId,
+                characterOnly: true,
+                onChanged: (id) => controller.updateEvent(
+                  chainId,
+                  follow.copyWith(followerObjectId: id),
+                ),
+              ),
+              _ObjectPicker(
+                ready: ready,
+                label: '目标角色',
+                value: follow.leaderObjectId,
+                characterOnly: true,
+                onChanged: (id) => controller.updateEvent(
+                  chainId,
+                  follow.copyWith(leaderObjectId: id),
+                ),
+              ),
+              InspectorNumberField(
+                label: '跟随距离',
+                value: follow.distance,
+                onChanged: (distance) => controller.updateEvent(
+                  chainId,
+                  follow.copyWith(distance: distance.clamp(0, 9999)),
+                ),
+              ),
+            ],
+          ),
+          characterStopFollow: (follow) => _ObjectPicker(
+            ready: ready,
+            label: '跟随者',
+            value: follow.followerObjectId,
+            characterOnly: true,
+            onChanged: (id) => controller.updateEvent(
+              chainId,
+              follow.copyWith(followerObjectId: id),
+            ),
+          ),
+          characterWait: (wait) => InspectorNumberField(
             label: l10n.duration,
             value: wait.duration,
             onChanged: (duration) => controller.updateEvent(
@@ -557,7 +717,9 @@ class _EventInspector extends ConsumerWidget {
                   expression.copyWith(characterObjectId: id),
                 ),
               ),
-              _StringField(
+              _ExpressionPicker(
+                ready: ready,
+                characterObjectId: expression.characterObjectId,
                 label: l10n.expression,
                 value: expression.expressionId,
                 onChanged: (id) => controller.updateEvent(
@@ -569,15 +731,7 @@ class _EventInspector extends ConsumerWidget {
           ),
           dialogueSay: (dialogue) => Column(
             children: [
-              _StringField(
-                label: l10n.speaker,
-                value: dialogue.speaker,
-                onChanged: (speaker) => controller.updateEvent(
-                  chainId,
-                  dialogue.copyWith(speaker: speaker),
-                ),
-              ),
-              _StringField(
+              InspectorStringField(
                 label: l10n.text,
                 value: dialogue.text,
                 maxLines: 4,
@@ -586,14 +740,23 @@ class _EventInspector extends ConsumerWidget {
                   dialogue.copyWith(text: text),
                 ),
               ),
-              _ImageAssetPicker(
+              _DialoguePortraitPicker(
                 ready: ready,
-                label: l10n.portrait,
                 value: dialogue.portraitAssetId ?? '',
                 onChanged: (assetId) => controller.updateEvent(
                   chainId,
                   dialogue.copyWith(
                     portraitAssetId: assetId.isEmpty ? null : assetId,
+                  ),
+                ),
+              ),
+              _DialogueSoundPicker(
+                ready: ready,
+                value: dialogue.textSoundAssetId ?? '',
+                onChanged: (assetId) => controller.updateEvent(
+                  chainId,
+                  dialogue.copyWith(
+                    textSoundAssetId: assetId.isEmpty ? null : assetId,
                   ),
                 ),
               ),
@@ -610,7 +773,7 @@ class _EventInspector extends ConsumerWidget {
                   dialogue.copyWith(style: style),
                 ),
               ),
-              _NumberField(
+              InspectorNumberField(
                 label: l10n.duration,
                 value: dialogue.duration,
                 onChanged: (duration) => controller.updateEvent(
@@ -643,7 +806,7 @@ class _EventInspector extends ConsumerWidget {
                 onChanged: (mode) =>
                     controller.updateEvent(chainId, fade.copyWith(mode: mode)),
               ),
-              _NumberField(
+              InspectorNumberField(
                 label: l10n.duration,
                 value: fade.duration,
                 onChanged: (duration) => controller.updateEvent(
@@ -653,7 +816,7 @@ class _EventInspector extends ConsumerWidget {
               ),
             ],
           ),
-          sceneChange: (scene) => _StringField(
+          sceneChange: (scene) => InspectorStringField(
             label: l10n.canvasMarker,
             value: scene.entryPointId ?? scene.sceneId,
             onChanged: (marker) => controller.updateEvent(
@@ -679,6 +842,20 @@ class _EventInspector extends ConsumerWidget {
               audio.copyWith(assetId: assetId),
             ),
           ),
+          videoPlay: (video) => Column(
+            children: [
+              _AssetPicker(
+                ready: ready,
+                kind: AssetKind.video,
+                value: video.assetId,
+                onChanged: (assetId) => controller.updateEvent(
+                  chainId,
+                  video.copyWith(assetId: assetId),
+                ),
+              ),
+              InspectorInfo(label: 'Fit', value: video.fit.name),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         FilledButton.tonalIcon(
@@ -687,21 +864,6 @@ class _EventInspector extends ConsumerWidget {
           label: Text(l10n.deleteEvent),
         ),
       ],
-    );
-  }
-
-  String _eventTitle(StudioEvent event) {
-    return event.map(
-      characterMove: (_) => 'Character Move',
-      characterWait: (_) => 'Wait',
-      characterChangeExpression: (_) => 'Change Expression',
-      dialogueSay: (_) => 'Dialogue',
-      cameraFollow: (_) => 'Camera Follow',
-      cameraFocus: (_) => 'Camera Focus',
-      sceneFade: (_) => 'Fade',
-      sceneChange: (_) => 'Canvas Jump',
-      audioPlayBgm: (_) => 'Play BGM',
-      audioPlaySound: (_) => 'Play Sound',
     );
   }
 }
@@ -734,8 +896,8 @@ class _PathNodeInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(l10n.pathNode),
-        _StringField(
+        InspectorSectionTitle(l10n.pathNode),
+        InspectorStringField(
           label: l10n.name,
           value: value.name,
           onChanged: (name) => update(value.copyWith(name: name)),
@@ -743,7 +905,7 @@ class _PathNodeInspector extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _NumberField(
+              child: InspectorNumberField(
                 label: 'X',
                 value: value.x,
                 onChanged: (x) => update(value.copyWith(x: x)),
@@ -751,7 +913,7 @@ class _PathNodeInspector extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _NumberField(
+              child: InspectorNumberField(
                 label: 'Y',
                 value: value.y,
                 onChanged: (y) => update(value.copyWith(y: y)),
@@ -759,7 +921,7 @@ class _PathNodeInspector extends ConsumerWidget {
             ),
           ],
         ),
-        _NumberField(
+        InspectorNumberField(
           label: l10n.waitSeconds,
           value: value.waitSeconds ?? 0,
           onChanged: (seconds) => update(
@@ -810,17 +972,17 @@ class _AssetInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(l10n.asset),
+        InspectorSectionTitle(l10n.asset),
         if (missing)
           Text(l10n.missingFile, style: const TextStyle(color: Colors.orange)),
-        _StringField(
+        InspectorStringField(
           label: l10n.name,
           value: value.originalName,
           onChanged: (name) =>
               controller.updateAsset(value.copyWith(originalName: name)),
         ),
-        _Info(label: l10n.kind, value: value.kind.name),
-        _Info(label: l10n.path, value: value.relativePath),
+        InspectorInfo(label: l10n.kind, value: value.kind.name),
+        InspectorInfo(label: l10n.path, value: value.relativePath),
         const SizedBox(height: 8),
         FilledButton.tonalIcon(
           onPressed: used ? null : () => controller.deleteUnusedAsset(value.id),
@@ -849,14 +1011,14 @@ class _CharacterInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(l10n.characterDefinition),
-        _StringField(
+        InspectorSectionTitle(l10n.characterDefinition),
+        InspectorStringField(
           label: l10n.name,
           value: value.name,
           onChanged: (name) =>
               controller.updateCharacter(value.copyWith(name: name)),
         ),
-        _NumberField(
+        InspectorNumberField(
           label: l10n.defaultSpeed,
           value: value.movement.defaultSpeed,
           onChanged: (speed) => controller.updateCharacter(
@@ -865,7 +1027,7 @@ class _CharacterInspector extends ConsumerWidget {
             ),
           ),
         ),
-        _NumberField(
+        InspectorNumberField(
           label: l10n.defaultShake,
           value: value.movement.defaultShake,
           onChanged: (shake) => controller.updateCharacter(
@@ -876,7 +1038,7 @@ class _CharacterInspector extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text('默认大小', style: Theme.of(context).textTheme.titleSmall),
-        _NumberField(
+        InspectorNumberField(
           label: 'Width',
           value: value.defaultTransform.width * value.defaultTransform.scale,
           onChanged: (width) => controller.updateCharacter(
@@ -888,7 +1050,7 @@ class _CharacterInspector extends ConsumerWidget {
             ),
           ),
         ),
-        _NumberField(
+        InspectorNumberField(
           label: 'Height',
           value: value.defaultTransform.height * value.defaultTransform.scale,
           onChanged: (height) => controller.updateCharacter(
@@ -909,19 +1071,45 @@ class _CharacterInspector extends ConsumerWidget {
         const SizedBox(height: 12),
         Text(l10n.expressions, style: Theme.of(context).textTheme.titleSmall),
         for (final expression in value.expressions)
-          _StringField(
-            label: expression.id,
-            value: expression.name,
-            onChanged: (name) => controller.updateCharacter(
-              value.copyWith(
-                expressions: value.expressions
-                    .map(
-                      (item) => item.id == expression.id
-                          ? item.copyWith(name: name)
-                          : item,
-                    )
-                    .toList(),
-              ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              children: [
+                InspectorStringField(
+                  label: expression.id,
+                  value: expression.name,
+                  onChanged: (name) => controller.updateCharacter(
+                    value.copyWith(
+                      expressions: value.expressions
+                          .map(
+                            (item) => item.id == expression.id
+                                ? item.copyWith(name: name)
+                                : item,
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+                _ImageAssetPicker(
+                  ready: ready,
+                  label: '表情资源',
+                  value: expression.assetId ?? '',
+                  kind: AssetKind.character,
+                  onChanged: (assetId) => controller.updateCharacter(
+                    value.copyWith(
+                      expressions: value.expressions
+                          .map(
+                            (item) => item.id == expression.id
+                                ? item.copyWith(
+                                    assetId: assetId.isEmpty ? null : assetId,
+                                  )
+                                : item,
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         FilledButton.tonalIcon(
@@ -986,7 +1174,10 @@ class _SpriteSlot extends ConsumerWidget {
         .where((animation) => animation.direction == direction)
         .toList();
     final imageAssets = ready.project.assets
-        .where((asset) => asset.kind != AssetKind.audio)
+        .where(
+          (asset) =>
+              asset.kind != AssetKind.audio && asset.kind != AssetKind.video,
+        )
         .toList();
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1063,13 +1254,13 @@ class _FocusEditor extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        _NumberField(
+        InspectorNumberField(
           label: l10n.duration,
           value: focus.duration,
           onChanged: (duration) =>
               onChanged(focus.copyWith(duration: duration)),
         ),
-        _NumberField(
+        InspectorNumberField(
           label: l10n.pointX,
           value: focus.target.maybeMap(
             point: (point) => point.x,
@@ -1087,7 +1278,7 @@ class _FocusEditor extends StatelessWidget {
             ),
           ),
         ),
-        _NumberField(
+        InspectorNumberField(
           label: l10n.pointY,
           value: focus.target.maybeMap(
             point: (point) => point.y,
@@ -1110,6 +1301,44 @@ class _FocusEditor extends StatelessWidget {
   }
 }
 
+class _ExpressionPicker extends StatelessWidget {
+  const _ExpressionPicker({
+    required this.ready,
+    required this.characterObjectId,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final StudioReady ready;
+  final String characterObjectId;
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final object = ready.objectById(characterObjectId);
+    final characterId = object is CharacterInstanceObject
+        ? object.characterId
+        : null;
+    final character = ready.characterById(characterId);
+    final expressions = character?.expressions ?? const <CharacterExpression>[];
+    return _DropdownField<String>(
+      label: label,
+      value: value,
+      values: expressions.map((expression) => expression.id).toList(),
+      labelFor: (id) =>
+          expressions
+              .where((expression) => expression.id == id)
+              .firstOrNull
+              ?.name ??
+          id,
+      onChanged: onChanged,
+    );
+  }
+}
+
 class _TransformEditor extends StatelessWidget {
   const _TransformEditor({required this.transform, required this.onChanged});
 
@@ -1126,7 +1355,7 @@ class _TransformEditor extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _NumberField(
+              child: InspectorNumberField(
                 label: 'X',
                 value: transform.x,
                 onChanged: (x) => onChanged(transform.copyWith(x: x)),
@@ -1134,7 +1363,7 @@ class _TransformEditor extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _NumberField(
+              child: InspectorNumberField(
                 label: 'Y',
                 value: transform.y,
                 onChanged: (y) => onChanged(transform.copyWith(y: y)),
@@ -1145,7 +1374,7 @@ class _TransformEditor extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _NumberField(
+              child: InspectorNumberField(
                 label: l10n.width,
                 value: transform.width,
                 onChanged: (width) =>
@@ -1154,7 +1383,7 @@ class _TransformEditor extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _NumberField(
+              child: InspectorNumberField(
                 label: l10n.height,
                 value: transform.height,
                 onChanged: (height) =>
@@ -1163,7 +1392,7 @@ class _TransformEditor extends StatelessWidget {
             ),
           ],
         ),
-        _NumberField(
+        InspectorNumberField(
           label: l10n.scale,
           value: transform.scale,
           onChanged: (scale) => onChanged(transform.copyWith(scale: scale)),
@@ -1297,12 +1526,14 @@ class _ImageAssetPicker extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.kind,
   });
 
   final StudioReady ready;
   final String label;
   final String value;
   final ValueChanged<String> onChanged;
+  final AssetKind? kind;
 
   @override
   Widget build(BuildContext context) {
@@ -1310,7 +1541,15 @@ class _ImageAssetPicker extends StatelessWidget {
     final assets = [
       '',
       ...ready.project.assets
-          .where((asset) => asset.kind != AssetKind.audio)
+          .where((asset) {
+            final wanted = kind;
+            if (wanted != null) {
+              return asset.kind == wanted;
+            }
+            return asset.kind != AssetKind.audio &&
+                asset.kind != AssetKind.dialoguePortrait &&
+                asset.kind != AssetKind.video;
+          })
           .map((asset) => asset.id),
     ];
     if (!assets.contains(value)) {
@@ -1326,6 +1565,611 @@ class _ImageAssetPicker extends StatelessWidget {
       onChanged: onChanged,
     );
   }
+}
+
+class _DialoguePortraitPicker extends ConsumerStatefulWidget {
+  const _DialoguePortraitPicker({
+    required this.ready,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final StudioReady ready;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  ConsumerState<_DialoguePortraitPicker> createState() =>
+      _DialoguePortraitPickerState();
+}
+
+class _DialoguePortraitPickerState
+    extends ConsumerState<_DialoguePortraitPicker> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final normalized = _query.trim().toLowerCase();
+    final importedPortraits = widget.ready.project.assets
+        .where((asset) => asset.kind == AssetKind.dialoguePortrait)
+        .where((asset) {
+          if (normalized.isEmpty) {
+            return true;
+          }
+          return asset.originalName.toLowerCase().contains(normalized) ||
+              asset.relativePath.toLowerCase().contains(normalized);
+        })
+        .toList();
+    final selected = widget.ready.assetById(widget.value);
+    final builtInLibrary = ref.watch(builtInAssetLibraryProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.portrait,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: ref
+                  .read(studioControllerProvider.notifier)
+                  .importDialoguePortrait,
+              icon: const Icon(Icons.add_photo_alternate),
+              label: const Text('导入头像'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          decoration: const InputDecoration(
+            isDense: true,
+            prefixIcon: Icon(Icons.search, size: 18),
+            labelText: '搜索对话头像',
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (value) => setState(() => _query = value),
+        ),
+        const SizedBox(height: 8),
+        if (selected != null && widget.value.isNotEmpty)
+          InputChip(
+            avatar: _AssetTinyPreview(ready: widget.ready, asset: selected),
+            label: Text(selected.originalName, overflow: TextOverflow.ellipsis),
+            onDeleted: () => widget.onChanged(''),
+          )
+        else
+          Text(l10n.none, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 300,
+          child: ListView(
+            children: [
+              _PortraitGridHeader(
+                label: '用户导入',
+                count: importedPortraits.length,
+              ),
+              if (importedPortraits.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    '还没有导入头像',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                )
+              else
+                _ImportedPortraitGrid(
+                  ready: widget.ready,
+                  portraits: importedPortraits,
+                  selectedAssetId: widget.value,
+                  onChanged: widget.onChanged,
+                ),
+              const SizedBox(height: 12),
+              builtInLibrary.when(
+                data: (library) {
+                  final builtIns = _filterBuiltInPortraits(
+                    library.assets,
+                    normalized,
+                  );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _PortraitGridHeader(
+                        label: '内置头像库',
+                        count: builtIns.length,
+                      ),
+                      if (builtIns.isEmpty)
+                        Text(
+                          '没有匹配的内置头像',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )
+                      else
+                        _BuiltInPortraitGrid(
+                          portraits: builtIns.take(240).toList(),
+                          onSelected: ref
+                              .read(studioControllerProvider.notifier)
+                              .addBuiltInAsset,
+                        ),
+                    ],
+                  );
+                },
+                loading: () => const LinearProgressIndicator(),
+                error: (error, _) => Text(
+                  '$error',
+                  style: const TextStyle(color: Colors.orange),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<BuiltInAsset> _filterBuiltInPortraits(
+    List<BuiltInAsset> assets,
+    String normalized,
+  ) {
+    return assets.where((asset) {
+      if (asset.kind != AssetKind.dialoguePortrait ||
+          !asset.assetPath.startsWith('assets/dialogue/portraits/')) {
+        return false;
+      }
+      if (normalized.isEmpty) {
+        return true;
+      }
+      return asset.name.toLowerCase().contains(normalized) ||
+          asset.sourcePath.toLowerCase().contains(normalized);
+    }).toList();
+  }
+}
+
+class _PortraitGridHeader extends StatelessWidget {
+  const _PortraitGridHeader({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        '$label ($count)',
+        style: Theme.of(context).textTheme.labelLarge,
+      ),
+    );
+  }
+}
+
+class _ImportedPortraitGrid extends StatelessWidget {
+  const _ImportedPortraitGrid({
+    required this.ready,
+    required this.portraits,
+    required this.selectedAssetId,
+    required this.onChanged,
+  });
+
+  final StudioReady ready;
+  final List<AssetRef> portraits;
+  final String selectedAssetId;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 0.9,
+      ),
+      itemCount: portraits.length,
+      itemBuilder: (context, index) {
+        final asset = portraits[index];
+        return _PortraitTile(
+          active: asset.id == selectedAssetId,
+          title: asset.originalName,
+          image: _AssetPreviewImage(ready: ready, asset: asset),
+          onTap: () => onChanged(asset.id),
+        );
+      },
+    );
+  }
+}
+
+class _BuiltInPortraitGrid extends StatelessWidget {
+  const _BuiltInPortraitGrid({
+    required this.portraits,
+    required this.onSelected,
+  });
+
+  final List<BuiltInAsset> portraits;
+  final ValueChanged<BuiltInAsset> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 0.9,
+      ),
+      itemCount: portraits.length,
+      itemBuilder: (context, index) {
+        final asset = portraits[index];
+        return _PortraitTile(
+          active: false,
+          title: asset.name,
+          image: _BuiltInPortraitPreview(asset: asset),
+          onTap: () => onSelected(asset),
+        );
+      },
+    );
+  }
+}
+
+class _PortraitTile extends StatelessWidget {
+  const _PortraitTile({
+    required this.active,
+    required this.title,
+    required this.image,
+    required this.onTap,
+  });
+
+  final bool active;
+  final String title;
+  final Widget image;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: active
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).dividerColor,
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Column(
+            children: [
+              Expanded(child: image),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BuiltInPortraitPreview extends StatelessWidget {
+  const _BuiltInPortraitPreview({required this.asset});
+
+  final BuiltInAsset asset;
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return Image.asset(
+        asset.assetPath,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.none,
+        isAntiAlias: false,
+        errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+      );
+    }
+    return Image.file(
+      File(asset.resolvedPath),
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none,
+      isAntiAlias: false,
+      errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+    );
+  }
+}
+
+class _DialogueSoundPicker extends ConsumerStatefulWidget {
+  const _DialogueSoundPicker({
+    required this.ready,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final StudioReady ready;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  ConsumerState<_DialogueSoundPicker> createState() =>
+      _DialogueSoundPickerState();
+}
+
+class _DialogueSoundPickerState extends ConsumerState<_DialogueSoundPicker> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = _query.trim().toLowerCase();
+    final importedSounds = widget.ready.project.assets
+        .where((asset) => asset.kind == AssetKind.audio)
+        .where((asset) {
+          if (normalized.isEmpty) {
+            return true;
+          }
+          return asset.originalName.toLowerCase().contains(normalized) ||
+              asset.relativePath.toLowerCase().contains(normalized);
+        })
+        .toList();
+    final selected = widget.ready.assetById(widget.value);
+    final builtInLibrary = ref.watch(builtInAssetLibraryProvider);
+    final controller = ref.read(studioControllerProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '打字音效',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: controller.importAudio,
+              icon: const Icon(Icons.library_music),
+              label: const Text('导入音效'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          decoration: const InputDecoration(
+            isDense: true,
+            prefixIcon: Icon(Icons.search, size: 18),
+            labelText: '搜索对话音效',
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (value) => setState(() => _query = value),
+        ),
+        const SizedBox(height: 8),
+        if (widget.value.isNotEmpty)
+          InputChip(
+            avatar: const Icon(Icons.volume_up, size: 18),
+            label: Text(
+              selected?.originalName ?? _builtInSoundName(widget.value),
+              overflow: TextOverflow.ellipsis,
+            ),
+            onDeleted: () => widget.onChanged(''),
+          )
+        else
+          Text(
+            AppLocalizations.of(context)!.none,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 220,
+          child: ListView(
+            children: [
+              _SoundListHeader(label: '用户导入', count: importedSounds.length),
+              for (final asset in importedSounds)
+                _SoundTile(
+                  title: asset.originalName,
+                  subtitle: asset.relativePath,
+                  active: asset.id == widget.value,
+                  onTap: () => widget.onChanged(asset.id),
+                  onPreview: () => ref
+                      .read(previewControllerProvider.notifier)
+                      .previewAudioAsset(widget.ready, asset.id),
+                ),
+              if (importedSounds.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '还没有导入音效',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              builtInLibrary.when(
+                data: (library) {
+                  final sounds = _filterDialogueSounds(
+                    library.assets,
+                    normalized,
+                  );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SoundListHeader(label: '内置音效库', count: sounds.length),
+                      for (final sound in sounds.take(160))
+                        _SoundTile(
+                          title: sound.name,
+                          subtitle: sound.sourcePath,
+                          active: sound.id == widget.value,
+                          onTap: () => controller.addBuiltInAsset(sound),
+                          onPreview: () => ref
+                              .read(previewControllerProvider.notifier)
+                              .previewAudioAssetId(widget.ready, sound.id),
+                        ),
+                      if (sounds.isEmpty)
+                        Text(
+                          '没有匹配的内置音效',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                    ],
+                  );
+                },
+                loading: () => const LinearProgressIndicator(),
+                error: (error, _) => Text(
+                  '$error',
+                  style: const TextStyle(color: Colors.orange),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _builtInSoundName(String assetId) {
+    final library = ref.read(builtInAssetLibraryProvider).valueOrNull;
+    return library?.assets
+            .where((asset) => asset.id == assetId)
+            .firstOrNull
+            ?.name ??
+        assetId;
+  }
+
+  List<BuiltInAsset> _filterDialogueSounds(
+    List<BuiltInAsset> assets,
+    String normalized,
+  ) {
+    return assets.where((asset) {
+      if (asset.kind != AssetKind.audio ||
+          !asset.assetPath.startsWith('assets/dialogue/sound/')) {
+        return false;
+      }
+      if (normalized.isEmpty) {
+        return true;
+      }
+      return asset.name.toLowerCase().contains(normalized) ||
+          asset.sourcePath.toLowerCase().contains(normalized);
+    }).toList();
+  }
+}
+
+class _SoundListHeader extends StatelessWidget {
+  const _SoundListHeader({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Text(
+        '$label ($count)',
+        style: Theme.of(context).textTheme.labelLarge,
+      ),
+    );
+  }
+}
+
+class _SoundTile extends StatelessWidget {
+  const _SoundTile({
+    required this.title,
+    required this.subtitle,
+    required this.active,
+    required this.onTap,
+    required this.onPreview,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool active;
+  final VoidCallback onTap;
+  final VoidCallback onPreview;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      selected: active,
+      leading: IconButton(
+        tooltip: '试听',
+        icon: const Icon(Icons.play_arrow),
+        onPressed: onPreview,
+      ),
+      title: Text(title, overflow: TextOverflow.ellipsis),
+      subtitle: Text(subtitle, overflow: TextOverflow.ellipsis),
+      onTap: onTap,
+    );
+  }
+}
+
+class _AssetTinyPreview extends StatelessWidget {
+  const _AssetTinyPreview({required this.ready, required this.asset});
+
+  final StudioReady ready;
+  final AssetRef asset;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: _AssetPreviewImage(ready: ready, asset: asset),
+    );
+  }
+}
+
+class _AssetPreviewImage extends StatelessWidget {
+  const _AssetPreviewImage({required this.ready, required this.asset});
+
+  final StudioReady ready;
+  final AssetRef asset;
+
+  @override
+  Widget build(BuildContext context) {
+    final dataUri = asset.dataUri;
+    if (dataUri != null && dataUri.isNotEmpty) {
+      return Image.memory(
+        _bytesFromDataUri(dataUri),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.none,
+        isAntiAlias: false,
+        errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+      );
+    }
+    final directory = ready.projectDirectory;
+    if (directory == null) {
+      return const Icon(Icons.image);
+    }
+    final file = File(p.join(directory.path, asset.relativePath));
+    if (!file.existsSync()) {
+      return const Icon(Icons.broken_image);
+    }
+    return Image.file(
+      file,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none,
+      isAntiAlias: false,
+      errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+    );
+  }
+}
+
+Uint8List _bytesFromDataUri(String dataUri) {
+  final comma = dataUri.indexOf(',');
+  if (comma < 0) {
+    return Uint8List(0);
+  }
+  return base64Decode(dataUri.substring(comma + 1));
 }
 
 class _DropdownField<T> extends StatelessWidget {
@@ -1346,7 +2190,10 @@ class _DropdownField<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (values.isEmpty) {
-      return _Info(label: label, value: AppLocalizations.of(context)!.none);
+      return InspectorInfo(
+        label: label,
+        value: AppLocalizations.of(context)!.none,
+      );
     }
     final actualValue = values.contains(value) ? value : values.first;
     return DropdownButtonFormField<T>(
@@ -1361,159 +2208,6 @@ class _DropdownField<T> extends StatelessWidget {
           onChanged(next as T);
         }
       },
-    );
-  }
-}
-
-class _StringField extends StatefulWidget {
-  const _StringField({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.maxLines = 1,
-  });
-
-  final String label;
-  final String value;
-  final ValueChanged<String> onChanged;
-  final int maxLines;
-
-  @override
-  State<_StringField> createState() => _StringFieldState();
-}
-
-class _StringFieldState extends State<_StringField> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.value);
-  }
-
-  @override
-  void didUpdateWidget(covariant _StringField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_controller.selection.isValid && _controller.text != widget.value) {
-      _controller.text = widget.value;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      maxLines: widget.maxLines,
-      decoration: InputDecoration(labelText: widget.label),
-      onChanged: widget.onChanged,
-      onSubmitted: widget.onChanged,
-      onEditingComplete: () => widget.onChanged(_controller.text),
-    );
-  }
-}
-
-class _NumberField extends StatefulWidget {
-  const _NumberField({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String label;
-  final double value;
-  final ValueChanged<double> onChanged;
-
-  @override
-  State<_NumberField> createState() => _NumberFieldState();
-}
-
-class _NumberFieldState extends State<_NumberField> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.value.toStringAsFixed(1));
-  }
-
-  @override
-  void didUpdateWidget(covariant _NumberField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final next = widget.value.toStringAsFixed(1);
-    if (!_controller.selection.isValid && _controller.text != next) {
-      _controller.text = next;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      decoration: InputDecoration(labelText: widget.label),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d*')),
-      ],
-      onChanged: _submit,
-      onSubmitted: _submit,
-      onEditingComplete: () => _submit(_controller.text),
-    );
-  }
-
-  void _submit(String value) {
-    final parsed = double.tryParse(value);
-    if (parsed != null) {
-      widget.onChanged(parsed);
-    }
-  }
-}
-
-class _Info extends StatelessWidget {
-  const _Info({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 76,
-            child: Text(label, style: Theme.of(context).textTheme.labelMedium),
-          ),
-          Expanded(child: Text(value, overflow: TextOverflow.ellipsis)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(text, style: Theme.of(context).textTheme.titleSmall),
     );
   }
 }

@@ -188,6 +188,54 @@ abstract class AppLocalizations {
   /// **'Pause'**
   String get pause;
 
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @languageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get languageSystem;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get languageChinese;
+
+  /// No description provided for @englishDialogueTypewriterByWord.
+  ///
+  /// In en, this message translates to:
+  /// **'English dialogue appears by word'**
+  String get englishDialogueTypewriterByWord;
+
+  /// No description provided for @englishDialogueTypewriterByWordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'When the app language is English and the dialogue text is English, the typewriter reveal advances one word at a time.'**
+  String get englishDialogueTypewriterByWordHelp;
+
   /// No description provided for @canvasObjects.
   ///
   /// In en, this message translates to:
@@ -403,6 +451,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Play BGM'**
   String get playBgm;
+
+  /// No description provided for @playVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Play Video'**
+  String get playVideo;
+
+  /// No description provided for @startFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Follow'**
+  String get startFollow;
+
+  /// No description provided for @stopFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Follow'**
+  String get stopFollow;
 
   /// No description provided for @expression.
   ///
@@ -643,6 +709,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Event Chain'**
   String get eventChain;
+
+  /// No description provided for @triggerMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger Mode'**
+  String get triggerMode;
+
+  /// No description provided for @triggerModeTriggerPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger Point'**
+  String get triggerModeTriggerPoint;
+
+  /// No description provided for @triggerModeAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get triggerModeAlways;
 
   /// No description provided for @linkedDoor.
   ///

@@ -4,6 +4,8 @@ sealed class EditorSelection {
   const EditorSelection();
 
   const factory EditorSelection.object(String objectId) = ObjectSelection;
+  const factory EditorSelection.objects(List<String> objectIds) =
+      ObjectMultiSelection;
   const factory EditorSelection.trigger(String triggerId) = TriggerSelection;
   const factory EditorSelection.eventChain(String chainId) =
       EventChainSelection;
@@ -22,6 +24,11 @@ sealed class EditorSelection {
 final class ObjectSelection extends EditorSelection {
   const ObjectSelection(this.objectId);
   final String objectId;
+}
+
+final class ObjectMultiSelection extends EditorSelection {
+  const ObjectMultiSelection(this.objectIds);
+  final List<String> objectIds;
 }
 
 final class TriggerSelection extends EditorSelection {
@@ -60,7 +67,15 @@ final class CharacterSelection extends EditorSelection {
 extension EditorSelectionLookup on EditorSelection? {
   String? get objectId => switch (this) {
     ObjectSelection(:final objectId) => objectId,
+    ObjectMultiSelection(:final objectIds) =>
+      objectIds.length == 1 ? objectIds.single : null,
     _ => null,
+  };
+
+  List<String> get objectIds => switch (this) {
+    ObjectSelection(:final objectId) => [objectId],
+    ObjectMultiSelection(:final objectIds) => objectIds,
+    _ => const [],
   };
 
   String? get chainId => switch (this) {
