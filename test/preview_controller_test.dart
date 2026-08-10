@@ -56,6 +56,7 @@ void main() {
           EventChain(
             id: soundChainId,
             name: 'Sound',
+            triggerMode: EventChainTriggerMode.triggerPoint,
             events: [
               StudioEvent.audioPlaySound(
                 id: soundEventId,
@@ -102,4 +103,248 @@ void main() {
       expect(plan.audioCues.single.time, closeTo(1, 0.001));
     },
   );
+
+  test(
+    'character stops walking animation while a trigger chain is running',
+    () {
+      const characterObjectId = 'object_kris';
+      const triggerId = 'trigger_dialogue';
+      const dialogueChainId = 'chain_dialogue';
+      final scene = Scene(
+        id: 'scene_main',
+        name: 'Main Canvas',
+        objects: const [
+          SceneObject.characterInstance(
+            id: characterObjectId,
+            name: 'Kris',
+            characterId: 'character_kris',
+            transform: Transform2D(x: 0, y: 0),
+            facing: Direction.right,
+          ),
+          SceneObject.triggerPoint(
+            id: 'object_trigger_point',
+            name: 'Talk',
+            triggerId: triggerId,
+            transform: Transform2D(x: 10, y: 0, width: 8, height: 8),
+          ),
+        ],
+        triggers: const [
+          Trigger.area(
+            id: triggerId,
+            name: 'Talk',
+            eventChainId: dialogueChainId,
+          ),
+        ],
+        eventChains: const [
+          EventChain(
+            id: 'chain_walk',
+            name: 'Walk',
+            events: [
+              StudioEvent.characterMove(
+                id: 'event_walk',
+                characterObjectId: characterObjectId,
+                path: MovementPath(
+                  speed: 10,
+                  nodes: [
+                    PathNode(id: 'node_start', x: 0, y: 0),
+                    PathNode(id: 'node_trigger', x: 10, y: 0),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          EventChain(
+            id: dialogueChainId,
+            name: 'Dialogue',
+            triggerMode: EventChainTriggerMode.triggerPoint,
+            events: [
+              StudioEvent.dialogueSay(
+                id: 'event_dialogue',
+                text: '...',
+                textSoundAssetId: 'asset_text_sound',
+                style: DialogueStyle.darkWorld,
+                duration: 2,
+              ),
+            ],
+          ),
+        ],
+        interestPoints: const [],
+        cameraPolicy: const CameraPolicy.followPlayer(
+          playerObjectId: characterObjectId,
+        ),
+      );
+      final project = StudioProject(
+        schemaVersion: 3,
+        id: 'project_test',
+        name: 'Test',
+        currentSceneId: scene.id,
+        scenes: [scene],
+        characters: const [
+          Character(
+            id: 'character_kris',
+            name: 'Kris',
+            animations: [],
+            expressions: [],
+            movement: CharacterMovementProfile(),
+          ),
+        ],
+        assets: const [
+          AssetRef(
+            id: 'asset_text_sound',
+            kind: AssetKind.audio,
+            relativePath: 'assets/audio/text.wav',
+            originalName: 'text.wav',
+          ),
+        ],
+      );
+
+      final plan = TimelinePlan(project: project, scene: scene, chain: null);
+      final world = plan.evaluate(1.5);
+
+      expect(plan.dialogueTypeCues, hasLength(3));
+      expect(plan.dialogueTypeCues.first.assetId, 'asset_text_sound');
+      expect(plan.dialogueTypeCues.first.time, closeTo(1 + 1 / 32, 0.001));
+      expect(world.dialogue, isNotNull);
+      expect(world.objects[characterObjectId]!.isMoving, isFalse);
+    },
+  );
+
+  test('final dialogue clears when its duration ends', () {
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [],
+      triggers: const [],
+      eventChains: const [
+        EventChain(
+          id: 'chain_dialogue',
+          name: 'Dialogue',
+          events: [
+            StudioEvent.dialogueSay(
+              id: 'event_dialogue',
+              text: 'Line',
+              style: DialogueStyle.darkWorld,
+              duration: 1,
+            ),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: const CameraPolicy.focus(
+        target: FocusTarget.point(x: 0, y: 0),
+      ),
+    );
+    final project = StudioProject(
+      schemaVersion: 2,
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [],
+      assets: const [],
+    );
+    final plan = TimelinePlan(
+      project: project,
+      scene: scene,
+      chain: scene.eventChains.single,
+    );
+
+    expect(plan.evaluate(0.5).dialogue, isNotNull);
+    expect(plan.evaluate(1).dialogue, isNull);
+  });
+
+  test('character follow samples leader path at a fixed distance', () {
+    const leaderObjectId = 'object_leader';
+    const followerObjectId = 'object_follower';
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [
+        SceneObject.characterInstance(
+          id: leaderObjectId,
+          name: 'Leader',
+          characterId: 'character_kris',
+          transform: Transform2D(x: 0, y: 0),
+          facing: Direction.right,
+        ),
+        SceneObject.characterInstance(
+          id: followerObjectId,
+          name: 'Follower',
+          characterId: 'character_kris',
+          transform: Transform2D(x: -48, y: 0),
+          facing: Direction.right,
+        ),
+      ],
+      triggers: const [],
+      eventChains: const [
+        EventChain(
+          id: 'chain_follow',
+          name: 'Follow',
+          events: [
+            StudioEvent.characterStartFollow(
+              id: 'event_follow',
+              followerObjectId: followerObjectId,
+              leaderObjectId: leaderObjectId,
+              distance: 32,
+            ),
+            StudioEvent.characterMove(
+              id: 'event_move',
+              characterObjectId: leaderObjectId,
+              path: MovementPath(
+                speed: 320,
+                nodes: [
+                  PathNode(id: 'node_start', x: 0, y: 0),
+                  PathNode(id: 'node_end', x: 320, y: 0),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: const CameraPolicy.followPlayer(
+        playerObjectId: leaderObjectId,
+      ),
+    );
+    final project = StudioProject(
+      schemaVersion: 2,
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [
+        Character(
+          id: 'character_kris',
+          name: 'Kris',
+          animations: [],
+          expressions: [],
+          movement: CharacterMovementProfile(),
+        ),
+      ],
+      assets: const [],
+    );
+    final plan = TimelinePlan(
+      project: project,
+      scene: scene,
+      chain: scene.eventChains.single,
+    );
+
+    final movingWorld = plan.evaluate(0.6);
+    expect(
+      movingWorld.objects[leaderObjectId]!.transform.x,
+      closeTo(160, 0.001),
+    );
+    expect(
+      movingWorld.objects[followerObjectId]!.transform.x,
+      closeTo(128, 0.001),
+    );
+    expect(movingWorld.objects[followerObjectId]!.isMoving, isTrue);
+
+    final endWorld = plan.evaluate(plan.duration);
+    expect(
+      endWorld.objects[followerObjectId]!.transform.x,
+      closeTo(288, 0.001),
+    );
+    expect(endWorld.objects[followerObjectId]!.isMoving, isFalse);
+  });
 }

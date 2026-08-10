@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'studio_models.freezed.dart';
 part 'studio_models.g.dart';
 
-enum AssetKind { background, character, audio, prop }
+enum AssetKind { background, character, audio, prop, dialoguePortrait, video }
 
 enum Direction { up, down, left, right }
 
@@ -11,16 +11,24 @@ enum FadeMode { in_, out }
 
 enum DialogueStyle { regular, darkWorld }
 
+enum VideoFitMode { contain }
+
+enum AppLanguage { system, english, chinese }
+
+enum EventChainTriggerMode { triggerPoint, always }
+
 @freezed
 abstract class StudioProject with _$StudioProject {
   const factory StudioProject({
-    required int schemaVersion,
+    @Default(4) int schemaVersion,
     required String id,
     required String name,
     required String currentSceneId,
     required List<Scene> scenes,
     required List<Character> characters,
     required List<AssetRef> assets,
+    @Default(EditorLayout()) EditorLayout editorLayout,
+    @Default(EditorSettings()) EditorSettings settings,
   }) = _StudioProject;
 
   factory StudioProject.fromJson(Map<String, dynamic> json) =>
@@ -28,12 +36,36 @@ abstract class StudioProject with _$StudioProject {
 }
 
 @freezed
+abstract class EditorLayout with _$EditorLayout {
+  const factory EditorLayout({
+    @Default(220) double leftSidebarWidth,
+    @Default(280) double rightSidebarWidth,
+    @Default(300) double bottomPanelHeight,
+  }) = _EditorLayout;
+
+  factory EditorLayout.fromJson(Map<String, dynamic> json) =>
+      _$EditorLayoutFromJson(json);
+}
+
+@freezed
+abstract class EditorSettings with _$EditorSettings {
+  const factory EditorSettings({
+    @Default(AppLanguage.system) AppLanguage language,
+    @Default(true) bool englishDialogueTypewriterByWord,
+  }) = _EditorSettings;
+
+  factory EditorSettings.fromJson(Map<String, dynamic> json) =>
+      _$EditorSettingsFromJson(json);
+}
+
+@freezed
 abstract class AssetRef with _$AssetRef {
   const factory AssetRef({
     required String id,
-    required AssetKind kind,
+    @JsonKey(unknownEnumValue: AssetKind.prop) required AssetKind kind,
     required String relativePath,
     required String originalName,
+    String? dataUri,
   }) = _AssetRef;
 
   factory AssetRef.fromJson(Map<String, dynamic> json) =>
@@ -69,6 +101,7 @@ sealed class SceneObject with _$SceneObject {
     required Direction facing,
     String? initialExpression,
     ActivityProfile? activity,
+    @Default(false) bool locked,
   }) = CharacterInstanceObject;
 
   @FreezedUnionValue('prop')
@@ -78,6 +111,7 @@ sealed class SceneObject with _$SceneObject {
     required String assetId,
     required Transform2D transform,
     @Default(false) bool interactable,
+    @Default(false) bool locked,
   }) = PropSceneObject;
 
   @FreezedUnionValue('background')
@@ -95,6 +129,7 @@ sealed class SceneObject with _$SceneObject {
     required String name,
     required String triggerId,
     required Transform2D transform,
+    @Default(false) bool locked,
   }) = TriggerPointObject;
 
   @FreezedUnionValue('triggerArea')
@@ -103,6 +138,7 @@ sealed class SceneObject with _$SceneObject {
     required String name,
     required String triggerId,
     required Transform2D transform,
+    @Default(false) bool locked,
   }) = TriggerAreaObject;
 
   String get objectId => map(
@@ -176,6 +212,8 @@ abstract class CharacterExpression with _$CharacterExpression {
   const factory CharacterExpression({
     required String id,
     required String name,
+    String? assetId,
+    Direction? direction,
   }) = _CharacterExpression;
 
   factory CharacterExpression.fromJson(Map<String, dynamic> json) =>
@@ -292,6 +330,7 @@ abstract class EventChain with _$EventChain {
   const factory EventChain({
     required String id,
     required String name,
+    @Default(EventChainTriggerMode.always) EventChainTriggerMode triggerMode,
     required List<StudioEvent> events,
   }) = _EventChain;
 
@@ -323,12 +362,26 @@ sealed class StudioEvent with _$StudioEvent {
     required String expressionId,
   }) = CharacterChangeExpressionEvent;
 
+  @FreezedUnionValue('character.startFollow')
+  const factory StudioEvent.characterStartFollow({
+    required String id,
+    required String followerObjectId,
+    required String leaderObjectId,
+    @Default(48) double distance,
+  }) = CharacterStartFollowEvent;
+
+  @FreezedUnionValue('character.stopFollow')
+  const factory StudioEvent.characterStopFollow({
+    required String id,
+    required String followerObjectId,
+  }) = CharacterStopFollowEvent;
+
   @FreezedUnionValue('dialogue.say')
   const factory StudioEvent.dialogueSay({
     required String id,
-    required String speaker,
     required String text,
     String? portraitAssetId,
+    String? textSoundAssetId,
     @Default(DialogueStyle.regular) DialogueStyle style,
     @Default(2) double duration,
   }) = DialogueSayEvent;
@@ -372,10 +425,20 @@ sealed class StudioEvent with _$StudioEvent {
     required String assetId,
   }) = AudioPlaySoundEvent;
 
+  @FreezedUnionValue('video.play')
+  const factory StudioEvent.videoPlay({
+    required String id,
+    required String assetId,
+    @Default(3) double duration,
+    @Default(VideoFitMode.contain) VideoFitMode fit,
+  }) = VideoPlayEvent;
+
   String get eventId => map(
     characterMove: (value) => value.id,
     characterWait: (value) => value.id,
     characterChangeExpression: (value) => value.id,
+    characterStartFollow: (value) => value.id,
+    characterStopFollow: (value) => value.id,
     dialogueSay: (value) => value.id,
     cameraFollow: (value) => value.id,
     cameraFocus: (value) => value.id,
@@ -383,6 +446,7 @@ sealed class StudioEvent with _$StudioEvent {
     sceneChange: (value) => value.id,
     audioPlayBgm: (value) => value.id,
     audioPlaySound: (value) => value.id,
+    videoPlay: (value) => value.id,
   );
 
   factory StudioEvent.fromJson(Map<String, dynamic> json) =>

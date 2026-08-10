@@ -13,8 +13,10 @@ final class RuntimeWorld {
     this.activeMoveEventId,
     this.activeMoveProgress = 0,
     this.audioEventIds = const [],
+    this.activeVideo,
     this.cameraFollowObjectId,
     this.cameraFocusTarget,
+    this.followStates = const {},
   });
 
   final StudioProject project;
@@ -28,8 +30,10 @@ final class RuntimeWorld {
   final String? activeMoveEventId;
   final double activeMoveProgress;
   final List<String> audioEventIds;
+  final VideoPlaybackState? activeVideo;
   final String? cameraFollowObjectId;
   final FocusTarget? cameraFocusTarget;
+  final Map<String, CharacterFollowState> followStates;
 
   RuntimeWorld copyWith({
     StudioProject? project,
@@ -43,12 +47,15 @@ final class RuntimeWorld {
     String? activeMoveEventId,
     double? activeMoveProgress,
     List<String>? audioEventIds,
+    VideoPlaybackState? activeVideo,
     String? cameraFollowObjectId,
     FocusTarget? cameraFocusTarget,
+    Map<String, CharacterFollowState>? followStates,
     bool clearEvent = false,
     bool clearDialogue = false,
     bool clearActiveMove = false,
     bool clearAudioEvents = false,
+    bool clearActiveVideo = false,
     bool clearCameraFocus = false,
   }) {
     return RuntimeWorld(
@@ -67,10 +74,12 @@ final class RuntimeWorld {
       audioEventIds: clearAudioEvents
           ? const []
           : audioEventIds ?? this.audioEventIds,
+      activeVideo: clearActiveVideo ? null : activeVideo ?? this.activeVideo,
       cameraFollowObjectId: cameraFollowObjectId ?? this.cameraFollowObjectId,
       cameraFocusTarget: clearCameraFocus
           ? null
           : cameraFocusTarget ?? this.cameraFocusTarget,
+      followStates: followStates ?? this.followStates,
     );
   }
 
@@ -96,18 +105,43 @@ final class RuntimeWorld {
   }
 }
 
+final class CharacterFollowState {
+  const CharacterFollowState({
+    required this.leaderObjectId,
+    required this.distance,
+  });
+
+  final String leaderObjectId;
+  final double distance;
+}
+
+final class VideoPlaybackState {
+  const VideoPlaybackState({
+    required this.assetId,
+    required this.fit,
+    required this.localTime,
+    required this.duration,
+  });
+
+  final String assetId;
+  final VideoFitMode fit;
+  final double localTime;
+  final double duration;
+}
+
 final class DialogueBoxState {
   const DialogueBoxState({
-    required this.speaker,
     required this.text,
     required this.style,
     this.portraitAssetId,
+    this.textSoundAssetId,
+    this.visibleCharacters,
   });
-
-  final String speaker;
   final String text;
   final DialogueStyle style;
   final String? portraitAssetId;
+  final String? textSoundAssetId;
+  final int? visibleCharacters;
 }
 
 final class RuntimeObject {
@@ -116,12 +150,14 @@ final class RuntimeObject {
     required this.transform,
     required this.facing,
     this.expressionId,
+    this.isMoving = false,
   });
 
   final SceneObject source;
   final Transform2D transform;
   final Direction facing;
   final String? expressionId;
+  final bool isMoving;
 
   factory RuntimeObject.fromSceneObject(SceneObject source) {
     return RuntimeObject(
@@ -142,12 +178,14 @@ final class RuntimeObject {
     Transform2D? transform,
     Direction? facing,
     String? expressionId,
+    bool? isMoving,
   }) {
     return RuntimeObject(
       source: source,
       transform: transform ?? this.transform,
       facing: facing ?? this.facing,
       expressionId: expressionId ?? this.expressionId,
+      isMoving: isMoving ?? this.isMoving,
     );
   }
 }

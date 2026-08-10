@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$StudioProject {
 
- int get schemaVersion; String get id; String get name; String get currentSceneId; List<Scene> get scenes; List<Character> get characters; List<AssetRef> get assets;
+ int get schemaVersion; String get id; String get name; String get currentSceneId; List<Scene> get scenes; List<Character> get characters; List<AssetRef> get assets; EditorLayout get editorLayout; EditorSettings get settings;
 /// Create a copy of StudioProject
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,16 @@ $StudioProjectCopyWith<StudioProject> get copyWith => _$StudioProjectCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioProject&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.currentSceneId, currentSceneId) || other.currentSceneId == currentSceneId)&&const DeepCollectionEquality().equals(other.scenes, scenes)&&const DeepCollectionEquality().equals(other.characters, characters)&&const DeepCollectionEquality().equals(other.assets, assets));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioProject&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.currentSceneId, currentSceneId) || other.currentSceneId == currentSceneId)&&const DeepCollectionEquality().equals(other.scenes, scenes)&&const DeepCollectionEquality().equals(other.characters, characters)&&const DeepCollectionEquality().equals(other.assets, assets)&&(identical(other.editorLayout, editorLayout) || other.editorLayout == editorLayout)&&(identical(other.settings, settings) || other.settings == settings));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,id,name,currentSceneId,const DeepCollectionEquality().hash(scenes),const DeepCollectionEquality().hash(characters),const DeepCollectionEquality().hash(assets));
+int get hashCode => Object.hash(runtimeType,schemaVersion,id,name,currentSceneId,const DeepCollectionEquality().hash(scenes),const DeepCollectionEquality().hash(characters),const DeepCollectionEquality().hash(assets),editorLayout,settings);
 
 @override
 String toString() {
-  return 'StudioProject(schemaVersion: $schemaVersion, id: $id, name: $name, currentSceneId: $currentSceneId, scenes: $scenes, characters: $characters, assets: $assets)';
+  return 'StudioProject(schemaVersion: $schemaVersion, id: $id, name: $name, currentSceneId: $currentSceneId, scenes: $scenes, characters: $characters, assets: $assets, editorLayout: $editorLayout, settings: $settings)';
 }
 
 
@@ -49,11 +49,11 @@ abstract mixin class $StudioProjectCopyWith<$Res>  {
   factory $StudioProjectCopyWith(StudioProject value, $Res Function(StudioProject) _then) = _$StudioProjectCopyWithImpl;
 @useResult
 $Res call({
- int schemaVersion, String id, String name, String currentSceneId, List<Scene> scenes, List<Character> characters, List<AssetRef> assets
+ int schemaVersion, String id, String name, String currentSceneId, List<Scene> scenes, List<Character> characters, List<AssetRef> assets, EditorLayout editorLayout, EditorSettings settings
 });
 
 
-
+$EditorLayoutCopyWith<$Res> get editorLayout;$EditorSettingsCopyWith<$Res> get settings;
 
 }
 /// @nodoc
@@ -66,7 +66,7 @@ class _$StudioProjectCopyWithImpl<$Res>
 
 /// Create a copy of StudioProject
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? id = null,Object? name = null,Object? currentSceneId = null,Object? scenes = null,Object? characters = null,Object? assets = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? id = null,Object? name = null,Object? currentSceneId = null,Object? scenes = null,Object? characters = null,Object? assets = null,Object? editorLayout = null,Object? settings = null,}) {
   return _then(StudioProject(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
@@ -75,10 +75,30 @@ as String,currentSceneId: null == currentSceneId ? _self.currentSceneId : curren
 as String,scenes: null == scenes ? _self.scenes : scenes // ignore: cast_nullable_to_non_nullable
 as List<Scene>,characters: null == characters ? _self.characters : characters // ignore: cast_nullable_to_non_nullable
 as List<Character>,assets: null == assets ? _self.assets : assets // ignore: cast_nullable_to_non_nullable
-as List<AssetRef>,
+as List<AssetRef>,editorLayout: null == editorLayout ? _self.editorLayout : editorLayout // ignore: cast_nullable_to_non_nullable
+as EditorLayout,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
+as EditorSettings,
   ));
 }
-
+/// Create a copy of StudioProject
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EditorLayoutCopyWith<$Res> get editorLayout {
+  
+  return $EditorLayoutCopyWith<$Res>(_self.editorLayout, (value) {
+    return _then(_self.copyWith(editorLayout: value));
+  });
+}/// Create a copy of StudioProject
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EditorSettingsCopyWith<$Res> get settings {
+  
+  return $EditorSettingsCopyWith<$Res>(_self.settings, (value) {
+    return _then(_self.copyWith(settings: value));
+  });
+}
 }
 
 
@@ -160,10 +180,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int schemaVersion,  String id,  String name,  String currentSceneId,  List<Scene> scenes,  List<Character> characters,  List<AssetRef> assets)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int schemaVersion,  String id,  String name,  String currentSceneId,  List<Scene> scenes,  List<Character> characters,  List<AssetRef> assets,  EditorLayout editorLayout,  EditorSettings settings)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StudioProject() when $default != null:
-return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_that.scenes,_that.characters,_that.assets);case _:
+return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_that.scenes,_that.characters,_that.assets,_that.editorLayout,_that.settings);case _:
   return orElse();
 
 }
@@ -181,10 +201,10 @@ return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int schemaVersion,  String id,  String name,  String currentSceneId,  List<Scene> scenes,  List<Character> characters,  List<AssetRef> assets)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int schemaVersion,  String id,  String name,  String currentSceneId,  List<Scene> scenes,  List<Character> characters,  List<AssetRef> assets,  EditorLayout editorLayout,  EditorSettings settings)  $default,) {final _that = this;
 switch (_that) {
 case _StudioProject():
-return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_that.scenes,_that.characters,_that.assets);case _:
+return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_that.scenes,_that.characters,_that.assets,_that.editorLayout,_that.settings);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +221,10 @@ return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int schemaVersion,  String id,  String name,  String currentSceneId,  List<Scene> scenes,  List<Character> characters,  List<AssetRef> assets)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int schemaVersion,  String id,  String name,  String currentSceneId,  List<Scene> scenes,  List<Character> characters,  List<AssetRef> assets,  EditorLayout editorLayout,  EditorSettings settings)?  $default,) {final _that = this;
 switch (_that) {
 case _StudioProject() when $default != null:
-return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_that.scenes,_that.characters,_that.assets);case _:
+return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_that.scenes,_that.characters,_that.assets,_that.editorLayout,_that.settings);case _:
   return null;
 
 }
@@ -216,10 +236,10 @@ return $default(_that.schemaVersion,_that.id,_that.name,_that.currentSceneId,_th
 @JsonSerializable()
 
 class _StudioProject implements StudioProject {
-  const _StudioProject({required this.schemaVersion, required this.id, required this.name, required this.currentSceneId, required  List<Scene> scenes, required  List<Character> characters, required  List<AssetRef> assets}): _scenes = scenes,_characters = characters,_assets = assets;
+  const _StudioProject({this.schemaVersion = 4, required this.id, required this.name, required this.currentSceneId, required  List<Scene> scenes, required  List<Character> characters, required  List<AssetRef> assets, this.editorLayout = const EditorLayout(), this.settings = const EditorSettings()}): _scenes = scenes,_characters = characters,_assets = assets;
   factory _StudioProject.fromJson(Map<String, dynamic> json) => _$StudioProjectFromJson(json);
 
-@override final  int schemaVersion;
+@override@JsonKey() final  int schemaVersion;
 @override final  String id;
 @override final  String name;
 @override final  String currentSceneId;
@@ -244,6 +264,8 @@ class _StudioProject implements StudioProject {
   return EqualUnmodifiableListView(_assets);
 }
 
+@override@JsonKey() final  EditorLayout editorLayout;
+@override@JsonKey() final  EditorSettings settings;
 
 /// Create a copy of StudioProject
 /// with the given fields replaced by the non-null parameter values.
@@ -258,16 +280,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudioProject&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.currentSceneId, currentSceneId) || other.currentSceneId == currentSceneId)&&const DeepCollectionEquality().equals(other._scenes, _scenes)&&const DeepCollectionEquality().equals(other._characters, _characters)&&const DeepCollectionEquality().equals(other._assets, _assets));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudioProject&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.currentSceneId, currentSceneId) || other.currentSceneId == currentSceneId)&&const DeepCollectionEquality().equals(other._scenes, _scenes)&&const DeepCollectionEquality().equals(other._characters, _characters)&&const DeepCollectionEquality().equals(other._assets, _assets)&&(identical(other.editorLayout, editorLayout) || other.editorLayout == editorLayout)&&(identical(other.settings, settings) || other.settings == settings));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,id,name,currentSceneId,const DeepCollectionEquality().hash(_scenes),const DeepCollectionEquality().hash(_characters),const DeepCollectionEquality().hash(_assets));
+int get hashCode => Object.hash(runtimeType,schemaVersion,id,name,currentSceneId,const DeepCollectionEquality().hash(_scenes),const DeepCollectionEquality().hash(_characters),const DeepCollectionEquality().hash(_assets),editorLayout,settings);
 
 @override
 String toString() {
-  return 'StudioProject(schemaVersion: $schemaVersion, id: $id, name: $name, currentSceneId: $currentSceneId, scenes: $scenes, characters: $characters, assets: $assets)';
+  return 'StudioProject(schemaVersion: $schemaVersion, id: $id, name: $name, currentSceneId: $currentSceneId, scenes: $scenes, characters: $characters, assets: $assets, editorLayout: $editorLayout, settings: $settings)';
 }
 
 
@@ -278,11 +300,11 @@ abstract mixin class _$StudioProjectCopyWith<$Res> implements $StudioProjectCopy
   factory _$StudioProjectCopyWith(_StudioProject value, $Res Function(_StudioProject) _then) = __$StudioProjectCopyWithImpl;
 @override @useResult
 $Res call({
- int schemaVersion, String id, String name, String currentSceneId, List<Scene> scenes, List<Character> characters, List<AssetRef> assets
+ int schemaVersion, String id, String name, String currentSceneId, List<Scene> scenes, List<Character> characters, List<AssetRef> assets, EditorLayout editorLayout, EditorSettings settings
 });
 
 
-
+@override $EditorLayoutCopyWith<$Res> get editorLayout;@override $EditorSettingsCopyWith<$Res> get settings;
 
 }
 /// @nodoc
@@ -295,7 +317,7 @@ class __$StudioProjectCopyWithImpl<$Res>
 
 /// Create a copy of StudioProject
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? schemaVersion = null,Object? id = null,Object? name = null,Object? currentSceneId = null,Object? scenes = null,Object? characters = null,Object? assets = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? schemaVersion = null,Object? id = null,Object? name = null,Object? currentSceneId = null,Object? scenes = null,Object? characters = null,Object? assets = null,Object? editorLayout = null,Object? settings = null,}) {
   return _then(_StudioProject(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as int,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
@@ -304,7 +326,562 @@ as String,currentSceneId: null == currentSceneId ? _self.currentSceneId : curren
 as String,scenes: null == scenes ? _self._scenes : scenes // ignore: cast_nullable_to_non_nullable
 as List<Scene>,characters: null == characters ? _self._characters : characters // ignore: cast_nullable_to_non_nullable
 as List<Character>,assets: null == assets ? _self._assets : assets // ignore: cast_nullable_to_non_nullable
-as List<AssetRef>,
+as List<AssetRef>,editorLayout: null == editorLayout ? _self.editorLayout : editorLayout // ignore: cast_nullable_to_non_nullable
+as EditorLayout,settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
+as EditorSettings,
+  ));
+}
+
+/// Create a copy of StudioProject
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EditorLayoutCopyWith<$Res> get editorLayout {
+  
+  return $EditorLayoutCopyWith<$Res>(_self.editorLayout, (value) {
+    return _then(_self.copyWith(editorLayout: value));
+  });
+}/// Create a copy of StudioProject
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EditorSettingsCopyWith<$Res> get settings {
+  
+  return $EditorSettingsCopyWith<$Res>(_self.settings, (value) {
+    return _then(_self.copyWith(settings: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$EditorLayout {
+
+ double get leftSidebarWidth; double get rightSidebarWidth; double get bottomPanelHeight;
+/// Create a copy of EditorLayout
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$EditorLayoutCopyWith<EditorLayout> get copyWith => _$EditorLayoutCopyWithImpl<EditorLayout>(this as EditorLayout, _$identity);
+
+  /// Serializes this EditorLayout to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorLayout&&(identical(other.leftSidebarWidth, leftSidebarWidth) || other.leftSidebarWidth == leftSidebarWidth)&&(identical(other.rightSidebarWidth, rightSidebarWidth) || other.rightSidebarWidth == rightSidebarWidth)&&(identical(other.bottomPanelHeight, bottomPanelHeight) || other.bottomPanelHeight == bottomPanelHeight));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,leftSidebarWidth,rightSidebarWidth,bottomPanelHeight);
+
+@override
+String toString() {
+  return 'EditorLayout(leftSidebarWidth: $leftSidebarWidth, rightSidebarWidth: $rightSidebarWidth, bottomPanelHeight: $bottomPanelHeight)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $EditorLayoutCopyWith<$Res>  {
+  factory $EditorLayoutCopyWith(EditorLayout value, $Res Function(EditorLayout) _then) = _$EditorLayoutCopyWithImpl;
+@useResult
+$Res call({
+ double leftSidebarWidth, double rightSidebarWidth, double bottomPanelHeight
+});
+
+
+
+
+}
+/// @nodoc
+class _$EditorLayoutCopyWithImpl<$Res>
+    implements $EditorLayoutCopyWith<$Res> {
+  _$EditorLayoutCopyWithImpl(this._self, this._then);
+
+  final EditorLayout _self;
+  final $Res Function(EditorLayout) _then;
+
+/// Create a copy of EditorLayout
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? leftSidebarWidth = null,Object? rightSidebarWidth = null,Object? bottomPanelHeight = null,}) {
+  return _then(EditorLayout(
+leftSidebarWidth: null == leftSidebarWidth ? _self.leftSidebarWidth : leftSidebarWidth // ignore: cast_nullable_to_non_nullable
+as double,rightSidebarWidth: null == rightSidebarWidth ? _self.rightSidebarWidth : rightSidebarWidth // ignore: cast_nullable_to_non_nullable
+as double,bottomPanelHeight: null == bottomPanelHeight ? _self.bottomPanelHeight : bottomPanelHeight // ignore: cast_nullable_to_non_nullable
+as double,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [EditorLayout].
+extension EditorLayoutPatterns on EditorLayout {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _EditorLayout value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _EditorLayout() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _EditorLayout value)  $default,){
+final _that = this;
+switch (_that) {
+case _EditorLayout():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _EditorLayout value)?  $default,){
+final _that = this;
+switch (_that) {
+case _EditorLayout() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _EditorLayout() when $default != null:
+return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight)  $default,) {final _that = this;
+switch (_that) {
+case _EditorLayout():
+return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight)?  $default,) {final _that = this;
+switch (_that) {
+case _EditorLayout() when $default != null:
+return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _EditorLayout implements EditorLayout {
+  const _EditorLayout({this.leftSidebarWidth = 220, this.rightSidebarWidth = 280, this.bottomPanelHeight = 300});
+  factory _EditorLayout.fromJson(Map<String, dynamic> json) => _$EditorLayoutFromJson(json);
+
+@override@JsonKey() final  double leftSidebarWidth;
+@override@JsonKey() final  double rightSidebarWidth;
+@override@JsonKey() final  double bottomPanelHeight;
+
+/// Create a copy of EditorLayout
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$EditorLayoutCopyWith<_EditorLayout> get copyWith => __$EditorLayoutCopyWithImpl<_EditorLayout>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$EditorLayoutToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorLayout&&(identical(other.leftSidebarWidth, leftSidebarWidth) || other.leftSidebarWidth == leftSidebarWidth)&&(identical(other.rightSidebarWidth, rightSidebarWidth) || other.rightSidebarWidth == rightSidebarWidth)&&(identical(other.bottomPanelHeight, bottomPanelHeight) || other.bottomPanelHeight == bottomPanelHeight));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,leftSidebarWidth,rightSidebarWidth,bottomPanelHeight);
+
+@override
+String toString() {
+  return 'EditorLayout(leftSidebarWidth: $leftSidebarWidth, rightSidebarWidth: $rightSidebarWidth, bottomPanelHeight: $bottomPanelHeight)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$EditorLayoutCopyWith<$Res> implements $EditorLayoutCopyWith<$Res> {
+  factory _$EditorLayoutCopyWith(_EditorLayout value, $Res Function(_EditorLayout) _then) = __$EditorLayoutCopyWithImpl;
+@override @useResult
+$Res call({
+ double leftSidebarWidth, double rightSidebarWidth, double bottomPanelHeight
+});
+
+
+
+
+}
+/// @nodoc
+class __$EditorLayoutCopyWithImpl<$Res>
+    implements _$EditorLayoutCopyWith<$Res> {
+  __$EditorLayoutCopyWithImpl(this._self, this._then);
+
+  final _EditorLayout _self;
+  final $Res Function(_EditorLayout) _then;
+
+/// Create a copy of EditorLayout
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? leftSidebarWidth = null,Object? rightSidebarWidth = null,Object? bottomPanelHeight = null,}) {
+  return _then(_EditorLayout(
+leftSidebarWidth: null == leftSidebarWidth ? _self.leftSidebarWidth : leftSidebarWidth // ignore: cast_nullable_to_non_nullable
+as double,rightSidebarWidth: null == rightSidebarWidth ? _self.rightSidebarWidth : rightSidebarWidth // ignore: cast_nullable_to_non_nullable
+as double,bottomPanelHeight: null == bottomPanelHeight ? _self.bottomPanelHeight : bottomPanelHeight // ignore: cast_nullable_to_non_nullable
+as double,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$EditorSettings {
+
+ AppLanguage get language; bool get englishDialogueTypewriterByWord;
+/// Create a copy of EditorSettings
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$EditorSettingsCopyWith<EditorSettings> get copyWith => _$EditorSettingsCopyWithImpl<EditorSettings>(this as EditorSettings, _$identity);
+
+  /// Serializes this EditorSettings to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord);
+
+@override
+String toString() {
+  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $EditorSettingsCopyWith<$Res>  {
+  factory $EditorSettingsCopyWith(EditorSettings value, $Res Function(EditorSettings) _then) = _$EditorSettingsCopyWithImpl;
+@useResult
+$Res call({
+ AppLanguage language, bool englishDialogueTypewriterByWord
+});
+
+
+
+
+}
+/// @nodoc
+class _$EditorSettingsCopyWithImpl<$Res>
+    implements $EditorSettingsCopyWith<$Res> {
+  _$EditorSettingsCopyWithImpl(this._self, this._then);
+
+  final EditorSettings _self;
+  final $Res Function(EditorSettings) _then;
+
+/// Create a copy of EditorSettings
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,}) {
+  return _then(EditorSettings(
+language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
+as AppLanguage,englishDialogueTypewriterByWord: null == englishDialogueTypewriterByWord ? _self.englishDialogueTypewriterByWord : englishDialogueTypewriterByWord // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [EditorSettings].
+extension EditorSettingsPatterns on EditorSettings {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _EditorSettings value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _EditorSettings() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _EditorSettings value)  $default,){
+final _that = this;
+switch (_that) {
+case _EditorSettings():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _EditorSettings value)?  $default,){
+final _that = this;
+switch (_that) {
+case _EditorSettings() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _EditorSettings() when $default != null:
+return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord)  $default,) {final _that = this;
+switch (_that) {
+case _EditorSettings():
+return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AppLanguage language,  bool englishDialogueTypewriterByWord)?  $default,) {final _that = this;
+switch (_that) {
+case _EditorSettings() when $default != null:
+return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _EditorSettings implements EditorSettings {
+  const _EditorSettings({this.language = AppLanguage.system, this.englishDialogueTypewriterByWord = true});
+  factory _EditorSettings.fromJson(Map<String, dynamic> json) => _$EditorSettingsFromJson(json);
+
+@override@JsonKey() final  AppLanguage language;
+@override@JsonKey() final  bool englishDialogueTypewriterByWord;
+
+/// Create a copy of EditorSettings
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$EditorSettingsCopyWith<_EditorSettings> get copyWith => __$EditorSettingsCopyWithImpl<_EditorSettings>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$EditorSettingsToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord);
+
+@override
+String toString() {
+  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$EditorSettingsCopyWith<$Res> implements $EditorSettingsCopyWith<$Res> {
+  factory _$EditorSettingsCopyWith(_EditorSettings value, $Res Function(_EditorSettings) _then) = __$EditorSettingsCopyWithImpl;
+@override @useResult
+$Res call({
+ AppLanguage language, bool englishDialogueTypewriterByWord
+});
+
+
+
+
+}
+/// @nodoc
+class __$EditorSettingsCopyWithImpl<$Res>
+    implements _$EditorSettingsCopyWith<$Res> {
+  __$EditorSettingsCopyWithImpl(this._self, this._then);
+
+  final _EditorSettings _self;
+  final $Res Function(_EditorSettings) _then;
+
+/// Create a copy of EditorSettings
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,}) {
+  return _then(_EditorSettings(
+language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
+as AppLanguage,englishDialogueTypewriterByWord: null == englishDialogueTypewriterByWord ? _self.englishDialogueTypewriterByWord : englishDialogueTypewriterByWord // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -315,7 +892,7 @@ as List<AssetRef>,
 /// @nodoc
 mixin _$AssetRef {
 
- String get id; AssetKind get kind; String get relativePath; String get originalName;
+ String get id;@JsonKey(unknownEnumValue: AssetKind.prop) AssetKind get kind; String get relativePath; String get originalName; String? get dataUri;
 /// Create a copy of AssetRef
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -328,16 +905,16 @@ $AssetRefCopyWith<AssetRef> get copyWith => _$AssetRefCopyWithImpl<AssetRef>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AssetRef&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.originalName, originalName) || other.originalName == originalName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AssetRef&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.originalName, originalName) || other.originalName == originalName)&&(identical(other.dataUri, dataUri) || other.dataUri == dataUri));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,relativePath,originalName);
+int get hashCode => Object.hash(runtimeType,id,kind,relativePath,originalName,dataUri);
 
 @override
 String toString() {
-  return 'AssetRef(id: $id, kind: $kind, relativePath: $relativePath, originalName: $originalName)';
+  return 'AssetRef(id: $id, kind: $kind, relativePath: $relativePath, originalName: $originalName, dataUri: $dataUri)';
 }
 
 
@@ -348,7 +925,7 @@ abstract mixin class $AssetRefCopyWith<$Res>  {
   factory $AssetRefCopyWith(AssetRef value, $Res Function(AssetRef) _then) = _$AssetRefCopyWithImpl;
 @useResult
 $Res call({
- String id, AssetKind kind, String relativePath, String originalName
+ String id,@JsonKey(unknownEnumValue: AssetKind.prop) AssetKind kind, String relativePath, String originalName, String? dataUri
 });
 
 
@@ -365,13 +942,14 @@ class _$AssetRefCopyWithImpl<$Res>
 
 /// Create a copy of AssetRef
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? relativePath = null,Object? originalName = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? relativePath = null,Object? originalName = null,Object? dataUri = freezed,}) {
   return _then(AssetRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as AssetKind,relativePath: null == relativePath ? _self.relativePath : relativePath // ignore: cast_nullable_to_non_nullable
 as String,originalName: null == originalName ? _self.originalName : originalName // ignore: cast_nullable_to_non_nullable
-as String,
+as String,dataUri: freezed == dataUri ? _self.dataUri : dataUri // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -456,10 +1034,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  AssetKind kind,  String relativePath,  String originalName)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(unknownEnumValue: AssetKind.prop)  AssetKind kind,  String relativePath,  String originalName,  String? dataUri)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AssetRef() when $default != null:
-return $default(_that.id,_that.kind,_that.relativePath,_that.originalName);case _:
+return $default(_that.id,_that.kind,_that.relativePath,_that.originalName,_that.dataUri);case _:
   return orElse();
 
 }
@@ -477,10 +1055,10 @@ return $default(_that.id,_that.kind,_that.relativePath,_that.originalName);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  AssetKind kind,  String relativePath,  String originalName)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(unknownEnumValue: AssetKind.prop)  AssetKind kind,  String relativePath,  String originalName,  String? dataUri)  $default,) {final _that = this;
 switch (_that) {
 case _AssetRef():
-return $default(_that.id,_that.kind,_that.relativePath,_that.originalName);case _:
+return $default(_that.id,_that.kind,_that.relativePath,_that.originalName,_that.dataUri);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -497,10 +1075,10 @@ return $default(_that.id,_that.kind,_that.relativePath,_that.originalName);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  AssetKind kind,  String relativePath,  String originalName)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(unknownEnumValue: AssetKind.prop)  AssetKind kind,  String relativePath,  String originalName,  String? dataUri)?  $default,) {final _that = this;
 switch (_that) {
 case _AssetRef() when $default != null:
-return $default(_that.id,_that.kind,_that.relativePath,_that.originalName);case _:
+return $default(_that.id,_that.kind,_that.relativePath,_that.originalName,_that.dataUri);case _:
   return null;
 
 }
@@ -512,13 +1090,14 @@ return $default(_that.id,_that.kind,_that.relativePath,_that.originalName);case 
 @JsonSerializable()
 
 class _AssetRef implements AssetRef {
-  const _AssetRef({required this.id, required this.kind, required this.relativePath, required this.originalName});
+  const _AssetRef({required this.id, @JsonKey(unknownEnumValue: AssetKind.prop) required this.kind, required this.relativePath, required this.originalName, this.dataUri});
   factory _AssetRef.fromJson(Map<String, dynamic> json) => _$AssetRefFromJson(json);
 
 @override final  String id;
-@override final  AssetKind kind;
+@override@JsonKey(unknownEnumValue: AssetKind.prop) final  AssetKind kind;
 @override final  String relativePath;
 @override final  String originalName;
+@override final  String? dataUri;
 
 /// Create a copy of AssetRef
 /// with the given fields replaced by the non-null parameter values.
@@ -533,16 +1112,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AssetRef&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.originalName, originalName) || other.originalName == originalName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AssetRef&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.originalName, originalName) || other.originalName == originalName)&&(identical(other.dataUri, dataUri) || other.dataUri == dataUri));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,relativePath,originalName);
+int get hashCode => Object.hash(runtimeType,id,kind,relativePath,originalName,dataUri);
 
 @override
 String toString() {
-  return 'AssetRef(id: $id, kind: $kind, relativePath: $relativePath, originalName: $originalName)';
+  return 'AssetRef(id: $id, kind: $kind, relativePath: $relativePath, originalName: $originalName, dataUri: $dataUri)';
 }
 
 
@@ -553,7 +1132,7 @@ abstract mixin class _$AssetRefCopyWith<$Res> implements $AssetRefCopyWith<$Res>
   factory _$AssetRefCopyWith(_AssetRef value, $Res Function(_AssetRef) _then) = __$AssetRefCopyWithImpl;
 @override @useResult
 $Res call({
- String id, AssetKind kind, String relativePath, String originalName
+ String id,@JsonKey(unknownEnumValue: AssetKind.prop) AssetKind kind, String relativePath, String originalName, String? dataUri
 });
 
 
@@ -570,13 +1149,14 @@ class __$AssetRefCopyWithImpl<$Res>
 
 /// Create a copy of AssetRef
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? relativePath = null,Object? originalName = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? relativePath = null,Object? originalName = null,Object? dataUri = freezed,}) {
   return _then(_AssetRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as AssetKind,relativePath: null == relativePath ? _self.relativePath : relativePath // ignore: cast_nullable_to_non_nullable
 as String,originalName: null == originalName ? _self.originalName : originalName // ignore: cast_nullable_to_non_nullable
-as String,
+as String,dataUri: freezed == dataUri ? _self.dataUri : dataUri // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -948,7 +1528,7 @@ SceneObject _$SceneObjectFromJson(
 /// @nodoc
 mixin _$SceneObject {
 
- String get id; String get name; Transform2D get transform;
+ String get id; String get name; Transform2D get transform; bool get locked;
 /// Create a copy of SceneObject
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -961,16 +1541,16 @@ $SceneObjectCopyWith<SceneObject> get copyWith => _$SceneObjectCopyWithImpl<Scen
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SceneObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.transform, transform) || other.transform == transform));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SceneObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.locked, locked) || other.locked == locked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,transform);
+int get hashCode => Object.hash(runtimeType,id,name,transform,locked);
 
 @override
 String toString() {
-  return 'SceneObject(id: $id, name: $name, transform: $transform)';
+  return 'SceneObject(id: $id, name: $name, transform: $transform, locked: $locked)';
 }
 
 
@@ -981,7 +1561,7 @@ abstract mixin class $SceneObjectCopyWith<$Res>  {
   factory $SceneObjectCopyWith(SceneObject value, $Res Function(SceneObject) _then) = _$SceneObjectCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, Transform2D transform
+ String id, String name, Transform2D transform, bool locked
 });
 
 
@@ -998,12 +1578,13 @@ class _$SceneObjectCopyWithImpl<$Res>
 
 /// Create a copy of SceneObject
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? transform = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? transform = null,Object? locked = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,transform: null == transform ? _self.transform : transform // ignore: cast_nullable_to_non_nullable
-as Transform2D,
+as Transform2D,locked: null == locked ? _self.locked : locked // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 /// Create a copy of SceneObject
@@ -1106,14 +1687,14 @@ return triggerArea(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String characterId,  Transform2D transform,  Direction facing,  String? initialExpression,  ActivityProfile? activity)?  characterInstance,TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool interactable)?  prop,TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool locked)?  background,TResult Function( String id,  String name,  String triggerId,  Transform2D transform)?  triggerPoint,TResult Function( String id,  String name,  String triggerId,  Transform2D transform)?  triggerArea,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String characterId,  Transform2D transform,  Direction facing,  String? initialExpression,  ActivityProfile? activity,  bool locked)?  characterInstance,TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool interactable,  bool locked)?  prop,TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool locked)?  background,TResult Function( String id,  String name,  String triggerId,  Transform2D transform,  bool locked)?  triggerPoint,TResult Function( String id,  String name,  String triggerId,  Transform2D transform,  bool locked)?  triggerArea,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CharacterInstanceObject() when characterInstance != null:
-return characterInstance(_that.id,_that.name,_that.characterId,_that.transform,_that.facing,_that.initialExpression,_that.activity);case PropSceneObject() when prop != null:
-return prop(_that.id,_that.name,_that.assetId,_that.transform,_that.interactable);case BackgroundObject() when background != null:
+return characterInstance(_that.id,_that.name,_that.characterId,_that.transform,_that.facing,_that.initialExpression,_that.activity,_that.locked);case PropSceneObject() when prop != null:
+return prop(_that.id,_that.name,_that.assetId,_that.transform,_that.interactable,_that.locked);case BackgroundObject() when background != null:
 return background(_that.id,_that.name,_that.assetId,_that.transform,_that.locked);case TriggerPointObject() when triggerPoint != null:
-return triggerPoint(_that.id,_that.name,_that.triggerId,_that.transform);case TriggerAreaObject() when triggerArea != null:
-return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform);case _:
+return triggerPoint(_that.id,_that.name,_that.triggerId,_that.transform,_that.locked);case TriggerAreaObject() when triggerArea != null:
+return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform,_that.locked);case _:
   return orElse();
 
 }
@@ -1131,14 +1712,14 @@ return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String characterId,  Transform2D transform,  Direction facing,  String? initialExpression,  ActivityProfile? activity)  characterInstance,required TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool interactable)  prop,required TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool locked)  background,required TResult Function( String id,  String name,  String triggerId,  Transform2D transform)  triggerPoint,required TResult Function( String id,  String name,  String triggerId,  Transform2D transform)  triggerArea,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String characterId,  Transform2D transform,  Direction facing,  String? initialExpression,  ActivityProfile? activity,  bool locked)  characterInstance,required TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool interactable,  bool locked)  prop,required TResult Function( String id,  String name,  String assetId,  Transform2D transform,  bool locked)  background,required TResult Function( String id,  String name,  String triggerId,  Transform2D transform,  bool locked)  triggerPoint,required TResult Function( String id,  String name,  String triggerId,  Transform2D transform,  bool locked)  triggerArea,}) {final _that = this;
 switch (_that) {
 case CharacterInstanceObject():
-return characterInstance(_that.id,_that.name,_that.characterId,_that.transform,_that.facing,_that.initialExpression,_that.activity);case PropSceneObject():
-return prop(_that.id,_that.name,_that.assetId,_that.transform,_that.interactable);case BackgroundObject():
+return characterInstance(_that.id,_that.name,_that.characterId,_that.transform,_that.facing,_that.initialExpression,_that.activity,_that.locked);case PropSceneObject():
+return prop(_that.id,_that.name,_that.assetId,_that.transform,_that.interactable,_that.locked);case BackgroundObject():
 return background(_that.id,_that.name,_that.assetId,_that.transform,_that.locked);case TriggerPointObject():
-return triggerPoint(_that.id,_that.name,_that.triggerId,_that.transform);case TriggerAreaObject():
-return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform);}
+return triggerPoint(_that.id,_that.name,_that.triggerId,_that.transform,_that.locked);case TriggerAreaObject():
+return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform,_that.locked);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1152,14 +1733,14 @@ return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String characterId,  Transform2D transform,  Direction facing,  String? initialExpression,  ActivityProfile? activity)?  characterInstance,TResult? Function( String id,  String name,  String assetId,  Transform2D transform,  bool interactable)?  prop,TResult? Function( String id,  String name,  String assetId,  Transform2D transform,  bool locked)?  background,TResult? Function( String id,  String name,  String triggerId,  Transform2D transform)?  triggerPoint,TResult? Function( String id,  String name,  String triggerId,  Transform2D transform)?  triggerArea,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String characterId,  Transform2D transform,  Direction facing,  String? initialExpression,  ActivityProfile? activity,  bool locked)?  characterInstance,TResult? Function( String id,  String name,  String assetId,  Transform2D transform,  bool interactable,  bool locked)?  prop,TResult? Function( String id,  String name,  String assetId,  Transform2D transform,  bool locked)?  background,TResult? Function( String id,  String name,  String triggerId,  Transform2D transform,  bool locked)?  triggerPoint,TResult? Function( String id,  String name,  String triggerId,  Transform2D transform,  bool locked)?  triggerArea,}) {final _that = this;
 switch (_that) {
 case CharacterInstanceObject() when characterInstance != null:
-return characterInstance(_that.id,_that.name,_that.characterId,_that.transform,_that.facing,_that.initialExpression,_that.activity);case PropSceneObject() when prop != null:
-return prop(_that.id,_that.name,_that.assetId,_that.transform,_that.interactable);case BackgroundObject() when background != null:
+return characterInstance(_that.id,_that.name,_that.characterId,_that.transform,_that.facing,_that.initialExpression,_that.activity,_that.locked);case PropSceneObject() when prop != null:
+return prop(_that.id,_that.name,_that.assetId,_that.transform,_that.interactable,_that.locked);case BackgroundObject() when background != null:
 return background(_that.id,_that.name,_that.assetId,_that.transform,_that.locked);case TriggerPointObject() when triggerPoint != null:
-return triggerPoint(_that.id,_that.name,_that.triggerId,_that.transform);case TriggerAreaObject() when triggerArea != null:
-return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform);case _:
+return triggerPoint(_that.id,_that.name,_that.triggerId,_that.transform,_that.locked);case TriggerAreaObject() when triggerArea != null:
+return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform,_that.locked);case _:
   return null;
 
 }
@@ -1171,7 +1752,7 @@ return triggerArea(_that.id,_that.name,_that.triggerId,_that.transform);case _:
 @JsonSerializable()
 
 class CharacterInstanceObject extends SceneObject {
-  const CharacterInstanceObject({required this.id, required this.name, required this.characterId, required this.transform, required this.facing, this.initialExpression, this.activity,  String? $type}): $type = $type ?? 'characterInstance',super._();
+  const CharacterInstanceObject({required this.id, required this.name, required this.characterId, required this.transform, required this.facing, this.initialExpression, this.activity, this.locked = false,  String? $type}): $type = $type ?? 'characterInstance',super._();
   factory CharacterInstanceObject.fromJson(Map<String, dynamic> json) => _$CharacterInstanceObjectFromJson(json);
 
 @override final  String id;
@@ -1181,6 +1762,7 @@ class CharacterInstanceObject extends SceneObject {
  final  Direction facing;
  final  String? initialExpression;
  final  ActivityProfile? activity;
+@override@JsonKey() final  bool locked;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -1199,16 +1781,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterInstanceObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.characterId, characterId) || other.characterId == characterId)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.facing, facing) || other.facing == facing)&&(identical(other.initialExpression, initialExpression) || other.initialExpression == initialExpression)&&(identical(other.activity, activity) || other.activity == activity));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterInstanceObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.characterId, characterId) || other.characterId == characterId)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.facing, facing) || other.facing == facing)&&(identical(other.initialExpression, initialExpression) || other.initialExpression == initialExpression)&&(identical(other.activity, activity) || other.activity == activity)&&(identical(other.locked, locked) || other.locked == locked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,characterId,transform,facing,initialExpression,activity);
+int get hashCode => Object.hash(runtimeType,id,name,characterId,transform,facing,initialExpression,activity,locked);
 
 @override
 String toString() {
-  return 'SceneObject.characterInstance(id: $id, name: $name, characterId: $characterId, transform: $transform, facing: $facing, initialExpression: $initialExpression, activity: $activity)';
+  return 'SceneObject.characterInstance(id: $id, name: $name, characterId: $characterId, transform: $transform, facing: $facing, initialExpression: $initialExpression, activity: $activity, locked: $locked)';
 }
 
 
@@ -1219,7 +1801,7 @@ abstract mixin class $CharacterInstanceObjectCopyWith<$Res> implements $SceneObj
   factory $CharacterInstanceObjectCopyWith(CharacterInstanceObject value, $Res Function(CharacterInstanceObject) _then) = _$CharacterInstanceObjectCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String characterId, Transform2D transform, Direction facing, String? initialExpression, ActivityProfile? activity
+ String id, String name, String characterId, Transform2D transform, Direction facing, String? initialExpression, ActivityProfile? activity, bool locked
 });
 
 
@@ -1236,7 +1818,7 @@ class _$CharacterInstanceObjectCopyWithImpl<$Res>
 
 /// Create a copy of SceneObject
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? characterId = null,Object? transform = null,Object? facing = null,Object? initialExpression = freezed,Object? activity = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? characterId = null,Object? transform = null,Object? facing = null,Object? initialExpression = freezed,Object? activity = freezed,Object? locked = null,}) {
   return _then(CharacterInstanceObject(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1245,7 +1827,8 @@ as String,transform: null == transform ? _self.transform : transform // ignore: 
 as Transform2D,facing: null == facing ? _self.facing : facing // ignore: cast_nullable_to_non_nullable
 as Direction,initialExpression: freezed == initialExpression ? _self.initialExpression : initialExpression // ignore: cast_nullable_to_non_nullable
 as String?,activity: freezed == activity ? _self.activity : activity // ignore: cast_nullable_to_non_nullable
-as ActivityProfile?,
+as ActivityProfile?,locked: null == locked ? _self.locked : locked // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -1277,7 +1860,7 @@ $ActivityProfileCopyWith<$Res>? get activity {
 @JsonSerializable()
 
 class PropSceneObject extends SceneObject {
-  const PropSceneObject({required this.id, required this.name, required this.assetId, required this.transform, this.interactable = false,  String? $type}): $type = $type ?? 'prop',super._();
+  const PropSceneObject({required this.id, required this.name, required this.assetId, required this.transform, this.interactable = false, this.locked = false,  String? $type}): $type = $type ?? 'prop',super._();
   factory PropSceneObject.fromJson(Map<String, dynamic> json) => _$PropSceneObjectFromJson(json);
 
 @override final  String id;
@@ -1285,6 +1868,7 @@ class PropSceneObject extends SceneObject {
  final  String assetId;
 @override final  Transform2D transform;
 @JsonKey() final  bool interactable;
+@override@JsonKey() final  bool locked;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -1303,16 +1887,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PropSceneObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.interactable, interactable) || other.interactable == interactable));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PropSceneObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.interactable, interactable) || other.interactable == interactable)&&(identical(other.locked, locked) || other.locked == locked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,assetId,transform,interactable);
+int get hashCode => Object.hash(runtimeType,id,name,assetId,transform,interactable,locked);
 
 @override
 String toString() {
-  return 'SceneObject.prop(id: $id, name: $name, assetId: $assetId, transform: $transform, interactable: $interactable)';
+  return 'SceneObject.prop(id: $id, name: $name, assetId: $assetId, transform: $transform, interactable: $interactable, locked: $locked)';
 }
 
 
@@ -1323,7 +1907,7 @@ abstract mixin class $PropSceneObjectCopyWith<$Res> implements $SceneObjectCopyW
   factory $PropSceneObjectCopyWith(PropSceneObject value, $Res Function(PropSceneObject) _then) = _$PropSceneObjectCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String assetId, Transform2D transform, bool interactable
+ String id, String name, String assetId, Transform2D transform, bool interactable, bool locked
 });
 
 
@@ -1340,13 +1924,14 @@ class _$PropSceneObjectCopyWithImpl<$Res>
 
 /// Create a copy of SceneObject
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? assetId = null,Object? transform = null,Object? interactable = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? assetId = null,Object? transform = null,Object? interactable = null,Object? locked = null,}) {
   return _then(PropSceneObject(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,assetId: null == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
 as String,transform: null == transform ? _self.transform : transform // ignore: cast_nullable_to_non_nullable
 as Transform2D,interactable: null == interactable ? _self.interactable : interactable // ignore: cast_nullable_to_non_nullable
+as bool,locked: null == locked ? _self.locked : locked // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -1374,7 +1959,7 @@ class BackgroundObject extends SceneObject {
 @override final  String name;
  final  String assetId;
 @override final  Transform2D transform;
-@JsonKey() final  bool locked;
+@override@JsonKey() final  bool locked;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -1457,13 +2042,14 @@ $Transform2DCopyWith<$Res> get transform {
 @JsonSerializable()
 
 class TriggerPointObject extends SceneObject {
-  const TriggerPointObject({required this.id, required this.name, required this.triggerId, required this.transform,  String? $type}): $type = $type ?? 'triggerPoint',super._();
+  const TriggerPointObject({required this.id, required this.name, required this.triggerId, required this.transform, this.locked = false,  String? $type}): $type = $type ?? 'triggerPoint',super._();
   factory TriggerPointObject.fromJson(Map<String, dynamic> json) => _$TriggerPointObjectFromJson(json);
 
 @override final  String id;
 @override final  String name;
  final  String triggerId;
 @override final  Transform2D transform;
+@override@JsonKey() final  bool locked;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -1482,16 +2068,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TriggerPointObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerId, triggerId) || other.triggerId == triggerId)&&(identical(other.transform, transform) || other.transform == transform));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TriggerPointObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerId, triggerId) || other.triggerId == triggerId)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.locked, locked) || other.locked == locked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,triggerId,transform);
+int get hashCode => Object.hash(runtimeType,id,name,triggerId,transform,locked);
 
 @override
 String toString() {
-  return 'SceneObject.triggerPoint(id: $id, name: $name, triggerId: $triggerId, transform: $transform)';
+  return 'SceneObject.triggerPoint(id: $id, name: $name, triggerId: $triggerId, transform: $transform, locked: $locked)';
 }
 
 
@@ -1502,7 +2088,7 @@ abstract mixin class $TriggerPointObjectCopyWith<$Res> implements $SceneObjectCo
   factory $TriggerPointObjectCopyWith(TriggerPointObject value, $Res Function(TriggerPointObject) _then) = _$TriggerPointObjectCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String triggerId, Transform2D transform
+ String id, String name, String triggerId, Transform2D transform, bool locked
 });
 
 
@@ -1519,13 +2105,14 @@ class _$TriggerPointObjectCopyWithImpl<$Res>
 
 /// Create a copy of SceneObject
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? triggerId = null,Object? transform = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? triggerId = null,Object? transform = null,Object? locked = null,}) {
   return _then(TriggerPointObject(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,triggerId: null == triggerId ? _self.triggerId : triggerId // ignore: cast_nullable_to_non_nullable
 as String,transform: null == transform ? _self.transform : transform // ignore: cast_nullable_to_non_nullable
-as Transform2D,
+as Transform2D,locked: null == locked ? _self.locked : locked // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -1545,13 +2132,14 @@ $Transform2DCopyWith<$Res> get transform {
 @JsonSerializable()
 
 class TriggerAreaObject extends SceneObject {
-  const TriggerAreaObject({required this.id, required this.name, required this.triggerId, required this.transform,  String? $type}): $type = $type ?? 'triggerArea',super._();
+  const TriggerAreaObject({required this.id, required this.name, required this.triggerId, required this.transform, this.locked = false,  String? $type}): $type = $type ?? 'triggerArea',super._();
   factory TriggerAreaObject.fromJson(Map<String, dynamic> json) => _$TriggerAreaObjectFromJson(json);
 
 @override final  String id;
 @override final  String name;
  final  String triggerId;
 @override final  Transform2D transform;
+@override@JsonKey() final  bool locked;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -1570,16 +2158,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TriggerAreaObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerId, triggerId) || other.triggerId == triggerId)&&(identical(other.transform, transform) || other.transform == transform));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TriggerAreaObject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerId, triggerId) || other.triggerId == triggerId)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.locked, locked) || other.locked == locked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,triggerId,transform);
+int get hashCode => Object.hash(runtimeType,id,name,triggerId,transform,locked);
 
 @override
 String toString() {
-  return 'SceneObject.triggerArea(id: $id, name: $name, triggerId: $triggerId, transform: $transform)';
+  return 'SceneObject.triggerArea(id: $id, name: $name, triggerId: $triggerId, transform: $transform, locked: $locked)';
 }
 
 
@@ -1590,7 +2178,7 @@ abstract mixin class $TriggerAreaObjectCopyWith<$Res> implements $SceneObjectCop
   factory $TriggerAreaObjectCopyWith(TriggerAreaObject value, $Res Function(TriggerAreaObject) _then) = _$TriggerAreaObjectCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String triggerId, Transform2D transform
+ String id, String name, String triggerId, Transform2D transform, bool locked
 });
 
 
@@ -1607,13 +2195,14 @@ class _$TriggerAreaObjectCopyWithImpl<$Res>
 
 /// Create a copy of SceneObject
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? triggerId = null,Object? transform = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? triggerId = null,Object? transform = null,Object? locked = null,}) {
   return _then(TriggerAreaObject(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,triggerId: null == triggerId ? _self.triggerId : triggerId // ignore: cast_nullable_to_non_nullable
 as String,transform: null == transform ? _self.transform : transform // ignore: cast_nullable_to_non_nullable
-as Transform2D,
+as Transform2D,locked: null == locked ? _self.locked : locked // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -2518,7 +3107,7 @@ as double,
 /// @nodoc
 mixin _$CharacterExpression {
 
- String get id; String get name;
+ String get id; String get name; String? get assetId; Direction? get direction;
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2531,16 +3120,16 @@ $CharacterExpressionCopyWith<CharacterExpression> get copyWith => _$CharacterExp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.direction, direction) || other.direction == direction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode => Object.hash(runtimeType,id,name,assetId,direction);
 
 @override
 String toString() {
-  return 'CharacterExpression(id: $id, name: $name)';
+  return 'CharacterExpression(id: $id, name: $name, assetId: $assetId, direction: $direction)';
 }
 
 
@@ -2551,7 +3140,7 @@ abstract mixin class $CharacterExpressionCopyWith<$Res>  {
   factory $CharacterExpressionCopyWith(CharacterExpression value, $Res Function(CharacterExpression) _then) = _$CharacterExpressionCopyWithImpl;
 @useResult
 $Res call({
- String id, String name
+ String id, String name, String? assetId, Direction? direction
 });
 
 
@@ -2568,11 +3157,13 @@ class _$CharacterExpressionCopyWithImpl<$Res>
 
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? assetId = freezed,Object? direction = freezed,}) {
   return _then(CharacterExpression(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,
+as String,assetId: freezed == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
+as String?,direction: freezed == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as Direction?,
   ));
 }
 
@@ -2657,10 +3248,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? assetId,  Direction? direction)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CharacterExpression() when $default != null:
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
   return orElse();
 
 }
@@ -2678,10 +3269,10 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? assetId,  Direction? direction)  $default,) {final _that = this;
 switch (_that) {
 case _CharacterExpression():
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2698,10 +3289,10 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? assetId,  Direction? direction)?  $default,) {final _that = this;
 switch (_that) {
 case _CharacterExpression() when $default != null:
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
   return null;
 
 }
@@ -2713,11 +3304,13 @@ return $default(_that.id,_that.name);case _:
 @JsonSerializable()
 
 class _CharacterExpression implements CharacterExpression {
-  const _CharacterExpression({required this.id, required this.name});
+  const _CharacterExpression({required this.id, required this.name, this.assetId, this.direction});
   factory _CharacterExpression.fromJson(Map<String, dynamic> json) => _$CharacterExpressionFromJson(json);
 
 @override final  String id;
 @override final  String name;
+@override final  String? assetId;
+@override final  Direction? direction;
 
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
@@ -2732,16 +3325,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.direction, direction) || other.direction == direction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode => Object.hash(runtimeType,id,name,assetId,direction);
 
 @override
 String toString() {
-  return 'CharacterExpression(id: $id, name: $name)';
+  return 'CharacterExpression(id: $id, name: $name, assetId: $assetId, direction: $direction)';
 }
 
 
@@ -2752,7 +3345,7 @@ abstract mixin class _$CharacterExpressionCopyWith<$Res> implements $CharacterEx
   factory _$CharacterExpressionCopyWith(_CharacterExpression value, $Res Function(_CharacterExpression) _then) = __$CharacterExpressionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name
+ String id, String name, String? assetId, Direction? direction
 });
 
 
@@ -2769,11 +3362,13 @@ class __$CharacterExpressionCopyWithImpl<$Res>
 
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? assetId = freezed,Object? direction = freezed,}) {
   return _then(_CharacterExpression(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,
+as String,assetId: freezed == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
+as String?,direction: freezed == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as Direction?,
   ));
 }
 
@@ -4710,7 +5305,7 @@ as String?,
 /// @nodoc
 mixin _$EventChain {
 
- String get id; String get name; List<StudioEvent> get events;
+ String get id; String get name; EventChainTriggerMode get triggerMode; List<StudioEvent> get events;
 /// Create a copy of EventChain
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4723,16 +5318,16 @@ $EventChainCopyWith<EventChain> get copyWith => _$EventChainCopyWithImpl<EventCh
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.events, events));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerMode, triggerMode) || other.triggerMode == triggerMode)&&const DeepCollectionEquality().equals(other.events, events));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,const DeepCollectionEquality().hash(events));
+int get hashCode => Object.hash(runtimeType,id,name,triggerMode,const DeepCollectionEquality().hash(events));
 
 @override
 String toString() {
-  return 'EventChain(id: $id, name: $name, events: $events)';
+  return 'EventChain(id: $id, name: $name, triggerMode: $triggerMode, events: $events)';
 }
 
 
@@ -4743,7 +5338,7 @@ abstract mixin class $EventChainCopyWith<$Res>  {
   factory $EventChainCopyWith(EventChain value, $Res Function(EventChain) _then) = _$EventChainCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, List<StudioEvent> events
+ String id, String name, EventChainTriggerMode triggerMode, List<StudioEvent> events
 });
 
 
@@ -4760,11 +5355,12 @@ class _$EventChainCopyWithImpl<$Res>
 
 /// Create a copy of EventChain
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? events = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? triggerMode = null,Object? events = null,}) {
   return _then(EventChain(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,events: null == events ? _self.events : events // ignore: cast_nullable_to_non_nullable
+as String,triggerMode: null == triggerMode ? _self.triggerMode : triggerMode // ignore: cast_nullable_to_non_nullable
+as EventChainTriggerMode,events: null == events ? _self.events : events // ignore: cast_nullable_to_non_nullable
 as List<StudioEvent>,
   ));
 }
@@ -4850,10 +5446,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  List<StudioEvent> events)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  EventChainTriggerMode triggerMode,  List<StudioEvent> events)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EventChain() when $default != null:
-return $default(_that.id,_that.name,_that.events);case _:
+return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
   return orElse();
 
 }
@@ -4871,10 +5467,10 @@ return $default(_that.id,_that.name,_that.events);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  List<StudioEvent> events)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  EventChainTriggerMode triggerMode,  List<StudioEvent> events)  $default,) {final _that = this;
 switch (_that) {
 case _EventChain():
-return $default(_that.id,_that.name,_that.events);case _:
+return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4891,10 +5487,10 @@ return $default(_that.id,_that.name,_that.events);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  List<StudioEvent> events)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  EventChainTriggerMode triggerMode,  List<StudioEvent> events)?  $default,) {final _that = this;
 switch (_that) {
 case _EventChain() when $default != null:
-return $default(_that.id,_that.name,_that.events);case _:
+return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
   return null;
 
 }
@@ -4906,11 +5502,12 @@ return $default(_that.id,_that.name,_that.events);case _:
 @JsonSerializable()
 
 class _EventChain implements EventChain {
-  const _EventChain({required this.id, required this.name, required  List<StudioEvent> events}): _events = events;
+  const _EventChain({required this.id, required this.name, this.triggerMode = EventChainTriggerMode.always, required  List<StudioEvent> events}): _events = events;
   factory _EventChain.fromJson(Map<String, dynamic> json) => _$EventChainFromJson(json);
 
 @override final  String id;
 @override final  String name;
+@override@JsonKey() final  EventChainTriggerMode triggerMode;
  final  List<StudioEvent> _events;
 @override List<StudioEvent> get events {
   if (_events is EqualUnmodifiableListView) return _events;
@@ -4932,16 +5529,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._events, _events));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerMode, triggerMode) || other.triggerMode == triggerMode)&&const DeepCollectionEquality().equals(other._events, _events));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,const DeepCollectionEquality().hash(_events));
+int get hashCode => Object.hash(runtimeType,id,name,triggerMode,const DeepCollectionEquality().hash(_events));
 
 @override
 String toString() {
-  return 'EventChain(id: $id, name: $name, events: $events)';
+  return 'EventChain(id: $id, name: $name, triggerMode: $triggerMode, events: $events)';
 }
 
 
@@ -4952,7 +5549,7 @@ abstract mixin class _$EventChainCopyWith<$Res> implements $EventChainCopyWith<$
   factory _$EventChainCopyWith(_EventChain value, $Res Function(_EventChain) _then) = __$EventChainCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, List<StudioEvent> events
+ String id, String name, EventChainTriggerMode triggerMode, List<StudioEvent> events
 });
 
 
@@ -4969,11 +5566,12 @@ class __$EventChainCopyWithImpl<$Res>
 
 /// Create a copy of EventChain
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? events = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? triggerMode = null,Object? events = null,}) {
   return _then(_EventChain(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,events: null == events ? _self._events : events // ignore: cast_nullable_to_non_nullable
+as String,triggerMode: null == triggerMode ? _self.triggerMode : triggerMode // ignore: cast_nullable_to_non_nullable
+as EventChainTriggerMode,events: null == events ? _self._events : events // ignore: cast_nullable_to_non_nullable
 as List<StudioEvent>,
   ));
 }
@@ -4995,6 +5593,14 @@ StudioEvent _$StudioEventFromJson(
           );
                 case 'character.changeExpression':
           return CharacterChangeExpressionEvent.fromJson(
+            json
+          );
+                case 'character.startFollow':
+          return CharacterStartFollowEvent.fromJson(
+            json
+          );
+                case 'character.stopFollow':
+          return CharacterStopFollowEvent.fromJson(
             json
           );
                 case 'dialogue.say':
@@ -5023,6 +5629,10 @@ StudioEvent _$StudioEventFromJson(
           );
                 case 'audio.playSound':
           return AudioPlaySoundEvent.fromJson(
+            json
+          );
+                case 'video.play':
+          return VideoPlayEvent.fromJson(
             json
           );
         
@@ -5114,20 +5724,23 @@ extension StudioEventPatterns on StudioEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CharacterMoveEvent value)?  characterMove,TResult Function( CharacterWaitEvent value)?  characterWait,TResult Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult Function( DialogueSayEvent value)?  dialogueSay,TResult Function( CameraFollowEvent value)?  cameraFollow,TResult Function( CameraFocusEvent value)?  cameraFocus,TResult Function( SceneFadeEvent value)?  sceneFade,TResult Function( SceneChangeEvent value)?  sceneChange,TResult Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult Function( AudioPlaySoundEvent value)?  audioPlaySound,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CharacterMoveEvent value)?  characterMove,TResult Function( CharacterWaitEvent value)?  characterWait,TResult Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult Function( CharacterStartFollowEvent value)?  characterStartFollow,TResult Function( CharacterStopFollowEvent value)?  characterStopFollow,TResult Function( DialogueSayEvent value)?  dialogueSay,TResult Function( CameraFollowEvent value)?  cameraFollow,TResult Function( CameraFocusEvent value)?  cameraFocus,TResult Function( SceneFadeEvent value)?  sceneFade,TResult Function( SceneChangeEvent value)?  sceneChange,TResult Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult Function( AudioPlaySoundEvent value)?  audioPlaySound,TResult Function( VideoPlayEvent value)?  videoPlay,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that);case CharacterWaitEvent() when characterWait != null:
 return characterWait(_that);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that);case DialogueSayEvent() when dialogueSay != null:
+return characterChangeExpression(_that);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterStartFollow(_that);case CharacterStopFollowEvent() when characterStopFollow != null:
+return characterStopFollow(_that);case DialogueSayEvent() when dialogueSay != null:
 return dialogueSay(_that);case CameraFollowEvent() when cameraFollow != null:
 return cameraFollow(_that);case CameraFocusEvent() when cameraFocus != null:
 return cameraFocus(_that);case SceneFadeEvent() when sceneFade != null:
 return sceneFade(_that);case SceneChangeEvent() when sceneChange != null:
 return sceneChange(_that);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that);case AudioPlaySoundEvent() when audioPlaySound != null:
-return audioPlaySound(_that);case _:
+return audioPlaySound(_that);case VideoPlayEvent() when videoPlay != null:
+return videoPlay(_that);case _:
   return orElse();
 
 }
@@ -5145,20 +5758,23 @@ return audioPlaySound(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CharacterMoveEvent value)  characterMove,required TResult Function( CharacterWaitEvent value)  characterWait,required TResult Function( CharacterChangeExpressionEvent value)  characterChangeExpression,required TResult Function( DialogueSayEvent value)  dialogueSay,required TResult Function( CameraFollowEvent value)  cameraFollow,required TResult Function( CameraFocusEvent value)  cameraFocus,required TResult Function( SceneFadeEvent value)  sceneFade,required TResult Function( SceneChangeEvent value)  sceneChange,required TResult Function( AudioPlayBgmEvent value)  audioPlayBgm,required TResult Function( AudioPlaySoundEvent value)  audioPlaySound,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CharacterMoveEvent value)  characterMove,required TResult Function( CharacterWaitEvent value)  characterWait,required TResult Function( CharacterChangeExpressionEvent value)  characterChangeExpression,required TResult Function( CharacterStartFollowEvent value)  characterStartFollow,required TResult Function( CharacterStopFollowEvent value)  characterStopFollow,required TResult Function( DialogueSayEvent value)  dialogueSay,required TResult Function( CameraFollowEvent value)  cameraFollow,required TResult Function( CameraFocusEvent value)  cameraFocus,required TResult Function( SceneFadeEvent value)  sceneFade,required TResult Function( SceneChangeEvent value)  sceneChange,required TResult Function( AudioPlayBgmEvent value)  audioPlayBgm,required TResult Function( AudioPlaySoundEvent value)  audioPlaySound,required TResult Function( VideoPlayEvent value)  videoPlay,}){
 final _that = this;
 switch (_that) {
 case CharacterMoveEvent():
 return characterMove(_that);case CharacterWaitEvent():
 return characterWait(_that);case CharacterChangeExpressionEvent():
-return characterChangeExpression(_that);case DialogueSayEvent():
+return characterChangeExpression(_that);case CharacterStartFollowEvent():
+return characterStartFollow(_that);case CharacterStopFollowEvent():
+return characterStopFollow(_that);case DialogueSayEvent():
 return dialogueSay(_that);case CameraFollowEvent():
 return cameraFollow(_that);case CameraFocusEvent():
 return cameraFocus(_that);case SceneFadeEvent():
 return sceneFade(_that);case SceneChangeEvent():
 return sceneChange(_that);case AudioPlayBgmEvent():
 return audioPlayBgm(_that);case AudioPlaySoundEvent():
-return audioPlaySound(_that);}
+return audioPlaySound(_that);case VideoPlayEvent():
+return videoPlay(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -5172,20 +5788,23 @@ return audioPlaySound(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CharacterMoveEvent value)?  characterMove,TResult? Function( CharacterWaitEvent value)?  characterWait,TResult? Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult? Function( DialogueSayEvent value)?  dialogueSay,TResult? Function( CameraFollowEvent value)?  cameraFollow,TResult? Function( CameraFocusEvent value)?  cameraFocus,TResult? Function( SceneFadeEvent value)?  sceneFade,TResult? Function( SceneChangeEvent value)?  sceneChange,TResult? Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult? Function( AudioPlaySoundEvent value)?  audioPlaySound,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CharacterMoveEvent value)?  characterMove,TResult? Function( CharacterWaitEvent value)?  characterWait,TResult? Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult? Function( CharacterStartFollowEvent value)?  characterStartFollow,TResult? Function( CharacterStopFollowEvent value)?  characterStopFollow,TResult? Function( DialogueSayEvent value)?  dialogueSay,TResult? Function( CameraFollowEvent value)?  cameraFollow,TResult? Function( CameraFocusEvent value)?  cameraFocus,TResult? Function( SceneFadeEvent value)?  sceneFade,TResult? Function( SceneChangeEvent value)?  sceneChange,TResult? Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult? Function( AudioPlaySoundEvent value)?  audioPlaySound,TResult? Function( VideoPlayEvent value)?  videoPlay,}){
 final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that);case CharacterWaitEvent() when characterWait != null:
 return characterWait(_that);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that);case DialogueSayEvent() when dialogueSay != null:
+return characterChangeExpression(_that);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterStartFollow(_that);case CharacterStopFollowEvent() when characterStopFollow != null:
+return characterStopFollow(_that);case DialogueSayEvent() when dialogueSay != null:
 return dialogueSay(_that);case CameraFollowEvent() when cameraFollow != null:
 return cameraFollow(_that);case CameraFocusEvent() when cameraFocus != null:
 return cameraFocus(_that);case SceneFadeEvent() when sceneFade != null:
 return sceneFade(_that);case SceneChangeEvent() when sceneChange != null:
 return sceneChange(_that);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that);case AudioPlaySoundEvent() when audioPlaySound != null:
-return audioPlaySound(_that);case _:
+return audioPlaySound(_that);case VideoPlayEvent() when videoPlay != null:
+return videoPlay(_that);case _:
   return null;
 
 }
@@ -5202,19 +5821,22 @@ return audioPlaySound(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult Function( String id,  double duration)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId)?  characterChangeExpression,TResult Function( String id,  String speaker,  String text,  String? portraitAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult Function( String id,  String targetObjectId)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult Function( String id,  String assetId)?  audioPlayBgm,TResult Function( String id,  String assetId)?  audioPlaySound,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult Function( String id,  double duration)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId)?  characterChangeExpression,TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult Function( String id,  String followerObjectId)?  characterStopFollow,TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult Function( String id,  String targetObjectId)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult Function( String id,  String assetId)?  audioPlayBgm,TResult Function( String id,  String assetId)?  audioPlaySound,TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent() when characterWait != null:
 return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case DialogueSayEvent() when dialogueSay != null:
-return dialogueSay(_that.id,_that.speaker,_that.text,_that.portraitAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent() when characterStopFollow != null:
+return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent() when dialogueSay != null:
+return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
 return cameraFollow(_that.id,_that.targetObjectId);case CameraFocusEvent() when cameraFocus != null:
 return cameraFocus(_that.id,_that.target,_that.duration);case SceneFadeEvent() when sceneFade != null:
 return sceneFade(_that.id,_that.mode,_that.duration);case SceneChangeEvent() when sceneChange != null:
 return sceneChange(_that.id,_that.sceneId,_that.entryPointId);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that.id,_that.assetId);case AudioPlaySoundEvent() when audioPlaySound != null:
-return audioPlaySound(_that.id,_that.assetId);case _:
+return audioPlaySound(_that.id,_that.assetId);case VideoPlayEvent() when videoPlay != null:
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);case _:
   return orElse();
 
 }
@@ -5232,19 +5854,22 @@ return audioPlaySound(_that.id,_that.assetId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path)  characterMove,required TResult Function( String id,  double duration)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId)  characterChangeExpression,required TResult Function( String id,  String speaker,  String text,  String? portraitAssetId,  DialogueStyle style,  double duration)  dialogueSay,required TResult Function( String id,  String targetObjectId)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId)  sceneChange,required TResult Function( String id,  String assetId)  audioPlayBgm,required TResult Function( String id,  String assetId)  audioPlaySound,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path)  characterMove,required TResult Function( String id,  double duration)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId)  characterChangeExpression,required TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)  characterStartFollow,required TResult Function( String id,  String followerObjectId)  characterStopFollow,required TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)  dialogueSay,required TResult Function( String id,  String targetObjectId)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId)  sceneChange,required TResult Function( String id,  String assetId)  audioPlayBgm,required TResult Function( String id,  String assetId)  audioPlaySound,required TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)  videoPlay,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent():
 return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent():
 return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent():
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case DialogueSayEvent():
-return dialogueSay(_that.id,_that.speaker,_that.text,_that.portraitAssetId,_that.style,_that.duration);case CameraFollowEvent():
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case CharacterStartFollowEvent():
+return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent():
+return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent():
+return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent():
 return cameraFollow(_that.id,_that.targetObjectId);case CameraFocusEvent():
 return cameraFocus(_that.id,_that.target,_that.duration);case SceneFadeEvent():
 return sceneFade(_that.id,_that.mode,_that.duration);case SceneChangeEvent():
 return sceneChange(_that.id,_that.sceneId,_that.entryPointId);case AudioPlayBgmEvent():
 return audioPlayBgm(_that.id,_that.assetId);case AudioPlaySoundEvent():
-return audioPlaySound(_that.id,_that.assetId);}
+return audioPlaySound(_that.id,_that.assetId);case VideoPlayEvent():
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -5258,19 +5883,22 @@ return audioPlaySound(_that.id,_that.assetId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult? Function( String id,  double duration)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId)?  characterChangeExpression,TResult? Function( String id,  String speaker,  String text,  String? portraitAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult? Function( String id,  String targetObjectId)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult? Function( String id,  String assetId)?  audioPlayBgm,TResult? Function( String id,  String assetId)?  audioPlaySound,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult? Function( String id,  double duration)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId)?  characterChangeExpression,TResult? Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult? Function( String id,  String followerObjectId)?  characterStopFollow,TResult? Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult? Function( String id,  String targetObjectId)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult? Function( String id,  String assetId)?  audioPlayBgm,TResult? Function( String id,  String assetId)?  audioPlaySound,TResult? Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent() when characterWait != null:
 return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case DialogueSayEvent() when dialogueSay != null:
-return dialogueSay(_that.id,_that.speaker,_that.text,_that.portraitAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent() when characterStopFollow != null:
+return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent() when dialogueSay != null:
+return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
 return cameraFollow(_that.id,_that.targetObjectId);case CameraFocusEvent() when cameraFocus != null:
 return cameraFocus(_that.id,_that.target,_that.duration);case SceneFadeEvent() when sceneFade != null:
 return sceneFade(_that.id,_that.mode,_that.duration);case SceneChangeEvent() when sceneChange != null:
 return sceneChange(_that.id,_that.sceneId,_that.entryPointId);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that.id,_that.assetId);case AudioPlaySoundEvent() when audioPlaySound != null:
-return audioPlaySound(_that.id,_that.assetId);case _:
+return audioPlaySound(_that.id,_that.assetId);case VideoPlayEvent() when videoPlay != null:
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);case _:
   return null;
 
 }
@@ -5519,14 +6147,168 @@ as String,
 /// @nodoc
 @JsonSerializable()
 
+class CharacterStartFollowEvent extends StudioEvent {
+  const CharacterStartFollowEvent({required this.id, required this.followerObjectId, required this.leaderObjectId, this.distance = 48,  String? $type}): $type = $type ?? 'character.startFollow',super._();
+  factory CharacterStartFollowEvent.fromJson(Map<String, dynamic> json) => _$CharacterStartFollowEventFromJson(json);
+
+@override final  String id;
+ final  String followerObjectId;
+ final  String leaderObjectId;
+@JsonKey() final  double distance;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CharacterStartFollowEventCopyWith<CharacterStartFollowEvent> get copyWith => _$CharacterStartFollowEventCopyWithImpl<CharacterStartFollowEvent>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CharacterStartFollowEventToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterStartFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.followerObjectId, followerObjectId) || other.followerObjectId == followerObjectId)&&(identical(other.leaderObjectId, leaderObjectId) || other.leaderObjectId == leaderObjectId)&&(identical(other.distance, distance) || other.distance == distance));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,followerObjectId,leaderObjectId,distance);
+
+@override
+String toString() {
+  return 'StudioEvent.characterStartFollow(id: $id, followerObjectId: $followerObjectId, leaderObjectId: $leaderObjectId, distance: $distance)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CharacterStartFollowEventCopyWith<$Res> implements $StudioEventCopyWith<$Res> {
+  factory $CharacterStartFollowEventCopyWith(CharacterStartFollowEvent value, $Res Function(CharacterStartFollowEvent) _then) = _$CharacterStartFollowEventCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String followerObjectId, String leaderObjectId, double distance
+});
+
+
+
+
+}
+/// @nodoc
+class _$CharacterStartFollowEventCopyWithImpl<$Res>
+    implements $CharacterStartFollowEventCopyWith<$Res> {
+  _$CharacterStartFollowEventCopyWithImpl(this._self, this._then);
+
+  final CharacterStartFollowEvent _self;
+  final $Res Function(CharacterStartFollowEvent) _then;
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? followerObjectId = null,Object? leaderObjectId = null,Object? distance = null,}) {
+  return _then(CharacterStartFollowEvent(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,followerObjectId: null == followerObjectId ? _self.followerObjectId : followerObjectId // ignore: cast_nullable_to_non_nullable
+as String,leaderObjectId: null == leaderObjectId ? _self.leaderObjectId : leaderObjectId // ignore: cast_nullable_to_non_nullable
+as String,distance: null == distance ? _self.distance : distance // ignore: cast_nullable_to_non_nullable
+as double,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class CharacterStopFollowEvent extends StudioEvent {
+  const CharacterStopFollowEvent({required this.id, required this.followerObjectId,  String? $type}): $type = $type ?? 'character.stopFollow',super._();
+  factory CharacterStopFollowEvent.fromJson(Map<String, dynamic> json) => _$CharacterStopFollowEventFromJson(json);
+
+@override final  String id;
+ final  String followerObjectId;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CharacterStopFollowEventCopyWith<CharacterStopFollowEvent> get copyWith => _$CharacterStopFollowEventCopyWithImpl<CharacterStopFollowEvent>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CharacterStopFollowEventToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterStopFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.followerObjectId, followerObjectId) || other.followerObjectId == followerObjectId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,followerObjectId);
+
+@override
+String toString() {
+  return 'StudioEvent.characterStopFollow(id: $id, followerObjectId: $followerObjectId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CharacterStopFollowEventCopyWith<$Res> implements $StudioEventCopyWith<$Res> {
+  factory $CharacterStopFollowEventCopyWith(CharacterStopFollowEvent value, $Res Function(CharacterStopFollowEvent) _then) = _$CharacterStopFollowEventCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String followerObjectId
+});
+
+
+
+
+}
+/// @nodoc
+class _$CharacterStopFollowEventCopyWithImpl<$Res>
+    implements $CharacterStopFollowEventCopyWith<$Res> {
+  _$CharacterStopFollowEventCopyWithImpl(this._self, this._then);
+
+  final CharacterStopFollowEvent _self;
+  final $Res Function(CharacterStopFollowEvent) _then;
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? followerObjectId = null,}) {
+  return _then(CharacterStopFollowEvent(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,followerObjectId: null == followerObjectId ? _self.followerObjectId : followerObjectId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
 class DialogueSayEvent extends StudioEvent {
-  const DialogueSayEvent({required this.id, required this.speaker, required this.text, this.portraitAssetId, this.style = DialogueStyle.regular, this.duration = 2,  String? $type}): $type = $type ?? 'dialogue.say',super._();
+  const DialogueSayEvent({required this.id, required this.text, this.portraitAssetId, this.textSoundAssetId, this.style = DialogueStyle.regular, this.duration = 2,  String? $type}): $type = $type ?? 'dialogue.say',super._();
   factory DialogueSayEvent.fromJson(Map<String, dynamic> json) => _$DialogueSayEventFromJson(json);
 
 @override final  String id;
- final  String speaker;
  final  String text;
  final  String? portraitAssetId;
+ final  String? textSoundAssetId;
 @JsonKey() final  DialogueStyle style;
 @JsonKey() final  double duration;
 
@@ -5547,16 +6329,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DialogueSayEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.speaker, speaker) || other.speaker == speaker)&&(identical(other.text, text) || other.text == text)&&(identical(other.portraitAssetId, portraitAssetId) || other.portraitAssetId == portraitAssetId)&&(identical(other.style, style) || other.style == style)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DialogueSayEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.text, text) || other.text == text)&&(identical(other.portraitAssetId, portraitAssetId) || other.portraitAssetId == portraitAssetId)&&(identical(other.textSoundAssetId, textSoundAssetId) || other.textSoundAssetId == textSoundAssetId)&&(identical(other.style, style) || other.style == style)&&(identical(other.duration, duration) || other.duration == duration));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,speaker,text,portraitAssetId,style,duration);
+int get hashCode => Object.hash(runtimeType,id,text,portraitAssetId,textSoundAssetId,style,duration);
 
 @override
 String toString() {
-  return 'StudioEvent.dialogueSay(id: $id, speaker: $speaker, text: $text, portraitAssetId: $portraitAssetId, style: $style, duration: $duration)';
+  return 'StudioEvent.dialogueSay(id: $id, text: $text, portraitAssetId: $portraitAssetId, textSoundAssetId: $textSoundAssetId, style: $style, duration: $duration)';
 }
 
 
@@ -5567,7 +6349,7 @@ abstract mixin class $DialogueSayEventCopyWith<$Res> implements $StudioEventCopy
   factory $DialogueSayEventCopyWith(DialogueSayEvent value, $Res Function(DialogueSayEvent) _then) = _$DialogueSayEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String speaker, String text, String? portraitAssetId, DialogueStyle style, double duration
+ String id, String text, String? portraitAssetId, String? textSoundAssetId, DialogueStyle style, double duration
 });
 
 
@@ -5584,12 +6366,12 @@ class _$DialogueSayEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? speaker = null,Object? text = null,Object? portraitAssetId = freezed,Object? style = null,Object? duration = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? text = null,Object? portraitAssetId = freezed,Object? textSoundAssetId = freezed,Object? style = null,Object? duration = null,}) {
   return _then(DialogueSayEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,speaker: null == speaker ? _self.speaker : speaker // ignore: cast_nullable_to_non_nullable
 as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,portraitAssetId: freezed == portraitAssetId ? _self.portraitAssetId : portraitAssetId // ignore: cast_nullable_to_non_nullable
+as String?,textSoundAssetId: freezed == textSoundAssetId ? _self.textSoundAssetId : textSoundAssetId // ignore: cast_nullable_to_non_nullable
 as String?,style: null == style ? _self.style : style // ignore: cast_nullable_to_non_nullable
 as DialogueStyle,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as double,
@@ -6058,6 +6840,85 @@ class _$AudioPlaySoundEventCopyWithImpl<$Res>
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,assetId: null == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
 as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class VideoPlayEvent extends StudioEvent {
+  const VideoPlayEvent({required this.id, required this.assetId, this.duration = 3, this.fit = VideoFitMode.contain,  String? $type}): $type = $type ?? 'video.play',super._();
+  factory VideoPlayEvent.fromJson(Map<String, dynamic> json) => _$VideoPlayEventFromJson(json);
+
+@override final  String id;
+ final  String assetId;
+@JsonKey() final  double duration;
+@JsonKey() final  VideoFitMode fit;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$VideoPlayEventCopyWith<VideoPlayEvent> get copyWith => _$VideoPlayEventCopyWithImpl<VideoPlayEvent>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$VideoPlayEventToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VideoPlayEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.fit, fit) || other.fit == fit));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,assetId,duration,fit);
+
+@override
+String toString() {
+  return 'StudioEvent.videoPlay(id: $id, assetId: $assetId, duration: $duration, fit: $fit)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $VideoPlayEventCopyWith<$Res> implements $StudioEventCopyWith<$Res> {
+  factory $VideoPlayEventCopyWith(VideoPlayEvent value, $Res Function(VideoPlayEvent) _then) = _$VideoPlayEventCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String assetId, double duration, VideoFitMode fit
+});
+
+
+
+
+}
+/// @nodoc
+class _$VideoPlayEventCopyWithImpl<$Res>
+    implements $VideoPlayEventCopyWith<$Res> {
+  _$VideoPlayEventCopyWithImpl(this._self, this._then);
+
+  final VideoPlayEvent _self;
+  final $Res Function(VideoPlayEvent) _then;
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? assetId = null,Object? duration = null,Object? fit = null,}) {
+  return _then(VideoPlayEvent(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,assetId: null == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
+as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,fit: null == fit ? _self.fit : fit // ignore: cast_nullable_to_non_nullable
+as VideoFitMode,
   ));
 }
 

@@ -7,9 +7,16 @@ import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/editor/editor_selection.dart';
 import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_repository.dart';
+import 'package:deltarune_studio/project/studio_state.dart';
+import 'package:deltarune_studio/project/web_project_download_stub.dart'
+    if (dart.library.html) 'package:deltarune_studio/project/web_project_download_web.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+
+export 'package:deltarune_studio/project/studio_state.dart';
 
 final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
   return ProjectRepository();
@@ -26,16 +33,24 @@ final class StudioController extends StateNotifier<StudioState> {
   }
 
   final ProjectRepository _repository;
+  final List<_HistoryEntry> _undoStack = [];
+  final List<_HistoryEntry> _redoStack = [];
+  bool _restoringHistory = false;
 
   static const _settingsFileName = 'settings.json';
   static const _lastProjectPathKey = 'lastProjectPath';
 
   Future<void> openLastProjectOrCreateScratch() async {
+    if (kIsWeb) {
+      await createScratchProject();
+      return;
+    }
     final lastProjectPath = await _readLastProjectPath();
     if (lastProjectPath != null) {
       final directory = Directory(lastProjectPath);
       try {
         final project = await _repository.openProject(directory);
+        _clearHistory();
         state = StudioState.ready(
           project: project,
           projectDirectory: directory,
@@ -51,6 +66,7 @@ final class StudioController extends StateNotifier<StudioState> {
 
   Future<void> createScratchProject() async {
     final project = await _repository.createDefaultProject('Deltarune Studio');
+    _clearHistory();
     state = StudioState.ready(project: project);
   }
 
@@ -59,6 +75,18 @@ final class StudioController extends StateNotifier<StudioState> {
   Future<void> saveProject() async {
     final current = state.asReady;
     if (current == null) {
+      return;
+    }
+    if (kIsWeb) {
+      const encoder = JsonEncoder.withIndent('  ');
+      await downloadProjectJson(
+        '${current.project.name}.drs.json',
+        encoder.convert(current.project.toJson()),
+      );
+      state = current.copyWith(
+        isDirty: false,
+        statusMessage: 'Downloaded ${current.project.name}.drs.json.',
+      );
       return;
     }
     final directory = current.projectDirectory ?? await _defaultProjectDir();
@@ -84,6 +112,10 @@ final class StudioController extends StateNotifier<StudioState> {
   Future<void> saveProjectAs() async {
     final current = state.asReady;
     if (current == null) {
+      return;
+    }
+    if (kIsWeb) {
+      await saveProject();
       return;
     }
     final path = await getSaveLocation(
@@ -118,13 +150,69 @@ final class StudioController extends StateNotifier<StudioState> {
     await _writeLastProjectPath(directory);
   }
 
+  void updateEditorLayout(EditorLayout layout) {
+    final current = state.asReady;
+    if (current == null) {
+      return;
+    }
+    if (current.project.editorLayout == layout) {
+      return;
+    }
+    state = current.copyWith(
+      project: current.project.copyWith(editorLayout: layout),
+      isDirty: true,
+    );
+  }
+
+  void updateEditorSettings(EditorSettings settings) {
+    final current = state.asReady;
+    if (current == null) {
+      return;
+    }
+    if (current.project.settings == settings) {
+      return;
+    }
+    _recordHistory(current);
+    state = current.copyWith(
+      project: current.project.copyWith(settings: settings),
+      isDirty: true,
+      statusMessage: 'Updated editor settings.',
+    );
+  }
+
   Future<void> openProject() async {
+    if (kIsWeb) {
+      final file = await openFile(
+        acceptedTypeGroups: const [
+          XTypeGroup(
+            label: 'Deltarune Studio Project',
+            extensions: ['json', 'drs'],
+          ),
+        ],
+      );
+      if (file == null) {
+        return;
+      }
+      final json = jsonDecode(await file.readAsString());
+      if (json is! Map<String, dynamic>) {
+        return;
+      }
+      state = StudioState.ready(
+        project: _repository.migrateProjectForOpen(
+          StudioProject.fromJson(json),
+        ),
+        statusMessage: 'Opened ${file.name}.',
+      );
+      _clearHistory();
+      return;
+    }
     final path = await getDirectoryPath(confirmButtonText: 'Open Project');
     if (path == null) {
       return;
     }
     final directory = Directory(path);
     final project = await _repository.openProject(directory);
+    _clearHistory();
     state = StudioState.ready(project: project, projectDirectory: directory);
     await _writeLastProjectPath(directory);
   }
@@ -185,7 +273,32 @@ final class StudioController extends StateNotifier<StudioState> {
   }
 
   Future<void> importAudio() async {
-    await _importAsset(AssetKind.audio);
+    final targetSelection = state.asReady?.selection;
+    final asset = await _importAsset(AssetKind.audio);
+    if (asset == null) {
+      return;
+    }
+    _applyAssetToSelection(asset, targetSelection: targetSelection);
+  }
+
+  Future<void> importVideo() async {
+    final targetSelection = state.asReady?.selection;
+    final asset = await _importAsset(AssetKind.video);
+    if (asset == null) {
+      return;
+    }
+    if (!_applyAssetToSelection(asset, targetSelection: targetSelection)) {
+      selectAsset(asset.id);
+    }
+  }
+
+  Future<void> importDialoguePortrait() async {
+    final targetSelection = state.asReady?.selection;
+    final asset = await _importAsset(AssetKind.dialoguePortrait);
+    if (asset == null) {
+      return;
+    }
+    _applyAssetToSelection(asset, targetSelection: targetSelection);
   }
 
   Future<void> addBuiltInAsset(BuiltInAsset builtIn) async {
@@ -224,6 +337,14 @@ final class StudioController extends StateNotifier<StudioState> {
         _attachCharacterAsset(asset, targetSelection: targetSelection);
       case AssetKind.audio:
         selectAsset(asset.id);
+      case AssetKind.dialoguePortrait:
+        if (!_applyAssetToSelection(asset, targetSelection: targetSelection)) {
+          selectAsset(asset.id);
+        }
+      case AssetKind.video:
+        if (!_applyAssetToSelection(asset, targetSelection: targetSelection)) {
+          selectAsset(asset.id);
+        }
     }
   }
 
@@ -233,16 +354,27 @@ final class StudioController extends StateNotifier<StudioState> {
       return null;
     }
     try {
-      final file = File(builtIn.resolvedPath);
-      final data = await file.readAsBytes();
-      final directory = current.projectDirectory ?? await _defaultProjectDir();
-      final asset = await _repository.importAssetBytes(
-        projectDirectory: directory,
-        bytes: data,
-        kind: builtIn.kind,
-        originalName: p.basename(builtIn.sourcePath),
-      );
+      final data = await _readBuiltInAssetBytes(builtIn);
+      final directory = kIsWeb
+          ? current.projectDirectory
+          : current.projectDirectory ?? await _defaultProjectDir();
+      final asset = kIsWeb
+          ? AssetRef(
+              id: StudioIds.asset(),
+              kind: builtIn.kind,
+              originalName: p.basename(builtIn.sourcePath),
+              relativePath: '',
+              dataUri:
+                  'data:${_mimeForName(builtIn.sourcePath)};base64,${base64Encode(data)}',
+            )
+          : await _repository.importAssetBytes(
+              projectDirectory: directory!,
+              bytes: data,
+              kind: builtIn.kind,
+              originalName: p.basename(builtIn.sourcePath),
+            );
       final latest = state.asReady ?? current;
+      _recordHistory(latest);
       state = latest.copyWith(
         projectDirectory: directory,
         project: latest.project.copyWith(
@@ -257,6 +389,16 @@ final class StudioController extends StateNotifier<StudioState> {
       state = current.copyWith(statusMessage: 'Built-in import failed: $error');
       return null;
     }
+  }
+
+  Future<Uint8List> _readBuiltInAssetBytes(BuiltInAsset builtIn) async {
+    if (!kIsWeb) {
+      final file = File(builtIn.resolvedPath);
+      if (await file.exists()) {
+        return file.readAsBytes();
+      }
+    }
+    return (await rootBundle.load(builtIn.assetPath)).buffer.asUint8List();
   }
 
   void _attachCharacterAsset(
@@ -294,7 +436,7 @@ final class StudioController extends StateNotifier<StudioState> {
         state =
             state.asReady?.copyWith(
               statusMessage:
-                  'Assigned ${asset.originalName} to ${_eventDisplayName(event)}.',
+                  'Assigned ${asset.originalName} to ${_eventTypeKey(event)}.',
             ) ??
             state;
         return true;
@@ -305,12 +447,27 @@ final class StudioController extends StateNotifier<StudioState> {
         state =
             state.asReady?.copyWith(
               statusMessage:
-                  'Assigned ${asset.originalName} to ${_eventDisplayName(event)}.',
+                  'Assigned ${asset.originalName} to ${_eventTypeKey(event)}.',
             ) ??
             state;
         return true;
       }
-      if (asset.kind != AssetKind.audio && event is DialogueSayEvent) {
+      if (asset.kind == AssetKind.audio && event is DialogueSayEvent) {
+        updateEvent(
+          selection.chainId,
+          event.copyWith(textSoundAssetId: asset.id),
+        );
+        select(EditorSelection.event(selection.chainId, selection.eventId));
+        state =
+            state.asReady?.copyWith(
+              statusMessage:
+                  'Assigned ${asset.originalName} to ${_eventTypeKey(event)} text sound.',
+            ) ??
+            state;
+        return true;
+      }
+      if (asset.kind == AssetKind.dialoguePortrait &&
+          event is DialogueSayEvent) {
         updateEvent(
           selection.chainId,
           event.copyWith(portraitAssetId: asset.id),
@@ -319,16 +476,31 @@ final class StudioController extends StateNotifier<StudioState> {
         state =
             state.asReady?.copyWith(
               statusMessage:
-                  'Assigned ${asset.originalName} to ${_eventDisplayName(event)} portrait.',
+                  'Assigned ${asset.originalName} to ${_eventTypeKey(event)} portrait.',
             ) ??
             state;
         return true;
       }
-      if (asset.kind == AssetKind.audio) {
+      if (asset.kind == AssetKind.video && event is VideoPlayEvent) {
+        updateEvent(selection.chainId, event.copyWith(assetId: asset.id));
+        select(EditorSelection.event(selection.chainId, selection.eventId));
+        state =
+            state.asReady?.copyWith(
+              statusMessage:
+                  'Assigned ${asset.originalName} to ${_eventTypeKey(event)}.',
+            ) ??
+            state;
+        return true;
+      }
+      if (asset.kind == AssetKind.audio ||
+          asset.kind == AssetKind.dialoguePortrait ||
+          asset.kind == AssetKind.video) {
         return false;
       }
     }
-    if (asset.kind == AssetKind.audio) {
+    if (asset.kind == AssetKind.audio ||
+        asset.kind == AssetKind.dialoguePortrait ||
+        asset.kind == AssetKind.video) {
       return false;
     }
     if (selection is CharacterSelection || selection is ObjectSelection) {
@@ -366,18 +538,21 @@ final class StudioController extends StateNotifier<StudioState> {
     return false;
   }
 
-  String _eventDisplayName(StudioEvent event) {
+  String _eventTypeKey(StudioEvent event) {
     return event.map(
-      characterMove: (_) => 'Character Move',
-      characterWait: (_) => 'Wait',
-      characterChangeExpression: (_) => 'Change Expression',
-      dialogueSay: (_) => 'Dialogue',
-      cameraFollow: (_) => 'Camera Follow',
-      cameraFocus: (_) => 'Camera Focus',
-      sceneFade: (_) => 'Fade',
-      sceneChange: (_) => 'Canvas Jump',
-      audioPlayBgm: (_) => 'Play BGM',
-      audioPlaySound: (_) => 'Play Sound',
+      characterMove: (_) => 'character.move',
+      characterStartFollow: (_) => 'character.startFollow',
+      characterStopFollow: (_) => 'character.stopFollow',
+      characterWait: (_) => 'character.wait',
+      characterChangeExpression: (_) => 'character.changeExpression',
+      dialogueSay: (_) => 'dialogue.say',
+      cameraFollow: (_) => 'camera.follow',
+      cameraFocus: (_) => 'camera.focus',
+      sceneFade: (_) => 'scene.fade',
+      sceneChange: (_) => 'scene.change',
+      audioPlayBgm: (_) => 'audio.playBgm',
+      audioPlaySound: (_) => 'audio.playSound',
+      videoPlay: (_) => 'video.play',
     );
   }
 
@@ -441,14 +616,28 @@ final class StudioController extends StateNotifier<StudioState> {
         state = current.copyWith(statusMessage: 'Import cancelled.');
         return null;
       }
-      final directory = current.projectDirectory ?? await _defaultProjectDir();
-      final asset = await _repository.importAsset(
-        projectDirectory: directory,
-        source: File(file.path),
-        kind: kind,
-      );
+      final bytes = await file.readAsBytes();
+      final directory = kIsWeb
+          ? current.projectDirectory
+          : current.projectDirectory ?? await _defaultProjectDir();
+      final asset = kIsWeb
+          ? AssetRef(
+              id: StudioIds.asset(),
+              kind: kind,
+              originalName: file.name,
+              relativePath: '',
+              dataUri:
+                  'data:${_mimeForName(file.name)};base64,${base64Encode(bytes)}',
+            )
+          : await _repository.importAssetBytes(
+              projectDirectory: directory!,
+              bytes: bytes,
+              kind: kind,
+              originalName: file.name,
+            );
+      _recordHistory(current);
       state = current.copyWith(
-        projectDirectory: directory,
+        projectDirectory: kIsWeb ? current.projectDirectory : directory,
         project: current.project.copyWith(
           assets: [...current.project.assets, asset],
         ),
@@ -467,7 +656,8 @@ final class StudioController extends StateNotifier<StudioState> {
     return switch (kind) {
       AssetKind.background ||
       AssetKind.prop ||
-      AssetKind.character => const XTypeGroup(
+      AssetKind.character ||
+      AssetKind.dialoguePortrait => const XTypeGroup(
         label: 'Images',
         extensions: ['png', 'jpg', 'jpeg', 'webp'],
       ),
@@ -475,7 +665,43 @@ final class StudioController extends StateNotifier<StudioState> {
         label: 'Audio',
         extensions: ['mp3', 'wav', 'ogg', 'flac', 'm4a'],
       ),
+      AssetKind.video => const XTypeGroup(
+        label: 'Video',
+        extensions: ['mp4', 'mov', 'webm', 'm4v'],
+      ),
     };
+  }
+
+  String _mimeForName(String name) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return 'image/jpeg';
+    }
+    if (lower.endsWith('.webp')) {
+      return 'image/webp';
+    }
+    if (lower.endsWith('.gif')) {
+      return 'image/gif';
+    }
+    if (lower.endsWith('.mp3')) {
+      return 'audio/mpeg';
+    }
+    if (lower.endsWith('.ogg')) {
+      return 'audio/ogg';
+    }
+    if (lower.endsWith('.wav')) {
+      return 'audio/wav';
+    }
+    if (lower.endsWith('.mp4') || lower.endsWith('.m4v')) {
+      return 'video/mp4';
+    }
+    if (lower.endsWith('.mov')) {
+      return 'video/quicktime';
+    }
+    if (lower.endsWith('.webm')) {
+      return 'video/webm';
+    }
+    return 'image/png';
   }
 
   void select(EditorSelection? selection) {
@@ -501,6 +727,33 @@ final class StudioController extends StateNotifier<StudioState> {
     select(objectId == null ? null : EditorSelection.object(objectId));
   }
 
+  void selectObjects(List<String> objectIds) {
+    final unique = objectIds.toSet().toList(growable: false);
+    if (unique.isEmpty) {
+      select(null);
+      return;
+    }
+    select(
+      unique.length == 1
+          ? EditorSelection.object(unique.single)
+          : EditorSelection.objects(unique),
+    );
+  }
+
+  void toggleObjectSelection(String objectId) {
+    final current = state.asReady;
+    if (current == null) {
+      return;
+    }
+    final ids = [...current.selection.objectIds];
+    if (ids.contains(objectId)) {
+      ids.remove(objectId);
+    } else {
+      ids.add(objectId);
+    }
+    selectObjects(ids);
+  }
+
   void selectChain(String? chainId) {
     select(chainId == null ? null : EditorSelection.eventChain(chainId));
   }
@@ -521,21 +774,98 @@ final class StudioController extends StateNotifier<StudioState> {
     select(EditorSelection.character(characterId));
   }
 
-  void moveSelectedObject(double dx, double dy) {
+  void undo() {
     final current = state.asReady;
-    final objectId = current?.selection.objectId;
-    if (current == null || objectId == null) {
+    if (current == null || _undoStack.isEmpty) {
       return;
     }
-    updateObjectTransformById(objectId, (transform) {
-      return transform.copyWith(x: transform.x + dx, y: transform.y + dy);
-    });
+    final previous = _undoStack.removeLast();
+    _redoStack.add(
+      _HistoryEntry(
+        project: current.project,
+        selection: current.selection,
+        clipboardObjects: current.clipboardObjects,
+      ),
+    );
+    _restoringHistory = true;
+    state = current.copyWith(
+      project: previous.project,
+      selection: previous.selection,
+      clipboardObjects: previous.clipboardObjects,
+      isDirty: true,
+      statusMessage: 'Undo.',
+    );
+    _restoringHistory = false;
+  }
+
+  void redo() {
+    final current = state.asReady;
+    if (current == null || _redoStack.isEmpty) {
+      return;
+    }
+    final next = _redoStack.removeLast();
+    _undoStack.add(
+      _HistoryEntry(
+        project: current.project,
+        selection: current.selection,
+        clipboardObjects: current.clipboardObjects,
+      ),
+    );
+    _restoringHistory = true;
+    state = current.copyWith(
+      project: next.project,
+      selection: next.selection,
+      clipboardObjects: next.clipboardObjects,
+      isDirty: true,
+      statusMessage: 'Redo.',
+    );
+    _restoringHistory = false;
+  }
+
+  void moveSelectedObject(double dx, double dy) {
+    final current = state.asReady;
+    final objectIds = current?.selection.objectIds ?? const [];
+    if (current == null || objectIds.isEmpty) {
+      return;
+    }
+    moveObjectsById(objectIds, dx, dy);
   }
 
   void moveObjectById(String objectId, double dx, double dy) {
-    updateObjectTransformById(objectId, (transform) {
-      return transform.copyWith(x: transform.x + dx, y: transform.y + dy);
-    });
+    moveObjectsById([objectId], dx, dy);
+  }
+
+  void moveObjectsById(List<String> objectIds, double dx, double dy) {
+    final current = state.asReady;
+    if (current == null) {
+      return;
+    }
+    final ids = objectIds.where((id) {
+      final object = current.objectById(id);
+      return object != null && !_isObjectLocked(object);
+    }).toSet();
+    if (ids.isEmpty) {
+      return;
+    }
+    final scene = current.currentScene.copyWith(
+      objects: current.currentScene.objects.map((object) {
+        if (!ids.contains(object.objectId)) {
+          return object;
+        }
+        final transform = object.objectTransform;
+        return _withObjectTransform(
+          object,
+          transform.copyWith(x: transform.x + dx, y: transform.y + dy),
+        );
+      }).toList(),
+    );
+    _replaceCurrentScene(scene);
+    if (current.currentScene.objects.any(
+      (object) =>
+          ids.contains(object.objectId) && _objectIsTriggerObject(object),
+    )) {
+      _syncAllPathNodeTriggerLinks();
+    }
   }
 
   void moveSelectedPathNode(double dx, double dy) {
@@ -615,15 +945,15 @@ final class StudioController extends StateNotifier<StudioState> {
     Transform2D Function(Transform2D transform) update,
   ) {
     final current = state.asReady;
-    final isTriggerObject =
-        current
-            ?.objectById(objectId)
-            ?.maybeMap(
-              triggerPoint: (_) => true,
-              triggerArea: (_) => true,
-              orElse: () => false,
-            ) ??
-        false;
+    final object = current?.objectById(objectId);
+    if (object == null || _isObjectLocked(object)) {
+      return;
+    }
+    final isTriggerObject = object.maybeMap(
+      triggerPoint: (_) => true,
+      triggerArea: (_) => true,
+      orElse: () => false,
+    );
     _replaceCurrentSceneObject((object) {
       if (object.objectId != objectId) {
         return object;
@@ -642,6 +972,73 @@ final class StudioController extends StateNotifier<StudioState> {
     if (_objectIsTriggerObject(object)) {
       _syncAllPathNodeTriggerLinks();
     }
+  }
+
+  void setObjectsLocked(List<String> objectIds, bool locked) {
+    final current = state.asReady;
+    if (current == null) {
+      return;
+    }
+    final ids = objectIds.toSet();
+    final scene = current.currentScene.copyWith(
+      objects: current.currentScene.objects.map((object) {
+        if (!ids.contains(object.objectId)) {
+          return object;
+        }
+        return _withObjectLocked(object, locked);
+      }).toList(),
+    );
+    _replaceCurrentScene(scene);
+  }
+
+  void copySelection() {
+    final current = state.asReady;
+    final ids = current?.selection.objectIds ?? const [];
+    if (current == null || ids.isEmpty) {
+      return;
+    }
+    final objects = current.currentScene.objects
+        .where((object) => ids.contains(object.objectId))
+        .toList(growable: false);
+    state = current.copyWith(
+      clipboardObjects: objects,
+      statusMessage: 'Copied ${objects.length} object(s).',
+    );
+  }
+
+  void pasteSelection() {
+    final current = state.asReady;
+    final clipboard = current?.clipboardObjects ?? const [];
+    if (current == null || clipboard.isEmpty) {
+      return;
+    }
+    final newObjects = <SceneObject>[];
+    final newTriggers = <Trigger>[];
+    final newChains = <EventChain>[];
+    for (final source in clipboard) {
+      final nextObjectId = StudioIds.object();
+      final copied = _copyObjectForPaste(source, nextObjectId);
+      newObjects.add(copied.object);
+      if (copied.trigger != null) {
+        newTriggers.add(copied.trigger!);
+      }
+      if (copied.chain != null) {
+        newChains.add(copied.chain!);
+      }
+    }
+    final scene = current.currentScene.copyWith(
+      objects: [...current.currentScene.objects, ...newObjects],
+      triggers: [...current.currentScene.triggers, ...newTriggers],
+      eventChains: [...current.currentScene.eventChains, ...newChains],
+    );
+    _replaceCurrentScene(
+      scene,
+      selection: newObjects.length == 1
+          ? EditorSelection.object(newObjects.single.objectId)
+          : EditorSelection.objects(
+              newObjects.map((object) => object.objectId).toList(),
+            ),
+    );
   }
 
   void addCharacterInstance() {
@@ -704,6 +1101,7 @@ final class StudioController extends StateNotifier<StudioState> {
     final chain = EventChain(
       id: StudioIds.chain(),
       name: 'Trigger Action',
+      triggerMode: EventChainTriggerMode.triggerPoint,
       events: const [],
     );
     final trigger = Trigger.area(
@@ -986,6 +1384,7 @@ final class StudioController extends StateNotifier<StudioState> {
     if (current == null) {
       return;
     }
+    _recordHistory(current);
     state = current.copyWith(
       project: current.project.copyWith(
         assets: current.project.assets
@@ -1001,6 +1400,7 @@ final class StudioController extends StateNotifier<StudioState> {
     if (current == null || current.assetIsUsed(assetId)) {
       return;
     }
+    _recordHistory(current);
     state = current.copyWith(
       project: current.project.copyWith(
         assets: current.project.assets
@@ -1017,6 +1417,7 @@ final class StudioController extends StateNotifier<StudioState> {
     if (current == null) {
       return;
     }
+    _recordHistory(current);
     state = current.copyWith(
       project: current.project.copyWith(
         characters: current.project.characters
@@ -1078,25 +1479,31 @@ final class StudioController extends StateNotifier<StudioState> {
 
   void deleteSelectedObject() {
     final current = state.asReady;
-    final objectId = current?.selection.objectId;
-    if (current == null || objectId == null) {
+    final objectIds = current?.selection.objectIds ?? const [];
+    if (current == null || objectIds.isEmpty) {
       return;
     }
-    final object = current.objectById(objectId);
-    final triggerId = object?.maybeMap(
-      triggerPoint: (value) => value.triggerId,
-      triggerArea: (value) => value.triggerId,
-      orElse: () => null,
-    );
+    final objectIdSet = objectIds.toSet();
+    final triggerIds = current.currentScene.objects
+        .where((object) => objectIdSet.contains(object.objectId))
+        .map(
+          (object) => object.maybeMap(
+            triggerPoint: (value) => value.triggerId,
+            triggerArea: (value) => value.triggerId,
+            orElse: () => null,
+          ),
+        )
+        .whereType<String>()
+        .toSet();
     var scene = current.currentScene.copyWith(
       objects: current.currentScene.objects
-          .where((candidate) => candidate.objectId != objectId)
+          .where((candidate) => !objectIdSet.contains(candidate.objectId))
           .toList(),
     );
-    if (triggerId != null) {
+    if (triggerIds.isNotEmpty) {
       scene = scene.copyWith(
         triggers: scene.triggers
-            .where((trigger) => _triggerId(trigger) != triggerId)
+            .where((trigger) => !triggerIds.contains(_triggerId(trigger)))
             .toList(),
         eventChains: scene.eventChains.map((chain) {
           return chain.copyWith(
@@ -1105,7 +1512,7 @@ final class StudioController extends StateNotifier<StudioState> {
                 characterMove: (move) => move.copyWith(
                   path: move.path.copyWith(
                     nodes: move.path.nodes.map((node) {
-                      return node.triggerId == triggerId
+                      return triggerIds.contains(node.triggerId)
                           ? node.copyWith(triggerId: null)
                           : node;
                     }).toList(),
@@ -1250,6 +1657,7 @@ final class StudioController extends StateNotifier<StudioState> {
     if (current == null) {
       return;
     }
+    _recordHistory(current);
     state = current.copyWith(
       selection: selection ?? current.selection,
       project: current.project.copyWith(
@@ -1261,6 +1669,28 @@ final class StudioController extends StateNotifier<StudioState> {
     );
   }
 
+  void _recordHistory(StudioReady current) {
+    if (_restoringHistory) {
+      return;
+    }
+    _undoStack.add(
+      _HistoryEntry(
+        project: current.project,
+        selection: current.selection,
+        clipboardObjects: current.clipboardObjects,
+      ),
+    );
+    if (_undoStack.length > 120) {
+      _undoStack.removeAt(0);
+    }
+    _redoStack.clear();
+  }
+
+  void _clearHistory() {
+    _undoStack.clear();
+    _redoStack.clear();
+  }
+
   SceneObject _withObjectTransform(SceneObject object, Transform2D transform) {
     return object.map(
       characterInstance: (value) => value.copyWith(transform: transform),
@@ -1268,6 +1698,93 @@ final class StudioController extends StateNotifier<StudioState> {
       background: (value) => value.copyWith(transform: transform),
       triggerPoint: (value) => value.copyWith(transform: transform),
       triggerArea: (value) => value.copyWith(transform: transform),
+    );
+  }
+
+  SceneObject _withObjectLocked(SceneObject object, bool locked) {
+    return object.map(
+      characterInstance: (value) => value.copyWith(locked: locked),
+      prop: (value) => value.copyWith(locked: locked),
+      background: (value) => value.copyWith(locked: locked),
+      triggerPoint: (value) => value.copyWith(locked: locked),
+      triggerArea: (value) => value.copyWith(locked: locked),
+    );
+  }
+
+  bool _isObjectLocked(SceneObject object) {
+    return object.map(
+      characterInstance: (value) => value.locked,
+      prop: (value) => value.locked,
+      background: (value) => value.locked,
+      triggerPoint: (value) => value.locked,
+      triggerArea: (value) => value.locked,
+    );
+  }
+
+  _PastedObject _copyObjectForPaste(SceneObject source, String objectId) {
+    final transform = source.objectTransform.copyWith(
+      x: source.objectTransform.x + 16,
+      y: source.objectTransform.y + 16,
+    );
+    return source.map(
+      characterInstance: (value) => _PastedObject(
+        object: value.copyWith(id: objectId, transform: transform),
+      ),
+      prop: (value) => _PastedObject(
+        object: value.copyWith(id: objectId, transform: transform),
+      ),
+      background: (value) => _PastedObject(
+        object: value.copyWith(id: objectId, transform: transform),
+      ),
+      triggerPoint: (value) {
+        final triggerId = StudioIds.trigger();
+        final chainId = StudioIds.chain();
+        final trigger = Trigger.area(
+          id: triggerId,
+          name: '${value.name} Copy',
+          eventChainId: chainId,
+        );
+        return _PastedObject(
+          object: value.copyWith(
+            id: objectId,
+            name: '${value.name} Copy',
+            triggerId: triggerId,
+            transform: transform,
+          ),
+          trigger: trigger,
+          chain: EventChain(
+            id: chainId,
+            name: '${value.name} Trigger',
+            triggerMode: EventChainTriggerMode.triggerPoint,
+            events: const [],
+          ),
+        );
+      },
+      triggerArea: (value) {
+        final triggerId = StudioIds.trigger();
+        final chainId = StudioIds.chain();
+        final trigger = Trigger.area(
+          id: triggerId,
+          name: '${value.name} Copy',
+          eventChainId: chainId,
+        );
+        return _PastedObject(
+          object: SceneObject.triggerPoint(
+            id: objectId,
+            name: '${value.name} Copy',
+            triggerId: triggerId,
+            transform: transform.copyWith(width: 22, height: 22, scale: 1),
+            locked: value.locked,
+          ),
+          trigger: trigger,
+          chain: EventChain(
+            id: chainId,
+            name: '${value.name} Trigger',
+            triggerMode: EventChainTriggerMode.triggerPoint,
+            events: const [],
+          ),
+        );
+      },
     );
   }
 
@@ -1347,229 +1864,6 @@ final class StudioController extends StateNotifier<StudioState> {
   }
 }
 
-sealed class StudioState {
-  const StudioState();
-
-  const factory StudioState.loading() = StudioLoading;
-  const factory StudioState.ready({
-    required StudioProject project,
-    Directory? projectDirectory,
-    EditorSelection? selection,
-    bool isDirty,
-    String? statusMessage,
-  }) = StudioReady;
-
-  StudioReady? get asReady => switch (this) {
-    final StudioReady ready => ready,
-    StudioLoading() => null,
-  };
-}
-
-final class StudioLoading extends StudioState {
-  const StudioLoading();
-}
-
-final class StudioReady extends StudioState {
-  const StudioReady({
-    required this.project,
-    this.projectDirectory,
-    this.selection,
-    this.isDirty = false,
-    this.statusMessage,
-  });
-
-  final StudioProject project;
-  final Directory? projectDirectory;
-  final EditorSelection? selection;
-  final bool isDirty;
-  final String? statusMessage;
-
-  String? get selectedObjectId => selection.objectId;
-
-  Scene get currentScene => project.scenes.firstWhere(
-    (scene) => scene.id == project.currentSceneId,
-    orElse: () => project.scenes.first,
-  );
-
-  SceneObject? get selectedObject => objectById(selection.objectId);
-
-  EventChain? get activeChain {
-    if (currentScene.eventChains.isEmpty) {
-      return null;
-    }
-    final chainId = selection.chainId;
-    if (chainId == null) {
-      return currentScene.eventChains.first;
-    }
-    return chainById(chainId) ?? currentScene.eventChains.first;
-  }
-
-  SceneObject? objectById(String? id) {
-    if (id == null) {
-      return null;
-    }
-    for (final object in currentScene.objects) {
-      if (object.objectId == id) {
-        return object;
-      }
-    }
-    return null;
-  }
-
-  Trigger? triggerById(String? id) {
-    if (id == null) {
-      return null;
-    }
-    for (final trigger in currentScene.triggers) {
-      if (triggerId(trigger) == id) {
-        return trigger;
-      }
-    }
-    return null;
-  }
-
-  EventChain? chainById(String? id) {
-    if (id == null) {
-      return null;
-    }
-    for (final chain in currentScene.eventChains) {
-      if (chain.id == id) {
-        return chain;
-      }
-    }
-    return null;
-  }
-
-  StudioEvent? eventById(String chainId, String eventId) {
-    final chain = chainById(chainId);
-    if (chain == null) {
-      return null;
-    }
-    for (final event in chain.events) {
-      if (event.eventId == eventId) {
-        return event;
-      }
-    }
-    return null;
-  }
-
-  PathNode? pathNodeById(String chainId, String eventId, String nodeId) {
-    final event = eventById(chainId, eventId);
-    if (event is! CharacterMoveEvent) {
-      return null;
-    }
-    for (final node in event.path.nodes) {
-      if (node.id == nodeId) {
-        return node;
-      }
-    }
-    return null;
-  }
-
-  AssetRef? assetById(String? id) {
-    if (id == null) {
-      return null;
-    }
-    for (final asset in project.assets) {
-      if (asset.id == id) {
-        return asset;
-      }
-    }
-    return null;
-  }
-
-  Character? characterById(String? id) {
-    if (id == null) {
-      return null;
-    }
-    for (final character in project.characters) {
-      if (character.id == id) {
-        return character;
-      }
-    }
-    return null;
-  }
-
-  bool assetIsUsed(String assetId) {
-    for (final object in currentScene.objects) {
-      final used = object.maybeMap(
-        prop: (value) => value.assetId == assetId,
-        background: (value) => value.assetId == assetId,
-        orElse: () => false,
-      );
-      if (used) {
-        return true;
-      }
-    }
-    for (final character in project.characters) {
-      for (final animation in character.animations) {
-        if (animation.assetId == assetId) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  String triggerId(Trigger trigger) {
-    return trigger.map(
-      area: (value) => value.id,
-      object: (value) => value.id,
-      auto: (value) => value.id,
-      moveComplete: (value) => value.id,
-    );
-  }
-
-  String triggerName(Trigger trigger) {
-    return trigger.map(
-      area: (value) => value.name,
-      object: (value) => value.name,
-      auto: (value) => value.name,
-      moveComplete: (value) => value.name,
-    );
-  }
-
-  String? triggerChainId(Trigger trigger) {
-    return trigger.map(
-      area: (value) => value.eventChainId,
-      object: (value) => value.eventChainId,
-      auto: (value) => value.eventChainId,
-      moveComplete: (value) => value.eventChainId,
-    );
-  }
-
-  String? triggerLinkedTriggerId(Trigger trigger) {
-    return trigger.map(
-      area: (value) => value.linkedTriggerId,
-      object: (value) => value.linkedTriggerId,
-      auto: (value) => value.linkedTriggerId,
-      moveComplete: (value) => value.linkedTriggerId,
-    );
-  }
-
-  StudioReady copyWith({
-    StudioProject? project,
-    Directory? projectDirectory,
-    Object? selection = _unchanged,
-    bool? isDirty,
-    Object? statusMessage = _unchanged,
-  }) {
-    return StudioReady(
-      project: project ?? this.project,
-      projectDirectory: projectDirectory ?? this.projectDirectory,
-      selection: selection == _unchanged
-          ? this.selection
-          : selection as EditorSelection?,
-      isDirty: isDirty ?? this.isDirty,
-      statusMessage: statusMessage == _unchanged
-          ? this.statusMessage
-          : statusMessage as String?,
-    );
-  }
-}
-
-const _unchanged = Object();
-
 final class Offset2D {
   const Offset2D(this.x, this.y);
 
@@ -1581,6 +1875,26 @@ final class Offset2D {
     final dy = y - otherY;
     return math.sqrt(dx * dx + dy * dy);
   }
+}
+
+final class _HistoryEntry {
+  const _HistoryEntry({
+    required this.project,
+    required this.selection,
+    required this.clipboardObjects,
+  });
+
+  final StudioProject project;
+  final EditorSelection? selection;
+  final List<SceneObject> clipboardObjects;
+}
+
+final class _PastedObject {
+  const _PastedObject({required this.object, this.trigger, this.chain});
+
+  final SceneObject object;
+  final Trigger? trigger;
+  final EventChain? chain;
 }
 
 extension _FirstOrNull<T> on List<T> {

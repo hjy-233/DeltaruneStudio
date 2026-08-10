@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_audio_player.dart';
 import 'package:deltarune_studio/runtime/runtime_world.dart';
@@ -9,16 +10,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final previewControllerProvider =
     StateNotifierProvider<PreviewController, PreviewState>((ref) {
-      return PreviewController();
+      return PreviewController(ref);
     });
 
 final class PreviewController extends StateNotifier<PreviewState> {
-  PreviewController() : super(const PreviewState.stopped());
+  PreviewController(this._ref) : super(const PreviewState.stopped());
 
+  final Ref _ref;
   Timer? _timer;
   TimelinePlan? _plan;
   final PreviewAudioPlayer _audioPlayer = PreviewAudioPlayer();
   final Set<String> _playedAudioEvents = {};
+  int _lastDialogueVisibleCharacters = 0;
+  String? _lastDialogueEventId;
 
   void play(
     StudioReady editorState, {
@@ -34,6 +38,7 @@ final class PreviewController extends StateNotifier<PreviewState> {
       unawaited(_audioPlayer.stopAll());
     }
     final startWorld = plan.evaluate(startTime);
+    _primeDialogueTypeSound(startWorld);
     state = PreviewState.playing(world: startWorld, cleanPreview: cleanPreview);
     _playAudioForWorld(editorState, startWorld);
     final playbackClock = Stopwatch()..start();
@@ -51,13 +56,19 @@ final class PreviewController extends StateNotifier<PreviewState> {
           .toDouble();
       _playAudioBetween(editorState, plan, world.currentTime, nextTime);
       final nextWorld = plan.evaluate(nextTime);
+      _syncDialogueTypeSound(editorState, world, nextWorld);
       _playAudioForWorld(editorState, nextWorld);
-      if (nextTime >= plan.duration) {
+      if (cleanPreview && nextWorld.activeVideo != null) {
         _timer?.cancel();
-        state = PreviewState.paused(
+        state = PreviewState.playing(
           world: nextWorld,
           cleanPreview: cleanPreview,
         );
+        return;
+      }
+      if (nextTime >= plan.duration) {
+        _timer?.cancel();
+        state = const PreviewState.stopped();
       } else {
         state = PreviewState.playing(
           world: nextWorld,
@@ -95,10 +106,7 @@ final class PreviewController extends StateNotifier<PreviewState> {
     _timer?.cancel();
     unawaited(_audioPlayer.stopAll());
     _playedAudioEvents.clear();
-    final plan = _plan;
-    state = plan == null
-        ? const PreviewState.stopped()
-        : PreviewState.paused(world: plan.evaluate(0), cleanPreview: false);
+    state = const PreviewState.stopped();
   }
 
   void previewAudioAsset(
@@ -113,6 +121,34 @@ final class PreviewController extends StateNotifier<PreviewState> {
         ? StudioEvent.audioPlayBgm(id: 'preview_audio', assetId: assetId)
         : StudioEvent.audioPlaySound(id: 'preview_audio', assetId: assetId);
     unawaited(_audioPlayer.playEvent(editorState, event));
+  }
+
+  void previewAudioAssetId(StudioReady editorState, String assetId) {
+    final builtIns = _ref.read(builtInAssetLibraryProvider).valueOrNull;
+    unawaited(_audioPlayer.playAssetId(editorState, builtIns, assetId));
+  }
+
+  void completeActiveVideo(StudioReady editorState) {
+    final world = state.world;
+    final plan = _plan ?? _planFor(editorState);
+    if (world?.activeVideo == null || world?.currentEventId == null) {
+      return;
+    }
+    final span = plan.spanForEventAt(world!.currentEventId!, world.currentTime);
+    if (span == null) {
+      stop();
+      return;
+    }
+    final resumeTime = (span.end + 0.001).clamp(0, plan.duration).toDouble();
+    if (resumeTime >= plan.duration) {
+      stop();
+      return;
+    }
+    state = PreviewState.playing(
+      world: plan.evaluate(resumeTime),
+      cleanPreview: state.cleanPreview,
+    );
+    play(editorState, cleanPreview: state.cleanPreview);
   }
 
   TimelinePlan _planFor(StudioReady editorState) {
@@ -131,6 +167,57 @@ final class PreviewController extends StateNotifier<PreviewState> {
             .where((cue) => cue.time < startTime)
             .map((cue) => cue.event.eventId),
       );
+    _lastDialogueVisibleCharacters = 0;
+    _lastDialogueEventId = null;
+  }
+
+  void _syncDialogueTypeSound(
+    StudioReady editorState,
+    RuntimeWorld? previous,
+    RuntimeWorld current,
+  ) {
+    final dialogue = current.dialogue;
+    final eventId = current.currentEventId;
+    if (dialogue == null || eventId == null) {
+      _lastDialogueVisibleCharacters = 0;
+      _lastDialogueEventId = null;
+      return;
+    }
+    final soundAssetId = dialogue.textSoundAssetId;
+    if (soundAssetId == null || soundAssetId.isEmpty) {
+      _lastDialogueVisibleCharacters = dialogue.visibleCharacters ?? 0;
+      _lastDialogueEventId = eventId;
+      return;
+    }
+    final previousCount = _lastDialogueEventId == eventId
+        ? _lastDialogueVisibleCharacters
+        : previous?.dialogue?.visibleCharacters ?? 0;
+    final currentCount = dialogue.visibleCharacters ?? 0;
+    if (currentCount > previousCount) {
+      final builtIns = _ref.read(builtInAssetLibraryProvider).valueOrNull;
+      final addedUnits =
+          TimelinePlan.usesWordTypewriter(editorState.project, dialogue.text)
+          ? 1
+          : currentCount - previousCount;
+      for (var index = 0; index < addedUnits; index += 1) {
+        unawaited(
+          _audioPlayer.playAssetId(editorState, builtIns, soundAssetId),
+        );
+      }
+    }
+    _lastDialogueVisibleCharacters = currentCount;
+    _lastDialogueEventId = eventId;
+  }
+
+  void _primeDialogueTypeSound(RuntimeWorld world) {
+    final dialogue = world.dialogue;
+    if (dialogue == null || world.currentEventId == null) {
+      _lastDialogueVisibleCharacters = 0;
+      _lastDialogueEventId = null;
+      return;
+    }
+    _lastDialogueVisibleCharacters = dialogue.visibleCharacters ?? 0;
+    _lastDialogueEventId = world.currentEventId;
   }
 
   void _playAudioBetween(
@@ -200,7 +287,8 @@ final class TimelinePlan {
     required this.scene,
     required this.chain,
   }) : spans = _buildSceneSpans(scene),
-       audioCues = _buildSceneAudioCues(scene) {
+       audioCues = _buildSceneAudioCues(scene),
+       dialogueTypeCues = _buildSceneDialogueTypeCues(project, scene) {
     duration = spans.isEmpty ? 0 : spans.last.end;
   }
 
@@ -209,7 +297,19 @@ final class TimelinePlan {
   final EventChain? chain;
   final List<TimelineSpan> spans;
   final List<TimelineAudioCue> audioCues;
+  final List<TimelineDialogueTypeCue> dialogueTypeCues;
   late final double duration;
+
+  TimelineSpan? spanForEventAt(String eventId, double time) {
+    for (final span in spans) {
+      if (span.event.eventId == eventId &&
+          time >= span.start &&
+          time <= span.end) {
+        return span;
+      }
+    }
+    return null;
+  }
 
   RuntimeWorld evaluate(double time) {
     var world = _initialWorld().copyWith(
@@ -219,6 +319,7 @@ final class TimelinePlan {
       clearEvent: true,
       clearActiveMove: true,
       clearAudioEvents: true,
+      clearActiveVideo: true,
     );
     if (spans.isEmpty) {
       return world;
@@ -235,10 +336,14 @@ final class TimelinePlan {
         span.duration,
         const {},
       );
-      if (time <= span.end) {
+      if (time < span.end) {
         break;
       }
-      world = world.copyWith(clearDialogue: true, clearActiveMove: true);
+      world = world.copyWith(
+        clearDialogue: true,
+        clearActiveMove: true,
+        clearActiveVideo: true,
+      );
     }
     return world.copyWith(currentTime: time, totalDuration: duration);
   }
@@ -272,16 +377,47 @@ final class TimelinePlan {
       characterWait: (_) => world.copyWith(currentEventId: event.eventId),
       characterChangeExpression: (value) {
         return _updateObject(world, value.characterObjectId, (object) {
-          return object.copyWith(expressionId: value.expressionId);
+          return object.copyWith(
+            expressionId: value.expressionId,
+            isMoving: false,
+          );
         }).copyWith(currentEventId: value.id);
+      },
+      characterStartFollow: (value) => world.copyWith(
+        currentEventId: value.id,
+        followStates: {
+          ...world.followStates,
+          value.followerObjectId: CharacterFollowState(
+            leaderObjectId: value.leaderObjectId,
+            distance: value.distance,
+          ),
+        },
+      ),
+      characterStopFollow: (value) {
+        final states = {...world.followStates}..remove(value.followerObjectId);
+        return world.copyWith(currentEventId: value.id, followStates: states);
       },
       dialogueSay: (value) => world.copyWith(
         currentEventId: value.id,
         dialogue: DialogueBoxState(
-          speaker: value.speaker,
           text: value.text,
           style: value.style,
           portraitAssetId: value.portraitAssetId,
+          textSoundAssetId: value.textSoundAssetId,
+          visibleCharacters: _typewriterCharacters(
+            project,
+            value.text,
+            localTime,
+          ),
+        ),
+      ),
+      videoPlay: (value) => world.copyWith(
+        currentEventId: value.id,
+        activeVideo: VideoPlaybackState(
+          assetId: value.assetId,
+          fit: value.fit,
+          localTime: localTime,
+          duration: eventDuration,
         ),
       ),
       cameraFollow: (value) => world.copyWith(
@@ -371,7 +507,11 @@ final class TimelinePlan {
       final end = nodes[index + 1];
       final wait = end.waitSeconds ?? 0;
       if (localTime <= elapsed + wait) {
-        return current.copyWith(currentEventId: event.id);
+        return _setMoving(
+          current,
+          event.characterObjectId,
+          false,
+        ).copyWith(currentEventId: event.id);
       }
       elapsed += wait;
       final touchedTriggerId = end.triggerId ?? _triggerAtPoint(end.x, end.y);
@@ -402,6 +542,7 @@ final class TimelinePlan {
       }
       final triggered = _triggerChain(touchedTriggerId);
       if (triggered != null && !stack.contains(triggered.id)) {
+        current = _setMoving(current, event.characterObjectId, false);
         final nestedDuration = _chainDuration(scene, triggered, stack);
         if (localTime <= elapsed + nestedDuration) {
           return _evaluateNested(
@@ -422,6 +563,7 @@ final class TimelinePlan {
       lastY,
       current.objects[event.characterObjectId]?.facing ?? Direction.down,
       progress: 1,
+      isMoving: false,
     ).copyWith(clearActiveMove: true);
   }
 
@@ -490,17 +632,134 @@ final class TimelinePlan {
     double y,
     Direction facing, {
     double progress = 0,
+    bool isMoving = true,
   }) {
-    return _updateObject(world, event.characterObjectId, (object) {
-      return object.copyWith(
-        facing: facing,
-        transform: object.transform.copyWith(x: x, y: y),
+    final placed =
+        _updateObject(world, event.characterObjectId, (object) {
+          return object.copyWith(
+            facing: facing,
+            transform: object.transform.copyWith(x: x, y: y),
+            isMoving: isMoving,
+          );
+        }).copyWith(
+          currentEventId: event.id,
+          activeMoveEventId: event.id,
+          activeMoveProgress: progress,
+        );
+    return _applyFollowersFromMove(placed, event, progress);
+  }
+
+  RuntimeWorld _setMoving(RuntimeWorld world, String objectId, bool isMoving) {
+    return _updateObject(world, objectId, (object) {
+      return object.copyWith(isMoving: isMoving);
+    });
+  }
+
+  RuntimeWorld _applyFollowersFromMove(
+    RuntimeWorld world,
+    CharacterMoveEvent event,
+    double progress,
+  ) {
+    var current = world;
+    for (final entry in world.followStates.entries) {
+      final followerId = entry.key;
+      final follow = entry.value;
+      if (follow.leaderObjectId != event.characterObjectId) {
+        continue;
+      }
+      final position = _followPositionForPath(
+        event.path,
+        progress,
+        follow.distance,
       );
-    }).copyWith(
-      currentEventId: event.id,
-      activeMoveEventId: event.id,
-      activeMoveProgress: progress,
+      if (position == null) {
+        continue;
+      }
+      current = _updateObject(current, followerId, (object) {
+        return object.copyWith(
+          transform: object.transform.copyWith(x: position.x, y: position.y),
+          facing: position.direction,
+          isMoving: position.isMoving,
+        );
+      });
+    }
+    return current;
+  }
+
+  FollowPosition? _followPositionForPath(
+    MovementPath path,
+    double progress,
+    double distance,
+  ) {
+    final samples = _pathSamples(path);
+    if (samples.isEmpty) {
+      return null;
+    }
+    final total = samples.last.distance;
+    final leaderDistance = (total * progress).clamp(0, total).toDouble();
+    final followerDistance = math.max(
+      0,
+      leaderDistance - math.max(distance, 0),
     );
+    var previous = samples.first;
+    for (final sample in samples.skip(1)) {
+      if (followerDistance <= sample.distance) {
+        final segmentDistance = sample.distance - previous.distance;
+        final t = segmentDistance <= 0
+            ? 1.0
+            : (followerDistance - previous.distance) / segmentDistance;
+        return FollowPosition(
+          x: previous.x + (sample.x - previous.x) * t,
+          y: previous.y + (sample.y - previous.y) * t,
+          direction: _directionFor(
+            sample.x - previous.x,
+            sample.y - previous.y,
+          ),
+          isMoving: leaderDistance > distance && progress < 1,
+        );
+      }
+      previous = sample;
+    }
+    return FollowPosition(
+      x: samples.last.x,
+      y: samples.last.y,
+      direction: samples.last.direction,
+      isMoving: false,
+    );
+  }
+
+  List<PathSample> _pathSamples(MovementPath path) {
+    if (path.nodes.isEmpty) {
+      return const [];
+    }
+    final samples = <PathSample>[
+      PathSample(
+        x: path.nodes.first.x,
+        y: path.nodes.first.y,
+        distance: 0,
+        direction: Direction.down,
+      ),
+    ];
+    var startX = path.nodes.first.x;
+    var startY = path.nodes.first.y;
+    var distance = 0.0;
+    for (final node in path.nodes.skip(1)) {
+      final target = _orthogonalTarget(startX, startY, node);
+      final dx = target.x - startX;
+      final dy = target.y - startY;
+      distance += math.sqrt(dx * dx + dy * dy);
+      samples.add(
+        PathSample(
+          x: target.x,
+          y: target.y,
+          distance: distance,
+          direction: _directionFor(dx, dy),
+        ),
+      );
+      startX = target.x;
+      startY = target.y;
+    }
+    return samples;
   }
 
   RuntimeWorld _updateObject(
@@ -531,7 +790,8 @@ final class TimelinePlan {
       );
       if (match != null) {
         for (final chain in scene.eventChains) {
-          if (chain.id == match) {
+          if (chain.id == match &&
+              chain.triggerMode == EventChainTriggerMode.triggerPoint) {
             return chain;
           }
         }
@@ -625,9 +885,9 @@ final class TimelinePlan {
   static List<TimelineSpan> _buildSceneSpans(Scene scene) {
     final spans = <TimelineSpan>[];
     var cursor = 0.0;
-    final triggeredChainIds = _triggeredChainIds(scene);
     for (final chain in scene.eventChains) {
-      if (chain.events.isEmpty || triggeredChainIds.contains(chain.id)) {
+      if (chain.events.isEmpty ||
+          chain.triggerMode != EventChainTriggerMode.always) {
         continue;
       }
       final chainSpans = _buildSpans(scene, chain, const {});
@@ -647,14 +907,35 @@ final class TimelinePlan {
 
   static List<TimelineAudioCue> _buildSceneAudioCues(Scene scene) {
     final cues = <TimelineAudioCue>[];
-    final triggeredChainIds = _triggeredChainIds(scene);
     var cursor = 0.0;
     for (final chain in scene.eventChains) {
-      if (chain.events.isEmpty || triggeredChainIds.contains(chain.id)) {
+      if (chain.events.isEmpty ||
+          chain.triggerMode != EventChainTriggerMode.always) {
         continue;
       }
       final chainSpans = _buildSpans(scene, chain, const {});
       cues.addAll(_audioCuesForSpans(scene, chainSpans, cursor, const {}));
+      cursor += chainSpans.isEmpty ? 0 : chainSpans.last.end;
+    }
+    cues.sort((a, b) => a.time.compareTo(b.time));
+    return cues;
+  }
+
+  static List<TimelineDialogueTypeCue> _buildSceneDialogueTypeCues(
+    StudioProject project,
+    Scene scene,
+  ) {
+    final cues = <TimelineDialogueTypeCue>[];
+    var cursor = 0.0;
+    for (final chain in scene.eventChains) {
+      if (chain.events.isEmpty ||
+          chain.triggerMode != EventChainTriggerMode.always) {
+        continue;
+      }
+      final chainSpans = _buildSpans(scene, chain, const {});
+      cues.addAll(
+        _dialogueTypeCuesForSpans(project, scene, chainSpans, cursor, const {}),
+      );
       cursor += chainSpans.isEmpty ? 0 : chainSpans.last.end;
     }
     cues.sort((a, b) => a.time.compareTo(b.time));
@@ -676,6 +957,47 @@ final class TimelinePlan {
       if (event is CharacterMoveEvent) {
         cues.addAll(
           _audioCuesForMove(scene, event, baseTime + span.start, stack),
+        );
+      }
+    }
+    return cues;
+  }
+
+  static List<TimelineDialogueTypeCue> _dialogueTypeCuesForSpans(
+    StudioProject project,
+    Scene scene,
+    List<TimelineSpan> spans,
+    double baseTime,
+    Set<String> stack,
+  ) {
+    final cues = <TimelineDialogueTypeCue>[];
+    for (final span in spans) {
+      final event = span.event;
+      if (event is DialogueSayEvent) {
+        final assetId = event.textSoundAssetId;
+        if (assetId != null && assetId.isNotEmpty) {
+          final byWord = usesWordTypewriter(project, event.text);
+          final interval = byWord ? 1 / 6.0 : 1 / 32.0;
+          final count = byWord
+              ? _englishWordStops(event.text).length
+              : event.text.length;
+          for (var index = 1; index <= count; index += 1) {
+            final time = baseTime + span.start + index * interval;
+            if (time < baseTime + span.end) {
+              cues.add(TimelineDialogueTypeCue(assetId: assetId, time: time));
+            }
+          }
+        }
+      }
+      if (event is CharacterMoveEvent) {
+        cues.addAll(
+          _dialogueTypeCuesForMove(
+            project,
+            scene,
+            event,
+            baseTime + span.start,
+            stack,
+          ),
         );
       }
     }
@@ -723,7 +1045,9 @@ final class TimelinePlan {
         }
       }
       final chain = _triggerChainStatic(scene, triggerId);
-      if (chain == null || stack.contains(chain.id)) {
+      if (chain == null ||
+          chain.triggerMode != EventChainTriggerMode.triggerPoint ||
+          stack.contains(chain.id)) {
         continue;
       }
       final spans = _buildSpans(scene, chain, stack);
@@ -738,20 +1062,63 @@ final class TimelinePlan {
     return cues;
   }
 
-  static Set<String> _triggeredChainIds(Scene scene) {
-    final ids = <String>{};
-    for (final trigger in scene.triggers) {
-      final chainId = trigger.map(
-        area: (value) => value.eventChainId,
-        object: (value) => value.eventChainId,
-        auto: (value) => value.eventChainId,
-        moveComplete: (value) => value.eventChainId,
-      );
-      if (chainId.isNotEmpty) {
-        ids.add(chainId);
-      }
+  static List<TimelineDialogueTypeCue> _dialogueTypeCuesForMove(
+    StudioProject project,
+    Scene scene,
+    CharacterMoveEvent event,
+    double baseTime,
+    Set<String> stack,
+  ) {
+    final cues = <TimelineDialogueTypeCue>[];
+    if (event.path.nodes.length < 2) {
+      return cues;
     }
-    return ids;
+    var elapsed = 0.0;
+    var startX = event.path.nodes.first.x;
+    var startY = event.path.nodes.first.y;
+    for (var index = 0; index < event.path.nodes.length - 1; index += 1) {
+      final end = event.path.nodes[index + 1];
+      elapsed += _segmentDuration(
+        startX,
+        startY,
+        end.x,
+        end.y,
+        event.path.speed,
+      );
+      final target = _orthogonalTarget(startX, startY, end);
+      startX = target.x;
+      startY = target.y;
+      elapsed += end.waitSeconds ?? 0;
+      final triggerId =
+          end.triggerId ?? _triggerAtPointStatic(scene, end.x, end.y);
+      final linkedTriggerId = _linkedTriggerIdStatic(scene, triggerId);
+      if (linkedTriggerId != null) {
+        elapsed += doorTransitionDuration;
+        final destination = _triggerObjectPositionStatic(
+          scene,
+          linkedTriggerId,
+        );
+        if (destination != null) {
+          startX = destination.x;
+          startY = destination.y;
+        }
+      }
+      final chain = _triggerChainStatic(scene, triggerId);
+      if (chain == null ||
+          chain.triggerMode != EventChainTriggerMode.triggerPoint ||
+          stack.contains(chain.id)) {
+        continue;
+      }
+      final spans = _buildSpans(scene, chain, stack);
+      cues.addAll(
+        _dialogueTypeCuesForSpans(project, scene, spans, baseTime + elapsed, {
+          ...stack,
+          chain.id,
+        }),
+      );
+      elapsed += spans.isEmpty ? 0 : spans.last.end;
+    }
+    return cues;
   }
 
   static double _chainDuration(
@@ -835,7 +1202,8 @@ final class TimelinePlan {
                 continue;
               }
               for (final chain in scene.eventChains) {
-                if (chain.id == chainId) {
+                if (chain.id == chainId &&
+                    chain.triggerMode == EventChainTriggerMode.triggerPoint) {
                   duration += _chainDuration(scene, chain, stack);
                 }
               }
@@ -846,6 +1214,8 @@ final class TimelinePlan {
       },
       characterWait: (value) => math.max(value.duration, 0.1),
       characterChangeExpression: (_) => 0.1,
+      characterStartFollow: (_) => 0.1,
+      characterStopFollow: (_) => 0.1,
       dialogueSay: (value) => math.max(value.duration, 0.1),
       cameraFollow: (_) => 0.1,
       cameraFocus: (value) => math.max(value.duration, 0.1),
@@ -853,6 +1223,7 @@ final class TimelinePlan {
       sceneChange: (_) => 0.1,
       audioPlayBgm: (_) => 0.1,
       audioPlaySound: (_) => 0.1,
+      videoPlay: (value) => math.max(value.duration, 0.1),
     );
   }
 
@@ -867,6 +1238,50 @@ final class TimelinePlan {
       return DoorDestination(target.x, startY);
     }
     return DoorDestination(startX, target.y);
+  }
+
+  static int _typewriterCharacters(
+    StudioProject project,
+    String text,
+    double localTime,
+  ) {
+    if (usesWordTypewriter(project, text)) {
+      final stops = _englishWordStops(text);
+      if (stops.isEmpty) {
+        return 0;
+      }
+      const wordsPerSecond = 6.0;
+      final visibleWords = (localTime * wordsPerSecond).floor();
+      if (visibleWords <= 0) {
+        return 0;
+      }
+      return stops[math.min(visibleWords, stops.length) - 1];
+    }
+    const charactersPerSecond = 32.0;
+    final visible = (localTime * charactersPerSecond).floor();
+    return visible.clamp(0, text.length);
+  }
+
+  static bool usesWordTypewriter(StudioProject project, String text) {
+    if (!project.settings.englishDialogueTypewriterByWord ||
+        project.settings.language != AppLanguage.english) {
+      return false;
+    }
+    final letters = RegExp(r'[A-Za-z]').allMatches(text).length;
+    if (letters == 0) {
+      return false;
+    }
+    final nonAsciiLetters = RegExp(r'[^\x00-\x7F]').hasMatch(text);
+    return !nonAsciiLetters;
+  }
+
+  static List<int> _englishWordStops(String text) {
+    final stops = <int>[];
+    final matches = RegExp(r'\S+\s*').allMatches(text);
+    for (final match in matches) {
+      stops.add(match.end);
+    }
+    return stops;
   }
 
   static double _segmentDuration(
@@ -946,7 +1361,8 @@ final class TimelinePlan {
         continue;
       }
       for (final chain in scene.eventChains) {
-        if (chain.id == chainId) {
+        if (chain.id == chainId &&
+            chain.triggerMode == EventChainTriggerMode.triggerPoint) {
           return chain;
         }
       }
@@ -1001,11 +1417,46 @@ final class TimelineAudioCue {
   final double time;
 }
 
+final class TimelineDialogueTypeCue {
+  const TimelineDialogueTypeCue({required this.assetId, required this.time});
+
+  final String assetId;
+  final double time;
+}
+
 final class DoorDestination {
   const DoorDestination(this.x, this.y);
 
   final double x;
   final double y;
+}
+
+final class PathSample {
+  const PathSample({
+    required this.x,
+    required this.y,
+    required this.distance,
+    required this.direction,
+  });
+
+  final double x;
+  final double y;
+  final double distance;
+  final Direction direction;
+}
+
+final class FollowPosition {
+  const FollowPosition({
+    required this.x,
+    required this.y,
+    required this.direction,
+    required this.isMoving,
+  });
+
+  final double x;
+  final double y;
+  final Direction direction;
+  final bool isMoving;
 }
 
 final class RectLike {

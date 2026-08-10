@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as p;
 
@@ -33,6 +35,22 @@ final class PreviewAudioPlayer {
       default:
         return;
     }
+  }
+
+  Future<void> playAssetId(
+    StudioReady ready,
+    BuiltInAssetLibrary? builtIns,
+    String assetId,
+  ) async {
+    if (assetId.isEmpty) {
+      return;
+    }
+    final source = await _audioSourceForAssetId(ready, builtIns, assetId);
+    if (source == null) {
+      debugPrint('Audio source missing for asset: $assetId');
+      return;
+    }
+    await _playSoundSource(source);
   }
 
   Future<void> stopAll() async {
@@ -71,11 +89,15 @@ final class PreviewAudioPlayer {
   }
 
   Future<void> _playSound(File file) async {
+    await _playSoundSource(AudioSource.file(file.path));
+  }
+
+  Future<void> _playSoundSource(AudioSource source) async {
     final player = AudioPlayer();
     _soundPlayers.add(player);
     try {
       await player.setLoopMode(LoopMode.off);
-      await player.setFilePath(file.path);
+      await player.setAudioSource(source);
       unawaited(
         player.playerStateStream
             .firstWhere(
@@ -88,6 +110,53 @@ final class PreviewAudioPlayer {
       debugPrint('Sound playback failed: $error');
       debugPrint('$stackTrace');
       await _disposeSoundPlayer(player);
+    }
+  }
+
+  Future<AudioSource?> _audioSourceForAssetId(
+    StudioReady ready,
+    BuiltInAssetLibrary? builtIns,
+    String assetId,
+  ) async {
+    final asset = ready.assetById(assetId);
+    if (asset != null && asset.kind == AssetKind.audio) {
+      final dataUri = asset.dataUri;
+      if (dataUri != null && dataUri.isNotEmpty) {
+        return AudioSource.uri(Uri.parse(dataUri));
+      }
+      final directory = ready.projectDirectory;
+      if (directory != null) {
+        final file = File(p.join(directory.path, asset.relativePath));
+        if (await file.exists()) {
+          return AudioSource.file(file.path);
+        }
+      }
+    }
+    final builtIn = builtIns?.assets.firstWhere(
+      (item) => item.id == assetId && item.kind == AssetKind.audio,
+      orElse: () => const BuiltInAsset(
+        id: '',
+        name: '',
+        kind: AssetKind.audio,
+        assetPath: '',
+        sourcePath: '',
+        resolvedPath: '',
+      ),
+    );
+    if (builtIn == null || builtIn.id.isEmpty) {
+      return null;
+    }
+    if (!kIsWeb) {
+      final file = File(builtIn.resolvedPath);
+      if (await file.exists()) {
+        return AudioSource.file(file.path);
+      }
+    }
+    try {
+      await rootBundle.load(builtIn.assetPath);
+      return AudioSource.asset(builtIn.assetPath);
+    } on Object {
+      return null;
     }
   }
 

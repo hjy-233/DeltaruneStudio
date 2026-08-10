@@ -18,7 +18,7 @@ final class ProjectRepository {
     final doorBTriggerId = StudioIds.trigger();
 
     return StudioProject(
-      schemaVersion: 1,
+      schemaVersion: 4,
       id: 'project_${StudioIds.scene()}',
       name: name,
       currentSceneId: canvasSceneId,
@@ -101,6 +101,7 @@ final class ProjectRepository {
             EventChain(
               id: walkChainId,
               name: 'Walk to Door',
+              triggerMode: EventChainTriggerMode.always,
               events: [
                 StudioEvent.characterMove(
                   id: StudioIds.event(),
@@ -133,7 +134,12 @@ final class ProjectRepository {
                 ),
               ],
             ),
-            EventChain(id: doorChainId, name: 'Door Trigger', events: const []),
+            EventChain(
+              id: doorChainId,
+              name: 'Door Trigger',
+              triggerMode: EventChainTriggerMode.triggerPoint,
+              events: const [],
+            ),
           ],
           interestPoints: const [
             InterestPoint(
@@ -181,17 +187,40 @@ final class ProjectRepository {
     return _migrateProject(StudioProject.fromJson(json));
   }
 
+  StudioProject migrateProjectForOpen(StudioProject project) {
+    return _migrateProject(project);
+  }
+
   StudioProject _migrateProject(StudioProject project) {
     return project.copyWith(
+      schemaVersion: 4,
       scenes: [for (final scene in project.scenes) _migrateScene(scene)],
     );
   }
 
   Scene _migrateScene(Scene scene) {
+    final triggeredChainIds = {
+      for (final trigger in scene.triggers) _eventChainIdForTrigger(trigger),
+    }..remove('');
     return scene.copyWith(
       objects: [
         for (final object in scene.objects) _migrateSceneObject(object),
       ],
+      eventChains: [
+        for (final chain in scene.eventChains)
+          triggeredChainIds.contains(chain.id)
+              ? chain.copyWith(triggerMode: EventChainTriggerMode.triggerPoint)
+              : chain,
+      ],
+    );
+  }
+
+  String _eventChainIdForTrigger(Trigger trigger) {
+    return trigger.map(
+      area: (value) => value.eventChainId,
+      object: (value) => value.eventChainId,
+      auto: (value) => value.eventChainId,
+      moveComplete: (value) => value.eventChainId,
     );
   }
 
@@ -217,6 +246,7 @@ final class ProjectRepository {
             height: height,
             scale: 1,
           ),
+          locked: value.locked,
         );
       },
       orElse: () => object,
@@ -275,6 +305,7 @@ final class ProjectRepository {
       'characters',
       'assets/backgrounds',
       'assets/characters',
+      'assets/dialogue_portraits',
       'assets/audio',
       'assets/props',
       'settings',
@@ -302,6 +333,8 @@ final class ProjectRepository {
       AssetKind.character => 'characters',
       AssetKind.audio => 'audio',
       AssetKind.prop => 'props',
+      AssetKind.dialoguePortrait => 'dialogue_portraits',
+      AssetKind.video => 'video',
     };
   }
 }

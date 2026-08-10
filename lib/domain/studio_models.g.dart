@@ -8,7 +8,7 @@ part of 'studio_models.dart';
 
 _StudioProject _$StudioProjectFromJson(Map<String, dynamic> json) =>
     _StudioProject(
-      schemaVersion: (json['schemaVersion'] as num).toInt(),
+      schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 4,
       id: json['id'] as String,
       name: json['name'] as String,
       currentSceneId: json['currentSceneId'] as String,
@@ -21,6 +21,12 @@ _StudioProject _$StudioProjectFromJson(Map<String, dynamic> json) =>
       assets: (json['assets'] as List<dynamic>)
           .map((e) => AssetRef.fromJson(e as Map<String, dynamic>))
           .toList(),
+      editorLayout: json['editorLayout'] == null
+          ? const EditorLayout()
+          : EditorLayout.fromJson(json['editorLayout'] as Map<String, dynamic>),
+      settings: json['settings'] == null
+          ? const EditorSettings()
+          : EditorSettings.fromJson(json['settings'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$StudioProjectToJson(_StudioProject instance) =>
@@ -32,13 +38,56 @@ Map<String, dynamic> _$StudioProjectToJson(_StudioProject instance) =>
       'scenes': instance.scenes,
       'characters': instance.characters,
       'assets': instance.assets,
+      'editorLayout': instance.editorLayout,
+      'settings': instance.settings,
     };
+
+_EditorLayout _$EditorLayoutFromJson(Map<String, dynamic> json) =>
+    _EditorLayout(
+      leftSidebarWidth: (json['leftSidebarWidth'] as num?)?.toDouble() ?? 220,
+      rightSidebarWidth: (json['rightSidebarWidth'] as num?)?.toDouble() ?? 280,
+      bottomPanelHeight: (json['bottomPanelHeight'] as num?)?.toDouble() ?? 300,
+    );
+
+Map<String, dynamic> _$EditorLayoutToJson(_EditorLayout instance) =>
+    <String, dynamic>{
+      'leftSidebarWidth': instance.leftSidebarWidth,
+      'rightSidebarWidth': instance.rightSidebarWidth,
+      'bottomPanelHeight': instance.bottomPanelHeight,
+    };
+
+_EditorSettings _$EditorSettingsFromJson(Map<String, dynamic> json) =>
+    _EditorSettings(
+      language:
+          $enumDecodeNullable(_$AppLanguageEnumMap, json['language']) ??
+          AppLanguage.system,
+      englishDialogueTypewriterByWord:
+          json['englishDialogueTypewriterByWord'] as bool? ?? true,
+    );
+
+Map<String, dynamic> _$EditorSettingsToJson(
+  _EditorSettings instance,
+) => <String, dynamic>{
+  'language': _$AppLanguageEnumMap[instance.language]!,
+  'englishDialogueTypewriterByWord': instance.englishDialogueTypewriterByWord,
+};
+
+const _$AppLanguageEnumMap = {
+  AppLanguage.system: 'system',
+  AppLanguage.english: 'english',
+  AppLanguage.chinese: 'chinese',
+};
 
 _AssetRef _$AssetRefFromJson(Map<String, dynamic> json) => _AssetRef(
   id: json['id'] as String,
-  kind: $enumDecode(_$AssetKindEnumMap, json['kind']),
+  kind: $enumDecode(
+    _$AssetKindEnumMap,
+    json['kind'],
+    unknownValue: AssetKind.prop,
+  ),
   relativePath: json['relativePath'] as String,
   originalName: json['originalName'] as String,
+  dataUri: json['dataUri'] as String?,
 );
 
 Map<String, dynamic> _$AssetRefToJson(_AssetRef instance) => <String, dynamic>{
@@ -46,6 +95,7 @@ Map<String, dynamic> _$AssetRefToJson(_AssetRef instance) => <String, dynamic>{
   'kind': _$AssetKindEnumMap[instance.kind]!,
   'relativePath': instance.relativePath,
   'originalName': instance.originalName,
+  'dataUri': instance.dataUri,
 };
 
 const _$AssetKindEnumMap = {
@@ -53,6 +103,8 @@ const _$AssetKindEnumMap = {
   AssetKind.character: 'character',
   AssetKind.audio: 'audio',
   AssetKind.prop: 'prop',
+  AssetKind.dialoguePortrait: 'dialoguePortrait',
+  AssetKind.video: 'video',
 };
 
 _Scene _$SceneFromJson(Map<String, dynamic> json) => _Scene(
@@ -99,6 +151,7 @@ CharacterInstanceObject _$CharacterInstanceObjectFromJson(
   activity: json['activity'] == null
       ? null
       : ActivityProfile.fromJson(json['activity'] as Map<String, dynamic>),
+  locked: json['locked'] as bool? ?? false,
   $type: json['type'] as String?,
 );
 
@@ -112,6 +165,7 @@ Map<String, dynamic> _$CharacterInstanceObjectToJson(
   'facing': _$DirectionEnumMap[instance.facing]!,
   'initialExpression': instance.initialExpression,
   'activity': instance.activity,
+  'locked': instance.locked,
   'type': instance.$type,
 };
 
@@ -131,6 +185,7 @@ PropSceneObject _$PropSceneObjectFromJson(Map<String, dynamic> json) =>
         json['transform'] as Map<String, dynamic>,
       ),
       interactable: json['interactable'] as bool? ?? false,
+      locked: json['locked'] as bool? ?? false,
       $type: json['type'] as String?,
     );
 
@@ -141,6 +196,7 @@ Map<String, dynamic> _$PropSceneObjectToJson(PropSceneObject instance) =>
       'assetId': instance.assetId,
       'transform': instance.transform,
       'interactable': instance.interactable,
+      'locked': instance.locked,
       'type': instance.$type,
     };
 
@@ -174,6 +230,7 @@ TriggerPointObject _$TriggerPointObjectFromJson(Map<String, dynamic> json) =>
       transform: Transform2D.fromJson(
         json['transform'] as Map<String, dynamic>,
       ),
+      locked: json['locked'] as bool? ?? false,
       $type: json['type'] as String?,
     );
 
@@ -183,6 +240,7 @@ Map<String, dynamic> _$TriggerPointObjectToJson(TriggerPointObject instance) =>
       'name': instance.name,
       'triggerId': instance.triggerId,
       'transform': instance.transform,
+      'locked': instance.locked,
       'type': instance.$type,
     };
 
@@ -194,6 +252,7 @@ TriggerAreaObject _$TriggerAreaObjectFromJson(Map<String, dynamic> json) =>
       transform: Transform2D.fromJson(
         json['transform'] as Map<String, dynamic>,
       ),
+      locked: json['locked'] as bool? ?? false,
       $type: json['type'] as String?,
     );
 
@@ -203,6 +262,7 @@ Map<String, dynamic> _$TriggerAreaObjectToJson(TriggerAreaObject instance) =>
       'name': instance.name,
       'triggerId': instance.triggerId,
       'transform': instance.transform,
+      'locked': instance.locked,
       'type': instance.$type,
     };
 
@@ -280,11 +340,18 @@ _CharacterExpression _$CharacterExpressionFromJson(Map<String, dynamic> json) =>
     _CharacterExpression(
       id: json['id'] as String,
       name: json['name'] as String,
+      assetId: json['assetId'] as String?,
+      direction: $enumDecodeNullable(_$DirectionEnumMap, json['direction']),
     );
 
 Map<String, dynamic> _$CharacterExpressionToJson(
   _CharacterExpression instance,
-) => <String, dynamic>{'id': instance.id, 'name': instance.name};
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'assetId': instance.assetId,
+  'direction': _$DirectionEnumMap[instance.direction],
+};
 
 _CharacterMovementProfile _$CharacterMovementProfileFromJson(
   Map<String, dynamic> json,
@@ -446,6 +513,12 @@ Map<String, dynamic> _$MoveCompleteTriggerToJson(
 _EventChain _$EventChainFromJson(Map<String, dynamic> json) => _EventChain(
   id: json['id'] as String,
   name: json['name'] as String,
+  triggerMode:
+      $enumDecodeNullable(
+        _$EventChainTriggerModeEnumMap,
+        json['triggerMode'],
+      ) ??
+      EventChainTriggerMode.always,
   events: (json['events'] as List<dynamic>)
       .map((e) => StudioEvent.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -455,8 +528,14 @@ Map<String, dynamic> _$EventChainToJson(_EventChain instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'triggerMode': _$EventChainTriggerModeEnumMap[instance.triggerMode]!,
       'events': instance.events,
     };
+
+const _$EventChainTriggerModeEnumMap = {
+  EventChainTriggerMode.triggerPoint: 'triggerPoint',
+  EventChainTriggerMode.always: 'always',
+};
 
 CharacterMoveEvent _$CharacterMoveEventFromJson(Map<String, dynamic> json) =>
     CharacterMoveEvent(
@@ -506,12 +585,48 @@ Map<String, dynamic> _$CharacterChangeExpressionEventToJson(
   'type': instance.$type,
 };
 
+CharacterStartFollowEvent _$CharacterStartFollowEventFromJson(
+  Map<String, dynamic> json,
+) => CharacterStartFollowEvent(
+  id: json['id'] as String,
+  followerObjectId: json['followerObjectId'] as String,
+  leaderObjectId: json['leaderObjectId'] as String,
+  distance: (json['distance'] as num?)?.toDouble() ?? 48,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$CharacterStartFollowEventToJson(
+  CharacterStartFollowEvent instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'followerObjectId': instance.followerObjectId,
+  'leaderObjectId': instance.leaderObjectId,
+  'distance': instance.distance,
+  'type': instance.$type,
+};
+
+CharacterStopFollowEvent _$CharacterStopFollowEventFromJson(
+  Map<String, dynamic> json,
+) => CharacterStopFollowEvent(
+  id: json['id'] as String,
+  followerObjectId: json['followerObjectId'] as String,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$CharacterStopFollowEventToJson(
+  CharacterStopFollowEvent instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'followerObjectId': instance.followerObjectId,
+  'type': instance.$type,
+};
+
 DialogueSayEvent _$DialogueSayEventFromJson(Map<String, dynamic> json) =>
     DialogueSayEvent(
       id: json['id'] as String,
-      speaker: json['speaker'] as String,
       text: json['text'] as String,
       portraitAssetId: json['portraitAssetId'] as String?,
+      textSoundAssetId: json['textSoundAssetId'] as String?,
       style:
           $enumDecodeNullable(_$DialogueStyleEnumMap, json['style']) ??
           DialogueStyle.regular,
@@ -522,9 +637,9 @@ DialogueSayEvent _$DialogueSayEventFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$DialogueSayEventToJson(DialogueSayEvent instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'speaker': instance.speaker,
       'text': instance.text,
       'portraitAssetId': instance.portraitAssetId,
+      'textSoundAssetId': instance.textSoundAssetId,
       'style': _$DialogueStyleEnumMap[instance.style]!,
       'duration': instance.duration,
       'type': instance.$type,
@@ -627,6 +742,28 @@ Map<String, dynamic> _$AudioPlaySoundEventToJson(
   'assetId': instance.assetId,
   'type': instance.$type,
 };
+
+VideoPlayEvent _$VideoPlayEventFromJson(Map<String, dynamic> json) =>
+    VideoPlayEvent(
+      id: json['id'] as String,
+      assetId: json['assetId'] as String,
+      duration: (json['duration'] as num?)?.toDouble() ?? 3,
+      fit:
+          $enumDecodeNullable(_$VideoFitModeEnumMap, json['fit']) ??
+          VideoFitMode.contain,
+      $type: json['type'] as String?,
+    );
+
+Map<String, dynamic> _$VideoPlayEventToJson(VideoPlayEvent instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'assetId': instance.assetId,
+      'duration': instance.duration,
+      'fit': _$VideoFitModeEnumMap[instance.fit]!,
+      'type': instance.$type,
+    };
+
+const _$VideoFitModeEnumMap = {VideoFitMode.contain: 'contain'};
 
 FollowPlayerCameraPolicy _$FollowPlayerCameraPolicyFromJson(
   Map<String, dynamic> json,
