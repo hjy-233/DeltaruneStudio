@@ -26,7 +26,7 @@
 
 ## 截图
 
-TODO
+![ss_1.png](./docs/ss_1.png)
 
 ## 开发
 
