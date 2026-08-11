@@ -264,6 +264,7 @@ class _AddEventMenu extends StatelessWidget {
             id: StudioIds.event(),
             characterObjectId: sampleCharacterId ?? '',
             expressionId: 'idle',
+            duration: 1,
           ),
           child: Text(l10n.changeExpression),
         ),
@@ -458,7 +459,8 @@ class _EventCard extends ConsumerWidget {
           '${value.followerObjectId} -> ${value.leaderObjectId}, ${value.distance}px',
       characterStopFollow: (value) => value.followerObjectId,
       characterWait: (value) => '${value.duration}s',
-      characterChangeExpression: (value) => value.expressionId,
+      characterChangeExpression: (value) =>
+          '${value.expressionId}, ${value.duration}s',
       dialogueSay: (value) => '${value.text} (${value.style.name})',
       cameraFollow: (value) => value.targetObjectId,
       cameraFocus: (value) => value.target.toString(),

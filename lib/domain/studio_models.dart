@@ -214,6 +214,9 @@ abstract class CharacterExpression with _$CharacterExpression {
     required String name,
     String? assetId,
     Direction? direction,
+    @Default([]) List<String> assetIds,
+    @Default(6) double framesPerSecond,
+    @Default(true) bool loop,
   }) = _CharacterExpression;
 
   factory CharacterExpression.fromJson(Map<String, dynamic> json) =>
@@ -360,6 +363,7 @@ sealed class StudioEvent with _$StudioEvent {
     required String id,
     required String characterObjectId,
     required String expressionId,
+    @Default(1) double duration,
   }) = CharacterChangeExpressionEvent;
 
   @FreezedUnionValue('character.startFollow')

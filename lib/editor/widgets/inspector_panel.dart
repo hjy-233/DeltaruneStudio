@@ -727,6 +727,14 @@ class _EventInspector extends ConsumerWidget {
                   expression.copyWith(expressionId: id),
                 ),
               ),
+              InspectorNumberField(
+                label: l10n.duration,
+                value: expression.duration,
+                onChanged: (duration) => controller.updateEvent(
+                  chainId,
+                  expression.copyWith(duration: duration),
+                ),
+              ),
             ],
           ),
           dialogueSay: (dialogue) => Column(
@@ -1090,24 +1098,10 @@ class _CharacterInspector extends ConsumerWidget {
                     ),
                   ),
                 ),
-                _ImageAssetPicker(
+                _ExpressionSpriteSlot(
                   ready: ready,
-                  label: '表情资源',
-                  value: expression.assetId ?? '',
-                  kind: AssetKind.character,
-                  onChanged: (assetId) => controller.updateCharacter(
-                    value.copyWith(
-                      expressions: value.expressions
-                          .map(
-                            (item) => item.id == expression.id
-                                ? item.copyWith(
-                                    assetId: assetId.isEmpty ? null : assetId,
-                                  )
-                                : item,
-                          )
-                          .toList(),
-                    ),
-                  ),
+                  character: value,
+                  expression: expression,
                 ),
               ],
             ),
@@ -1153,6 +1147,123 @@ class _DirectionalSpriteSlots extends ConsumerWidget {
         _SpriteSlot(ready: ready, character: character, direction: null),
       ],
     );
+  }
+}
+
+class _ExpressionSpriteSlot extends ConsumerWidget {
+  const _ExpressionSpriteSlot({
+    required this.ready,
+    required this.character,
+    required this.expression,
+  });
+
+  final StudioReady ready;
+  final Character character;
+  final CharacterExpression expression;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.read(studioControllerProvider.notifier);
+    final frames = [
+      ...expression.assetIds,
+      if ((expression.assetId ?? '').isNotEmpty) expression.assetId!,
+    ];
+    final imageAssets = ready.project.assets
+        .where(
+          (asset) =>
+              asset.kind != AssetKind.audio && asset.kind != AssetKind.video,
+        )
+        .toList();
+
+    void update(CharacterExpression next) {
+      controller.updateCharacter(
+        character.copyWith(
+          expressions: character.expressions
+              .map((item) => item.id == expression.id ? next : item)
+              .toList(),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (var index = 0; index < frames.length; index += 1)
+              InputChip(
+                label: Text(_assetName(frames[index])),
+                onDeleted: () {
+                  final nextFrames = [...frames]..removeAt(index);
+                  update(
+                    expression.copyWith(assetId: null, assetIds: nextFrames),
+                  );
+                },
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          decoration: const InputDecoration(
+            isDense: true,
+            border: OutlineInputBorder(),
+            labelText: 'Add expression frame',
+          ),
+          initialValue: null,
+          items: [
+            for (final asset in imageAssets)
+              DropdownMenuItem(
+                value: asset.id,
+                child: Text(
+                  asset.originalName,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: (assetId) {
+            if (assetId == null) {
+              return;
+            }
+            update(
+              expression.copyWith(
+                assetId: null,
+                assetIds: [...frames, assetId],
+              ),
+            );
+          },
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: InspectorNumberField(
+                label: 'FPS',
+                value: expression.framesPerSecond,
+                onChanged: (fps) => update(
+                  expression.copyWith(framesPerSecond: fps.clamp(0.1, 60)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SwitchListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Loop'),
+                value: expression.loop,
+                onChanged: (loop) => update(expression.copyWith(loop: loop)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _assetName(String assetId) {
+    return ready.assetById(assetId)?.originalName ?? assetId;
   }
 }
 
@@ -1514,53 +1625,6 @@ class _AssetPicker extends StatelessWidget {
       values: assets,
       labelFor: (id) => id.isEmpty
           ? l10n.builtIn
-          : ready.assetById(id)?.originalName ?? l10n.missingAsset,
-      onChanged: onChanged,
-    );
-  }
-}
-
-class _ImageAssetPicker extends StatelessWidget {
-  const _ImageAssetPicker({
-    required this.ready,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.kind,
-  });
-
-  final StudioReady ready;
-  final String label;
-  final String value;
-  final ValueChanged<String> onChanged;
-  final AssetKind? kind;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final assets = [
-      '',
-      ...ready.project.assets
-          .where((asset) {
-            final wanted = kind;
-            if (wanted != null) {
-              return asset.kind == wanted;
-            }
-            return asset.kind != AssetKind.audio &&
-                asset.kind != AssetKind.dialoguePortrait &&
-                asset.kind != AssetKind.video;
-          })
-          .map((asset) => asset.id),
-    ];
-    if (!assets.contains(value)) {
-      assets.add(value);
-    }
-    return _DropdownField<String>(
-      label: label,
-      value: value,
-      values: assets,
-      labelFor: (id) => id.isEmpty
-          ? l10n.none
           : ready.assetById(id)?.originalName ?? l10n.missingAsset,
       onChanged: onChanged,
     );

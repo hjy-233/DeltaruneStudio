@@ -347,4 +347,75 @@ void main() {
     );
     expect(endWorld.objects[followerObjectId]!.isMoving, isFalse);
   });
+
+  test('change expression plays for duration then restores previous state', () {
+    const characterObjectId = 'object_kris';
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [
+        SceneObject.characterInstance(
+          id: characterObjectId,
+          name: 'Kris',
+          characterId: 'character_kris',
+          transform: Transform2D(x: 0, y: 0),
+          facing: Direction.down,
+          initialExpression: 'idle',
+        ),
+      ],
+      triggers: const [],
+      eventChains: const [
+        EventChain(
+          id: 'chain_expression',
+          name: 'Expression',
+          events: [
+            StudioEvent.characterChangeExpression(
+              id: 'event_expression',
+              characterObjectId: characterObjectId,
+              expressionId: 'talk',
+              duration: 1,
+            ),
+            StudioEvent.characterWait(id: 'event_wait', duration: 1),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: const CameraPolicy.followPlayer(
+        playerObjectId: characterObjectId,
+      ),
+    );
+    final project = StudioProject(
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [
+        Character(
+          id: 'character_kris',
+          name: 'Kris',
+          animations: [],
+          expressions: [
+            CharacterExpression(id: 'idle', name: 'Idle'),
+            CharacterExpression(
+              id: 'talk',
+              name: 'Talk',
+              assetIds: ['frame_a', 'frame_b'],
+              framesPerSecond: 6,
+            ),
+          ],
+          movement: CharacterMovementProfile(),
+        ),
+      ],
+      assets: const [],
+    );
+    final plan = TimelinePlan(
+      project: project,
+      scene: scene,
+      chain: scene.eventChains.single,
+    );
+
+    expect(plan.duration, closeTo(2, 0.001));
+    expect(plan.evaluate(0.5).objects[characterObjectId]!.expressionId, 'talk');
+    expect(plan.evaluate(1.2).objects[characterObjectId]!.expressionId, 'idle');
+  });
 }

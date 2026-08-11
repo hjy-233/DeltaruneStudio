@@ -342,6 +342,13 @@ _CharacterExpression _$CharacterExpressionFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       assetId: json['assetId'] as String?,
       direction: $enumDecodeNullable(_$DirectionEnumMap, json['direction']),
+      assetIds:
+          (json['assetIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      framesPerSecond: (json['framesPerSecond'] as num?)?.toDouble() ?? 6,
+      loop: json['loop'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$CharacterExpressionToJson(
@@ -351,6 +358,9 @@ Map<String, dynamic> _$CharacterExpressionToJson(
   'name': instance.name,
   'assetId': instance.assetId,
   'direction': _$DirectionEnumMap[instance.direction],
+  'assetIds': instance.assetIds,
+  'framesPerSecond': instance.framesPerSecond,
+  'loop': instance.loop,
 };
 
 _CharacterMovementProfile _$CharacterMovementProfileFromJson(
@@ -573,6 +583,7 @@ CharacterChangeExpressionEvent _$CharacterChangeExpressionEventFromJson(
   id: json['id'] as String,
   characterObjectId: json['characterObjectId'] as String,
   expressionId: json['expressionId'] as String,
+  duration: (json['duration'] as num?)?.toDouble() ?? 1,
   $type: json['type'] as String?,
 );
 
@@ -582,6 +593,7 @@ Map<String, dynamic> _$CharacterChangeExpressionEventToJson(
   'id': instance.id,
   'characterObjectId': instance.characterObjectId,
   'expressionId': instance.expressionId,
+  'duration': instance.duration,
   'type': instance.$type,
 };
 

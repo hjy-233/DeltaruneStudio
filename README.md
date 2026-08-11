@@ -1,6 +1,6 @@
 # DeltaruneStudio
 
-只是一个用于 deltarune/undertale 风格动画的小工具
+只是一个用于制作 deltarune/undertale 风格动画的小工具
 
 ## 功能
 

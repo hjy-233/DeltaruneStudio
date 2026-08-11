@@ -45,12 +45,28 @@ String? imageAssetIdForObject({
       }
       final expressionId =
           runtimeObject?.expressionId ?? value.initialExpression;
-      final expressionAssetId = character.expressions
+      final expression = character.expressions
           .where((expression) => expression.id == expressionId)
-          .firstOrNull
-          ?.assetId;
-      if (expressionAssetId != null && expressionAssetId.isNotEmpty) {
-        return expressionAssetId;
+          .firstOrNull;
+      final expressionFrames = <String>[];
+      if (expression != null) {
+        expressionFrames.addAll(expression.assetIds);
+        if ((expression.assetId ?? '').isNotEmpty) {
+          expressionFrames.add(expression.assetId!);
+        }
+      }
+      if (expressionFrames.isNotEmpty) {
+        if (expressionFrames.length == 1) {
+          return expressionFrames.first;
+        }
+        final fps = expression!.framesPerSecond <= 0
+            ? 6.0
+            : expression.framesPerSecond;
+        final frame = (currentTime * fps).floor();
+        final frameIndex = expression.loop
+            ? frame % expressionFrames.length
+            : frame.clamp(0, expressionFrames.length - 1);
+        return expressionFrames[frameIndex];
       }
       if (character.animations.isEmpty) {
         return null;

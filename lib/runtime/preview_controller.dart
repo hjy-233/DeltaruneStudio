@@ -328,6 +328,9 @@ final class TimelinePlan {
       if (time < span.start) {
         break;
       }
+      if (time >= span.end && span.event is CharacterChangeExpressionEvent) {
+        continue;
+      }
       final localTime = (time - span.start).clamp(0, span.duration).toDouble();
       world = _applyEvent(
         world,
@@ -610,6 +613,9 @@ final class TimelinePlan {
     for (final span in spans) {
       if (time < span.start) {
         break;
+      }
+      if (time >= span.end && span.event is CharacterChangeExpressionEvent) {
+        continue;
       }
       world = _applyEvent(
         world,
@@ -1213,7 +1219,7 @@ final class TimelinePlan {
         return math.max(duration, 0.1);
       },
       characterWait: (value) => math.max(value.duration, 0.1),
-      characterChangeExpression: (_) => 0.1,
+      characterChangeExpression: (value) => math.max(value.duration, 0.1),
       characterStartFollow: (_) => 0.1,
       characterStopFollow: (_) => 0.1,
       dialogueSay: (value) => math.max(value.duration, 0.1),

@@ -3107,7 +3107,7 @@ as double,
 /// @nodoc
 mixin _$CharacterExpression {
 
- String get id; String get name; String? get assetId; Direction? get direction;
+ String get id; String get name; String? get assetId; Direction? get direction; List<String> get assetIds; double get framesPerSecond; bool get loop;
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3120,16 +3120,16 @@ $CharacterExpressionCopyWith<CharacterExpression> get copyWith => _$CharacterExp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.direction, direction) || other.direction == direction));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.direction, direction) || other.direction == direction)&&const DeepCollectionEquality().equals(other.assetIds, assetIds)&&(identical(other.framesPerSecond, framesPerSecond) || other.framesPerSecond == framesPerSecond)&&(identical(other.loop, loop) || other.loop == loop));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,assetId,direction);
+int get hashCode => Object.hash(runtimeType,id,name,assetId,direction,const DeepCollectionEquality().hash(assetIds),framesPerSecond,loop);
 
 @override
 String toString() {
-  return 'CharacterExpression(id: $id, name: $name, assetId: $assetId, direction: $direction)';
+  return 'CharacterExpression(id: $id, name: $name, assetId: $assetId, direction: $direction, assetIds: $assetIds, framesPerSecond: $framesPerSecond, loop: $loop)';
 }
 
 
@@ -3140,7 +3140,7 @@ abstract mixin class $CharacterExpressionCopyWith<$Res>  {
   factory $CharacterExpressionCopyWith(CharacterExpression value, $Res Function(CharacterExpression) _then) = _$CharacterExpressionCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? assetId, Direction? direction
+ String id, String name, String? assetId, Direction? direction, List<String> assetIds, double framesPerSecond, bool loop
 });
 
 
@@ -3157,13 +3157,16 @@ class _$CharacterExpressionCopyWithImpl<$Res>
 
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? assetId = freezed,Object? direction = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? assetId = freezed,Object? direction = freezed,Object? assetIds = null,Object? framesPerSecond = null,Object? loop = null,}) {
   return _then(CharacterExpression(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,assetId: freezed == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
 as String?,direction: freezed == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
-as Direction?,
+as Direction?,assetIds: null == assetIds ? _self.assetIds : assetIds // ignore: cast_nullable_to_non_nullable
+as List<String>,framesPerSecond: null == framesPerSecond ? _self.framesPerSecond : framesPerSecond // ignore: cast_nullable_to_non_nullable
+as double,loop: null == loop ? _self.loop : loop // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -3248,10 +3251,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? assetId,  Direction? direction)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? assetId,  Direction? direction,  List<String> assetIds,  double framesPerSecond,  bool loop)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CharacterExpression() when $default != null:
-return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
+return $default(_that.id,_that.name,_that.assetId,_that.direction,_that.assetIds,_that.framesPerSecond,_that.loop);case _:
   return orElse();
 
 }
@@ -3269,10 +3272,10 @@ return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? assetId,  Direction? direction)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? assetId,  Direction? direction,  List<String> assetIds,  double framesPerSecond,  bool loop)  $default,) {final _that = this;
 switch (_that) {
 case _CharacterExpression():
-return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
+return $default(_that.id,_that.name,_that.assetId,_that.direction,_that.assetIds,_that.framesPerSecond,_that.loop);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3289,10 +3292,10 @@ return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? assetId,  Direction? direction)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? assetId,  Direction? direction,  List<String> assetIds,  double framesPerSecond,  bool loop)?  $default,) {final _that = this;
 switch (_that) {
 case _CharacterExpression() when $default != null:
-return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
+return $default(_that.id,_that.name,_that.assetId,_that.direction,_that.assetIds,_that.framesPerSecond,_that.loop);case _:
   return null;
 
 }
@@ -3304,13 +3307,22 @@ return $default(_that.id,_that.name,_that.assetId,_that.direction);case _:
 @JsonSerializable()
 
 class _CharacterExpression implements CharacterExpression {
-  const _CharacterExpression({required this.id, required this.name, this.assetId, this.direction});
+  const _CharacterExpression({required this.id, required this.name, this.assetId, this.direction,  List<String> assetIds = const [], this.framesPerSecond = 6, this.loop = true}): _assetIds = assetIds;
   factory _CharacterExpression.fromJson(Map<String, dynamic> json) => _$CharacterExpressionFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  String? assetId;
 @override final  Direction? direction;
+ final  List<String> _assetIds;
+@override@JsonKey() List<String> get assetIds {
+  if (_assetIds is EqualUnmodifiableListView) return _assetIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_assetIds);
+}
+
+@override@JsonKey() final  double framesPerSecond;
+@override@JsonKey() final  bool loop;
 
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
@@ -3325,16 +3337,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.direction, direction) || other.direction == direction));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CharacterExpression&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.direction, direction) || other.direction == direction)&&const DeepCollectionEquality().equals(other._assetIds, _assetIds)&&(identical(other.framesPerSecond, framesPerSecond) || other.framesPerSecond == framesPerSecond)&&(identical(other.loop, loop) || other.loop == loop));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,assetId,direction);
+int get hashCode => Object.hash(runtimeType,id,name,assetId,direction,const DeepCollectionEquality().hash(_assetIds),framesPerSecond,loop);
 
 @override
 String toString() {
-  return 'CharacterExpression(id: $id, name: $name, assetId: $assetId, direction: $direction)';
+  return 'CharacterExpression(id: $id, name: $name, assetId: $assetId, direction: $direction, assetIds: $assetIds, framesPerSecond: $framesPerSecond, loop: $loop)';
 }
 
 
@@ -3345,7 +3357,7 @@ abstract mixin class _$CharacterExpressionCopyWith<$Res> implements $CharacterEx
   factory _$CharacterExpressionCopyWith(_CharacterExpression value, $Res Function(_CharacterExpression) _then) = __$CharacterExpressionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? assetId, Direction? direction
+ String id, String name, String? assetId, Direction? direction, List<String> assetIds, double framesPerSecond, bool loop
 });
 
 
@@ -3362,13 +3374,16 @@ class __$CharacterExpressionCopyWithImpl<$Res>
 
 /// Create a copy of CharacterExpression
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? assetId = freezed,Object? direction = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? assetId = freezed,Object? direction = freezed,Object? assetIds = null,Object? framesPerSecond = null,Object? loop = null,}) {
   return _then(_CharacterExpression(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,assetId: freezed == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
 as String?,direction: freezed == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
-as Direction?,
+as Direction?,assetIds: null == assetIds ? _self._assetIds : assetIds // ignore: cast_nullable_to_non_nullable
+as List<String>,framesPerSecond: null == framesPerSecond ? _self.framesPerSecond : framesPerSecond // ignore: cast_nullable_to_non_nullable
+as double,loop: null == loop ? _self.loop : loop // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -5821,12 +5836,12 @@ return videoPlay(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult Function( String id,  double duration)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId)?  characterChangeExpression,TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult Function( String id,  String followerObjectId)?  characterStopFollow,TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult Function( String id,  String targetObjectId)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult Function( String id,  String assetId)?  audioPlayBgm,TResult Function( String id,  String assetId)?  audioPlaySound,TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult Function( String id,  double duration)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId,  double duration)?  characterChangeExpression,TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult Function( String id,  String followerObjectId)?  characterStopFollow,TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult Function( String id,  String targetObjectId)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult Function( String id,  String assetId)?  audioPlayBgm,TResult Function( String id,  String assetId)?  audioPlaySound,TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent() when characterWait != null:
 return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration);case CharacterStartFollowEvent() when characterStartFollow != null:
 return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent() when characterStopFollow != null:
 return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent() when dialogueSay != null:
 return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
@@ -5854,12 +5869,12 @@ return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path)  characterMove,required TResult Function( String id,  double duration)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId)  characterChangeExpression,required TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)  characterStartFollow,required TResult Function( String id,  String followerObjectId)  characterStopFollow,required TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)  dialogueSay,required TResult Function( String id,  String targetObjectId)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId)  sceneChange,required TResult Function( String id,  String assetId)  audioPlayBgm,required TResult Function( String id,  String assetId)  audioPlaySound,required TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)  videoPlay,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path)  characterMove,required TResult Function( String id,  double duration)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId,  double duration)  characterChangeExpression,required TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)  characterStartFollow,required TResult Function( String id,  String followerObjectId)  characterStopFollow,required TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)  dialogueSay,required TResult Function( String id,  String targetObjectId)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId)  sceneChange,required TResult Function( String id,  String assetId)  audioPlayBgm,required TResult Function( String id,  String assetId)  audioPlaySound,required TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)  videoPlay,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent():
 return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent():
 return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent():
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case CharacterStartFollowEvent():
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration);case CharacterStartFollowEvent():
 return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent():
 return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent():
 return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent():
@@ -5883,12 +5898,12 @@ return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult? Function( String id,  double duration)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId)?  characterChangeExpression,TResult? Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult? Function( String id,  String followerObjectId)?  characterStopFollow,TResult? Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult? Function( String id,  String targetObjectId)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult? Function( String id,  String assetId)?  audioPlayBgm,TResult? Function( String id,  String assetId)?  audioPlaySound,TResult? Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult? Function( String id,  double duration)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId,  double duration)?  characterChangeExpression,TResult? Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult? Function( String id,  String followerObjectId)?  characterStopFollow,TResult? Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult? Function( String id,  String targetObjectId)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult? Function( String id,  String assetId)?  audioPlayBgm,TResult? Function( String id,  String assetId)?  audioPlaySound,TResult? Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent() when characterWait != null:
 return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration);case CharacterStartFollowEvent() when characterStartFollow != null:
 return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent() when characterStopFollow != null:
 return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent() when dialogueSay != null:
 return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
@@ -6071,12 +6086,13 @@ as double,
 @JsonSerializable()
 
 class CharacterChangeExpressionEvent extends StudioEvent {
-  const CharacterChangeExpressionEvent({required this.id, required this.characterObjectId, required this.expressionId,  String? $type}): $type = $type ?? 'character.changeExpression',super._();
+  const CharacterChangeExpressionEvent({required this.id, required this.characterObjectId, required this.expressionId, this.duration = 1,  String? $type}): $type = $type ?? 'character.changeExpression',super._();
   factory CharacterChangeExpressionEvent.fromJson(Map<String, dynamic> json) => _$CharacterChangeExpressionEventFromJson(json);
 
 @override final  String id;
  final  String characterObjectId;
  final  String expressionId;
+@JsonKey() final  double duration;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6095,16 +6111,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterChangeExpressionEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.characterObjectId, characterObjectId) || other.characterObjectId == characterObjectId)&&(identical(other.expressionId, expressionId) || other.expressionId == expressionId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterChangeExpressionEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.characterObjectId, characterObjectId) || other.characterObjectId == characterObjectId)&&(identical(other.expressionId, expressionId) || other.expressionId == expressionId)&&(identical(other.duration, duration) || other.duration == duration));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,characterObjectId,expressionId);
+int get hashCode => Object.hash(runtimeType,id,characterObjectId,expressionId,duration);
 
 @override
 String toString() {
-  return 'StudioEvent.characterChangeExpression(id: $id, characterObjectId: $characterObjectId, expressionId: $expressionId)';
+  return 'StudioEvent.characterChangeExpression(id: $id, characterObjectId: $characterObjectId, expressionId: $expressionId, duration: $duration)';
 }
 
 
@@ -6115,7 +6131,7 @@ abstract mixin class $CharacterChangeExpressionEventCopyWith<$Res> implements $S
   factory $CharacterChangeExpressionEventCopyWith(CharacterChangeExpressionEvent value, $Res Function(CharacterChangeExpressionEvent) _then) = _$CharacterChangeExpressionEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String characterObjectId, String expressionId
+ String id, String characterObjectId, String expressionId, double duration
 });
 
 
@@ -6132,12 +6148,13 @@ class _$CharacterChangeExpressionEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? characterObjectId = null,Object? expressionId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? characterObjectId = null,Object? expressionId = null,Object? duration = null,}) {
   return _then(CharacterChangeExpressionEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,characterObjectId: null == characterObjectId ? _self.characterObjectId : characterObjectId // ignore: cast_nullable_to_non_nullable
 as String,expressionId: null == expressionId ? _self.expressionId : expressionId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
