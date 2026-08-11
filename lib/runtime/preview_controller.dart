@@ -289,7 +289,10 @@ final class TimelinePlan {
   }) : spans = _buildSceneSpans(scene),
        audioCues = _buildSceneAudioCues(scene),
        dialogueTypeCues = _buildSceneDialogueTypeCues(project, scene) {
-    duration = spans.isEmpty ? 0 : spans.last.end;
+    duration = spans.fold<double>(
+      0,
+      (value, span) => math.max(value, span.end),
+    );
   }
 
   final StudioProject project;
@@ -339,16 +342,25 @@ final class TimelinePlan {
         span.duration,
         const {},
       );
-      if (time < span.end) {
-        break;
+      if (time >= span.end) {
+        world = _clearFinishedSpan(world, span);
       }
-      world = world.copyWith(
-        clearDialogue: true,
-        clearActiveMove: true,
-        clearActiveVideo: true,
-      );
     }
     return world.copyWith(currentTime: time, totalDuration: duration);
+  }
+
+  RuntimeWorld _clearFinishedSpan(RuntimeWorld world, TimelineSpan span) {
+    final event = span.event;
+    if (event is DialogueSayEvent) {
+      return world.copyWith(clearDialogue: true);
+    }
+    if (event is VideoPlayEvent) {
+      return world.copyWith(clearActiveVideo: true);
+    }
+    if (event is CharacterMoveEvent && world.activeMoveEventId == event.id) {
+      return world.copyWith(clearActiveMove: true);
+    }
+    return world;
   }
 
   RuntimeWorld _initialWorld() {
@@ -890,7 +902,6 @@ final class TimelinePlan {
 
   static List<TimelineSpan> _buildSceneSpans(Scene scene) {
     final spans = <TimelineSpan>[];
-    var cursor = 0.0;
     for (final chain in scene.eventChains) {
       if (chain.events.isEmpty ||
           chain.triggerMode != EventChainTriggerMode.always) {
@@ -899,29 +910,23 @@ final class TimelinePlan {
       final chainSpans = _buildSpans(scene, chain, const {});
       for (final span in chainSpans) {
         spans.add(
-          TimelineSpan(
-            event: span.event,
-            start: cursor + span.start,
-            end: cursor + span.end,
-          ),
+          TimelineSpan(event: span.event, start: span.start, end: span.end),
         );
       }
-      cursor += chainSpans.isEmpty ? 0 : chainSpans.last.end;
     }
+    spans.sort(_compareSpans);
     return spans;
   }
 
   static List<TimelineAudioCue> _buildSceneAudioCues(Scene scene) {
     final cues = <TimelineAudioCue>[];
-    var cursor = 0.0;
     for (final chain in scene.eventChains) {
       if (chain.events.isEmpty ||
           chain.triggerMode != EventChainTriggerMode.always) {
         continue;
       }
       final chainSpans = _buildSpans(scene, chain, const {});
-      cues.addAll(_audioCuesForSpans(scene, chainSpans, cursor, const {}));
-      cursor += chainSpans.isEmpty ? 0 : chainSpans.last.end;
+      cues.addAll(_audioCuesForSpans(scene, chainSpans, 0, const {}));
     }
     cues.sort((a, b) => a.time.compareTo(b.time));
     return cues;
@@ -932,7 +937,6 @@ final class TimelinePlan {
     Scene scene,
   ) {
     final cues = <TimelineDialogueTypeCue>[];
-    var cursor = 0.0;
     for (final chain in scene.eventChains) {
       if (chain.events.isEmpty ||
           chain.triggerMode != EventChainTriggerMode.always) {
@@ -940,12 +944,37 @@ final class TimelinePlan {
       }
       final chainSpans = _buildSpans(scene, chain, const {});
       cues.addAll(
-        _dialogueTypeCuesForSpans(project, scene, chainSpans, cursor, const {}),
+        _dialogueTypeCuesForSpans(project, scene, chainSpans, 0, const {}),
       );
-      cursor += chainSpans.isEmpty ? 0 : chainSpans.last.end;
     }
     cues.sort((a, b) => a.time.compareTo(b.time));
     return cues;
+  }
+
+  static int _compareSpans(TimelineSpan a, TimelineSpan b) {
+    final byStart = a.start.compareTo(b.start);
+    if (byStart != 0) {
+      return byStart;
+    }
+    return _eventPriority(a.event).compareTo(_eventPriority(b.event));
+  }
+
+  static int _eventPriority(StudioEvent event) {
+    return event.map(
+      characterStartFollow: (_) => 0,
+      cameraFollow: (_) => 1,
+      cameraFocus: (_) => 1,
+      characterChangeExpression: (_) => 2,
+      characterMove: (_) => 3,
+      characterWait: (_) => 4,
+      characterStopFollow: (_) => 5,
+      dialogueSay: (_) => 6,
+      sceneFade: (_) => 7,
+      sceneChange: (_) => 8,
+      audioPlayBgm: (_) => 9,
+      audioPlaySound: (_) => 9,
+      videoPlay: (_) => 10,
+    );
   }
 
   static List<TimelineAudioCue> _audioCuesForSpans(

@@ -348,6 +348,95 @@ void main() {
     expect(endWorld.objects[followerObjectId]!.isMoving, isFalse);
   });
 
+  test(
+    'always chains evaluate in parallel so followers can start before moves',
+    () {
+      const leaderObjectId = 'object_leader';
+      const followerObjectId = 'object_follower';
+      final scene = Scene(
+        id: 'scene_main',
+        name: 'Main Canvas',
+        objects: const [
+          SceneObject.characterInstance(
+            id: leaderObjectId,
+            name: 'Leader',
+            characterId: 'character_kris',
+            transform: Transform2D(x: 0, y: 0),
+            facing: Direction.right,
+          ),
+          SceneObject.characterInstance(
+            id: followerObjectId,
+            name: 'Follower',
+            characterId: 'character_kris',
+            transform: Transform2D(x: -48, y: 0),
+            facing: Direction.right,
+          ),
+        ],
+        triggers: const [],
+        eventChains: const [
+          EventChain(
+            id: 'chain_move',
+            name: 'Move',
+            triggerMode: EventChainTriggerMode.always,
+            events: [
+              StudioEvent.characterMove(
+                id: 'event_move',
+                characterObjectId: leaderObjectId,
+                path: MovementPath(
+                  speed: 320,
+                  nodes: [
+                    PathNode(id: 'node_start', x: 0, y: 0),
+                    PathNode(id: 'node_end', x: 320, y: 0),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          EventChain(
+            id: 'chain_follow',
+            name: 'Follow',
+            triggerMode: EventChainTriggerMode.always,
+            events: [
+              StudioEvent.characterStartFollow(
+                id: 'event_follow',
+                followerObjectId: followerObjectId,
+                leaderObjectId: leaderObjectId,
+                distance: 48,
+              ),
+            ],
+          ),
+        ],
+        interestPoints: const [],
+        cameraPolicy: const CameraPolicy.followPlayer(
+          playerObjectId: leaderObjectId,
+        ),
+      );
+      final project = StudioProject(
+        id: 'project_test',
+        name: 'Test',
+        currentSceneId: scene.id,
+        scenes: [scene],
+        characters: const [
+          Character(
+            id: 'character_kris',
+            name: 'Kris',
+            animations: [],
+            expressions: [],
+            movement: CharacterMovementProfile(),
+          ),
+        ],
+        assets: const [],
+      );
+      final plan = TimelinePlan(project: project, scene: scene, chain: null);
+
+      final world = plan.evaluate(0.75);
+      expect(plan.duration, closeTo(1, 0.001));
+      expect(world.objects[leaderObjectId]!.transform.x, closeTo(240, 0.001));
+      expect(world.objects[followerObjectId]!.transform.x, closeTo(192, 0.001));
+      expect(world.objects[followerObjectId]!.isMoving, isTrue);
+    },
+  );
+
   test('change expression plays for duration then restores previous state', () {
     const characterObjectId = 'object_kris';
     final scene = Scene(
