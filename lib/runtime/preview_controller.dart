@@ -479,6 +479,7 @@ final class TimelinePlan {
     var startY = nodes.first.y;
     var lastX = startX;
     var lastY = startY;
+    var pathDistance = 0.0;
     if (nodes.length == 1) {
       return _placeObject(current, event, startX, startY, Direction.down);
     }
@@ -497,6 +498,7 @@ final class TimelinePlan {
             : (localTime - elapsed) / segmentDuration;
         final dx = target.x - startX;
         final dy = target.y - startY;
+        final segmentDistance = math.sqrt(dx * dx + dy * dy);
         return _placeObject(
           current,
           event,
@@ -504,9 +506,11 @@ final class TimelinePlan {
           startY + dy * segmentT,
           _directionFor(dx, dy),
           progress: (index + segmentT) / (nodes.length - 1),
+          pathDistance: pathDistance + segmentDistance * segmentT,
         );
       }
       elapsed += segmentDuration;
+      pathDistance += _distance(startX, startY, target.x, target.y);
       lastX = target.x;
       lastY = target.y;
       current = _placeObject(
@@ -516,6 +520,7 @@ final class TimelinePlan {
         target.y,
         _directionFor(target.x - startX, target.y - startY),
         progress: (index + 1) / (nodes.length - 1),
+        pathDistance: pathDistance,
       );
       startX = target.x;
       startY = target.y;
@@ -548,6 +553,7 @@ final class TimelinePlan {
           destination.y,
           current.objects[event.characterObjectId]?.facing ?? Direction.down,
           progress: (index + 1) / (nodes.length - 1),
+          pathDistance: pathDistance,
         ).copyWith(fadeOpacity: 0);
         startX = destination.x;
         startY = destination.y;
@@ -578,6 +584,7 @@ final class TimelinePlan {
       lastY,
       current.objects[event.characterObjectId]?.facing ?? Direction.down,
       progress: 1,
+      pathDistance: pathDistance,
       isMoving: false,
     ).copyWith(clearActiveMove: true);
   }
@@ -650,6 +657,7 @@ final class TimelinePlan {
     double y,
     Direction facing, {
     double progress = 0,
+    double? pathDistance,
     bool isMoving = true,
   }) {
     final placed =
@@ -664,7 +672,7 @@ final class TimelinePlan {
           activeMoveEventId: event.id,
           activeMoveProgress: progress,
         );
-    return _applyFollowersFromMove(placed, event, progress);
+    return _applyFollowersFromMove(placed, event, progress, pathDistance);
   }
 
   RuntimeWorld _setMoving(RuntimeWorld world, String objectId, bool isMoving) {
@@ -677,6 +685,7 @@ final class TimelinePlan {
     RuntimeWorld world,
     CharacterMoveEvent event,
     double progress,
+    double? pathDistance,
   ) {
     var current = world;
     for (final entry in world.followStates.entries) {
@@ -688,6 +697,7 @@ final class TimelinePlan {
       final position = _followPositionForPath(
         event.path,
         progress,
+        pathDistance,
         follow.distance,
       );
       if (position == null) {
@@ -707,6 +717,7 @@ final class TimelinePlan {
   FollowPosition? _followPositionForPath(
     MovementPath path,
     double progress,
+    double? pathDistance,
     double distance,
   ) {
     final samples = _pathSamples(path);
@@ -714,7 +725,9 @@ final class TimelinePlan {
       return null;
     }
     final total = samples.last.distance;
-    final leaderDistance = (total * progress).clamp(0, total).toDouble();
+    final leaderDistance = (pathDistance ?? total * progress)
+        .clamp(0, total)
+        .toDouble();
     final followerDistance = math.max(
       0,
       leaderDistance - math.max(distance, 0),
@@ -744,6 +757,12 @@ final class TimelinePlan {
       direction: samples.last.direction,
       isMoving: false,
     );
+  }
+
+  double _distance(double startX, double startY, double endX, double endY) {
+    final dx = endX - startX;
+    final dy = endY - startY;
+    return math.sqrt(dx * dx + dy * dy);
   }
 
   List<PathSample> _pathSamples(MovementPath path) {
