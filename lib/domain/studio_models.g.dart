@@ -818,17 +818,3 @@ PointFocusTarget _$PointFocusTargetFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$PointFocusTargetToJson(PointFocusTarget instance) =>
     <String, dynamic>{'x': instance.x, 'y': instance.y, 'type': instance.$type};
-
-_BattleRequest _$BattleRequestFromJson(Map<String, dynamic> json) =>
-    _BattleRequest(
-      encounterId: json['encounterId'] as String,
-      returnSceneId: json['returnSceneId'] as String,
-      returnMarkerId: json['returnMarkerId'] as String,
-    );
-
-Map<String, dynamic> _$BattleRequestToJson(_BattleRequest instance) =>
-    <String, dynamic>{
-      'encounterId': instance.encounterId,
-      'returnSceneId': instance.returnSceneId,
-      'returnMarkerId': instance.returnMarkerId,
-    };

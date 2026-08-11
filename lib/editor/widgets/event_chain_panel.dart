@@ -1,7 +1,7 @@
 import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/editor/editor_selection.dart';
-import 'package:deltarune_studio/editor/studio_workspace.dart';
+import 'package:deltarune_studio/editor/default_event_factories.dart';
 import 'package:deltarune_studio/l10n/event_labels.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_controller.dart';

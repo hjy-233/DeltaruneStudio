@@ -1,4 +1,3 @@
-import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/editor/widgets/event_chain_panel.dart';
 import 'package:deltarune_studio/editor/widgets/inspector_panel.dart';
@@ -77,258 +76,283 @@ class _WorkspaceBodyState extends ConsumerState<_WorkspaceBody> {
 
     return Focus(
       autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is! KeyDownEvent) {
-          return KeyEventResult.ignored;
-        }
-        final isModifierPressed =
-            HardwareKeyboard.instance.isMetaPressed ||
-            HardwareKeyboard.instance.isControlPressed;
-        if (isModifierPressed && event.logicalKey == LogicalKeyboardKey.keyZ) {
-          if (HardwareKeyboard.instance.isShiftPressed) {
-            controller.redo();
-          } else {
-            controller.undo();
-          }
-          return KeyEventResult.handled;
-        }
-        if (isModifierPressed && event.logicalKey == LogicalKeyboardKey.keyY) {
-          controller.redo();
-          return KeyEventResult.handled;
-        }
-        if (isModifierPressed && event.logicalKey == LogicalKeyboardKey.keyC) {
-          controller.copySelection();
-          return KeyEventResult.handled;
-        }
-        if (isModifierPressed && event.logicalKey == LogicalKeyboardKey.keyV) {
-          controller.pasteSelection();
-          return KeyEventResult.handled;
-        }
-        if (isPreviewPlaying) {
-          return KeyEventResult.ignored;
-        }
-        final step = HardwareKeyboard.instance.isShiftPressed ? 10.0 : 1.0;
-        final delta = switch (event.logicalKey) {
-          LogicalKeyboardKey.arrowLeft => Offset(-step, 0),
-          LogicalKeyboardKey.arrowRight => Offset(step, 0),
-          LogicalKeyboardKey.arrowUp => Offset(0, -step),
-          LogicalKeyboardKey.arrowDown => Offset(0, step),
-          _ => null,
-        };
-        if (delta == null) {
-          return KeyEventResult.ignored;
-        }
-        final selection = ready.selection;
-        if (selection is PathNodeSelection) {
-          controller.moveSelectedPathNode(delta.dx, delta.dy);
-        } else {
-          controller.moveSelectedObject(delta.dx, delta.dy);
-        }
-        return KeyEventResult.handled;
-      },
+      onKeyEvent: (node, event) =>
+          _handleKeyEvent(event, ready, controller, isPreviewPlaying),
       child: Column(
         children: [
-          Material(
-            elevation: 1,
-            child: SizedBox(
-              height: 48,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    Text(
-                      l10n.appTitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    FilledButton.tonalIcon(
-                      onPressed: controller.newProject,
-                      icon: const Icon(Icons.note_add),
-                      label: Text(l10n.newProject),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonalIcon(
-                      onPressed: controller.openProject,
-                      icon: const Icon(Icons.folder_open),
-                      label: Text(l10n.open),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonalIcon(
-                      onPressed: controller.saveProject,
-                      icon: const Icon(Icons.save),
-                      label: Text(ready.isDirty ? l10n.saveDirty : l10n.save),
-                    ),
-                    if (!kIsWeb) ...[
-                      const SizedBox(width: 8),
-                      FilledButton.tonalIcon(
-                        onPressed: controller.saveProjectAs,
-                        icon: const Icon(Icons.save_as),
-                        label: Text(l10n.saveAs),
-                      ),
-                    ],
-                    const SizedBox(width: 28),
-                    Text(
-                      l10n.mainCanvas,
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const SizedBox(width: 10),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final cursor = ref.watch(canvasCursorProvider);
-                        final text = cursor == null
-                            ? 'x -, y -'
-                            : 'x ${cursor.dx.toStringAsFixed(0)}, y ${cursor.dy.toStringAsFixed(0)}';
-                        return Text(
-                          text,
-                          style: Theme.of(context).textTheme.labelMedium,
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton.filledTonal(
-                      tooltip: l10n.settings,
-                      onPressed: () =>
-                          showStudioSettingsWindow(context, ready: ready),
-                      icon: const Icon(Icons.settings),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.icon(
-                      onPressed: isPreviewPlaying
-                          ? previewController.stop
-                          : () => previewController.play(
-                              ready,
-                              fromStart: true,
-                              cleanPreview: true,
-                            ),
-                      icon: Icon(
-                        isPreviewPlaying ? Icons.stop : Icons.play_arrow,
-                      ),
-                      label: Text(isPreviewPlaying ? l10n.stop : l10n.play),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.tonalIcon(
-                      onPressed: _isExportingVideo
-                          ? null
-                          : () => _exportVideo(context, ready),
-                      icon: _isExportingVideo
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.movie_creation_outlined),
-                      label: const Text('导出视频'),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
+          _buildToolbar(context, ready, controller, previewController, l10n),
+          Expanded(child: _buildResizableWorkspace(ready)),
+          _buildStatusBar(context, projectPath, statusText),
+        ],
+      ),
+    );
+  }
+
+  KeyEventResult _handleKeyEvent(
+    KeyEvent event,
+    StudioReady ready,
+    StudioController controller,
+    bool isPreviewPlaying,
+  ) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+    final isModifierPressed =
+        HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isControlPressed;
+    if (_handleShortcut(event, controller, isModifierPressed)) {
+      return KeyEventResult.handled;
+    }
+    if (isPreviewPlaying) {
+      return KeyEventResult.ignored;
+    }
+    final step = HardwareKeyboard.instance.isShiftPressed ? 10.0 : 1.0;
+    final delta = switch (event.logicalKey) {
+      LogicalKeyboardKey.arrowLeft => Offset(-step, 0),
+      LogicalKeyboardKey.arrowRight => Offset(step, 0),
+      LogicalKeyboardKey.arrowUp => Offset(0, -step),
+      LogicalKeyboardKey.arrowDown => Offset(0, step),
+      _ => null,
+    };
+    if (delta == null) {
+      return KeyEventResult.ignored;
+    }
+    if (ready.selection is PathNodeSelection) {
+      controller.moveSelectedPathNode(delta.dx, delta.dy);
+    } else {
+      controller.moveSelectedObject(delta.dx, delta.dy);
+    }
+    return KeyEventResult.handled;
+  }
+
+  bool _handleShortcut(
+    KeyEvent event,
+    StudioController controller,
+    bool isModifierPressed,
+  ) {
+    if (!isModifierPressed) {
+      return false;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyZ) {
+      HardwareKeyboard.instance.isShiftPressed
+          ? controller.redo()
+          : controller.undo();
+      return true;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyY) {
+      controller.redo();
+      return true;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyC) {
+      controller.copySelection();
+      return true;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyV) {
+      controller.pasteSelection();
+      return true;
+    }
+    return false;
+  }
+
+  Widget _buildToolbar(
+    BuildContext context,
+    StudioReady ready,
+    StudioController controller,
+    PreviewController previewController,
+    AppLocalizations l10n,
+  ) {
+    final isPreviewPlaying = ref.watch(
+      previewControllerProvider.select((preview) => preview.isPlaying),
+    );
+    return Material(
+      elevation: 1,
+      child: SizedBox(
+        height: 48,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              Text(
+                l10n.appTitle,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-          ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final maxSideWidth = constraints.maxWidth * 0.45;
-                double bounded(double value, double preferredMin, double max) {
-                  final upper = max < 0 ? 0.0 : max;
-                  final lower = upper < preferredMin ? upper : preferredMin;
-                  return value.clamp(lower, upper).toDouble();
-                }
-
-                _leftWidth = bounded(_leftWidth, 160, maxSideWidth);
-                _rightWidth = bounded(_rightWidth, 220, maxSideWidth);
-                _bottomHeight = bounded(
-                  _bottomHeight,
-                  180,
-                  constraints.maxHeight * 0.65,
-                );
-                return Row(
-                  children: [
-                    SizedBox(
-                      width: _leftWidth,
-                      child: SceneSidebar(ready: ready),
-                    ),
-                    _ResizeHandle(
-                      axis: Axis.horizontal,
-                      onDrag: (delta) {
-                        setState(() {
-                          _leftWidth = bounded(
-                            _leftWidth + delta,
-                            160,
-                            maxSideWidth,
-                          );
-                        });
-                      },
-                      onDragEnd: _persistLayout,
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Expanded(child: SceneCanvas(ready: ready)),
-                          _ResizeHandle(
-                            axis: Axis.vertical,
-                            onDrag: (delta) {
-                              setState(() {
-                                _bottomHeight = bounded(
-                                  _bottomHeight - delta,
-                                  180,
-                                  constraints.maxHeight * 0.65,
-                                );
-                              });
-                            },
-                            onDragEnd: _persistLayout,
-                          ),
-                          SizedBox(
-                            height: _bottomHeight,
-                            child: EventChainPanel(
-                              ready: ready,
-                              sampleCharacterId: ready
-                                  .currentScene
-                                  .objects
-                                  .firstOrNullObjectId,
-                            ),
-                          ),
-                        ],
+              const SizedBox(width: 20),
+              _toolbarButton(
+                controller.newProject,
+                Icons.note_add,
+                l10n.newProject,
+              ),
+              _toolbarButton(
+                controller.openProject,
+                Icons.folder_open,
+                l10n.open,
+              ),
+              _toolbarButton(
+                controller.saveProject,
+                Icons.save,
+                ready.isDirty ? l10n.saveDirty : l10n.save,
+              ),
+              if (!kIsWeb)
+                _toolbarButton(
+                  controller.saveProjectAs,
+                  Icons.save_as,
+                  l10n.saveAs,
+                ),
+              const SizedBox(width: 28),
+              Text(
+                l10n.mainCanvas,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(width: 10),
+              const _CanvasCursorLabel(),
+              const SizedBox(width: 12),
+              IconButton.filledTonal(
+                tooltip: l10n.settings,
+                onPressed: () =>
+                    showStudioSettingsWindow(context, ready: ready),
+                icon: const Icon(Icons.settings),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: isPreviewPlaying
+                    ? previewController.stop
+                    : () => previewController.play(
+                        ready,
+                        fromStart: true,
+                        cleanPreview: true,
                       ),
-                    ),
-                    _ResizeHandle(
-                      axis: Axis.horizontal,
-                      onDrag: (delta) {
-                        setState(() {
-                          _rightWidth = bounded(
-                            _rightWidth - delta,
-                            220,
-                            maxSideWidth,
-                          );
-                        });
-                      },
-                      onDragEnd: _persistLayout,
-                    ),
-                    SizedBox(
-                      width: _rightWidth,
-                      child: InspectorPanel(ready: ready),
-                    ),
-                  ],
-                );
-              },
-            ),
+                icon: Icon(isPreviewPlaying ? Icons.stop : Icons.play_arrow),
+                label: Text(isPreviewPlaying ? l10n.stop : l10n.play),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                onPressed: _isExportingVideo
+                    ? null
+                    : () => _exportVideo(context, ready),
+                icon: _isExportingVideo
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.movie_creation_outlined),
+                label: const Text('导出视频'),
+              ),
+              const SizedBox(width: 16),
+            ],
           ),
-          Container(
-            height: 28,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            alignment: Alignment.centerLeft,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Text(
-              '$projectPath  |  $statusText',
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+    );
+  }
+
+  Widget _toolbarButton(VoidCallback onPressed, IconData icon, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilledButton.tonalIcon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      ),
+    );
+  }
+
+  Widget _buildResizableWorkspace(StudioReady ready) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxSideWidth = constraints.maxWidth * 0.45;
+        _leftWidth = _bounded(_leftWidth, 160, maxSideWidth);
+        _rightWidth = _bounded(_rightWidth, 220, maxSideWidth);
+        _bottomHeight = _bounded(
+          _bottomHeight,
+          180,
+          constraints.maxHeight * 0.65,
+        );
+        return Row(
+          children: [
+            SizedBox(
+              width: _leftWidth,
+              child: SceneSidebar(ready: ready),
             ),
+            _horizontalResize((delta) {
+              _leftWidth = _bounded(_leftWidth + delta, 160, maxSideWidth);
+            }),
+            Expanded(child: _buildCenterWorkspace(ready, constraints)),
+            _horizontalResize((delta) {
+              _rightWidth = _bounded(_rightWidth - delta, 220, maxSideWidth);
+            }),
+            SizedBox(
+              width: _rightWidth,
+              child: InspectorPanel(ready: ready),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCenterWorkspace(StudioReady ready, BoxConstraints constraints) {
+    return Column(
+      children: [
+        Expanded(child: SceneCanvas(ready: ready)),
+        _ResizeHandle(
+          axis: Axis.vertical,
+          onDrag: (delta) {
+            setState(() {
+              _bottomHeight = _bounded(
+                _bottomHeight - delta,
+                180,
+                constraints.maxHeight * 0.65,
+              );
+            });
+          },
+          onDragEnd: _persistLayout,
+        ),
+        SizedBox(
+          height: _bottomHeight,
+          child: EventChainPanel(
+            ready: ready,
+            sampleCharacterId: ready.currentScene.objects.firstOrNullObjectId,
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _horizontalResize(ValueChanged<double> updateWidth) {
+    return _ResizeHandle(
+      axis: Axis.horizontal,
+      onDrag: (delta) {
+        setState(() => updateWidth(delta));
+      },
+      onDragEnd: _persistLayout,
+    );
+  }
+
+  double _bounded(double value, double preferredMin, double max) {
+    final upper = max < 0 ? 0.0 : max;
+    final lower = upper < preferredMin ? upper : preferredMin;
+    return value.clamp(lower, upper).toDouble();
+  }
+
+  Widget _buildStatusBar(
+    BuildContext context,
+    String projectPath,
+    String statusText,
+  ) {
+    return Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      alignment: Alignment.centerLeft,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Text(
+        '$projectPath  |  $statusText',
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall,
       ),
     );
   }
@@ -414,6 +438,19 @@ class _WorkspaceBodyState extends ConsumerState<_WorkspaceBody> {
   }
 }
 
+class _CanvasCursorLabel extends ConsumerWidget {
+  const _CanvasCursorLabel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cursor = ref.watch(canvasCursorProvider);
+    final text = cursor == null
+        ? 'x -, y -'
+        : 'x ${cursor.dx.toStringAsFixed(0)}, y ${cursor.dy.toStringAsFixed(0)}';
+    return Text(text, style: Theme.of(context).textTheme.labelMedium);
+  }
+}
+
 class _ResizeHandle extends StatelessWidget {
   const _ResizeHandle({
     required this.axis,
@@ -466,20 +503,4 @@ extension on List<SceneObject> {
     }
     return isEmpty ? null : first.objectId;
   }
-}
-
-StudioEvent defaultMoveEvent(String? objectId) {
-  return StudioEvent.characterMove(
-    id: StudioIds.event(),
-    characterObjectId: objectId ?? '',
-    path: MovementPath(
-      nodes: [
-        const PathNode(id: 'path_a', name: 'Start', x: 120, y: 180),
-        const PathNode(id: 'path_b', name: 'Node 2', x: 240, y: 180),
-        const PathNode(id: 'path_c', name: 'Node 3', x: 240, y: 120),
-      ],
-      speed: 320,
-      shake: 12,
-    ),
-  );
 }

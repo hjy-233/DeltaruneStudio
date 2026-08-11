@@ -3,6 +3,18 @@ import 'package:deltarune_studio/runtime/preview_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  _timelineTests();
+  _dialogueTests();
+  _followTests();
+  _expressionTests();
+}
+
+void _timelineTests() {
+  _moveTriggerTimelineTests();
+  _videoTimelineTests();
+}
+
+void _moveTriggerTimelineTests() {
   test(
     'move node touching trigger point schedules trigger sound immediately',
     () {
@@ -103,7 +115,9 @@ void main() {
       expect(plan.audioCues.single.time, closeTo(1, 0.001));
     },
   );
+}
 
+void _videoTimelineTests() {
   test(
     'character stops walking animation while a trigger chain is running',
     () {
@@ -208,7 +222,9 @@ void main() {
       expect(world.objects[characterObjectId]!.isMoving, isFalse);
     },
   );
+}
 
+void _dialogueTests() {
   test('final dialogue clears when its duration ends', () {
     final scene = Scene(
       id: 'scene_main',
@@ -252,7 +268,15 @@ void main() {
     expect(plan.evaluate(0.5).dialogue, isNotNull);
     expect(plan.evaluate(1).dialogue, isNull);
   });
+}
 
+void _followTests() {
+  _basicFollowTests();
+  _parallelFollowTests();
+  _unevenFollowTests();
+}
+
+void _basicFollowTests() {
   test('character follow samples leader path at a fixed distance', () {
     const leaderObjectId = 'object_leader';
     const followerObjectId = 'object_follower';
@@ -347,7 +371,9 @@ void main() {
     );
     expect(endWorld.objects[followerObjectId]!.isMoving, isFalse);
   });
+}
 
+void _parallelFollowTests() {
   test(
     'always chains evaluate in parallel so followers can start before moves',
     () {
@@ -436,7 +462,9 @@ void main() {
       expect(world.objects[followerObjectId]!.isMoving, isTrue);
     },
   );
+}
 
+void _unevenFollowTests() {
   test('character follow uses traveled distance on uneven path segments', () {
     const leaderObjectId = 'object_leader';
     const followerObjectId = 'object_follower';
@@ -522,7 +550,9 @@ void main() {
     expect(world.objects[followerObjectId]!.transform.x, closeTo(272, 0.001));
     expect(world.objects[followerObjectId]!.isMoving, isTrue);
   });
+}
 
+void _expressionTests() {
   test('change expression plays for duration then restores previous state', () {
     const characterObjectId = 'object_kris';
     final scene = Scene(

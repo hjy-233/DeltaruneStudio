@@ -484,19 +484,3 @@ sealed class FocusTarget with _$FocusTarget {
   factory FocusTarget.fromJson(Map<String, dynamic> json) =>
       _$FocusTargetFromJson(json);
 }
-
-abstract interface class BattleEntryPoint {
-  Future<void> startBattle(BattleRequest request);
-}
-
-@freezed
-abstract class BattleRequest with _$BattleRequest {
-  const factory BattleRequest({
-    required String encounterId,
-    required String returnSceneId,
-    required String returnMarkerId,
-  }) = _BattleRequest;
-
-  factory BattleRequest.fromJson(Map<String, dynamic> json) =>
-      _$BattleRequestFromJson(json);
-}

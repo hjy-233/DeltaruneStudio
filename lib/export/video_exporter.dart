@@ -429,12 +429,17 @@ final class VideoExporter {
     if (templateImage == null) {
       return;
     }
-    final boxWidth = math.max(280.0, size.width - 28);
+    final boxWidth = math.max(
+      dialogueMinBoxWidth,
+      size.width - dialogueCameraHorizontalInset,
+    );
     final scale = boxWidth / template.width;
     final boxHeight = template.height * scale;
     final boxRect = Rect.fromLTWH(
       (size.width - boxWidth) / 2,
-      size.height - boxHeight - math.max(18, 20 * scale),
+      size.height -
+          boxHeight -
+          math.max(dialogueBottomInset, dialogueScaledBottomInset * scale),
       boxWidth,
       boxHeight,
     );
@@ -454,10 +459,14 @@ final class VideoExporter {
     final hasPortrait = portrait != null;
     if (portrait != null) {
       final portraitRect = Rect.fromLTWH(
-        boxRect.left + 28 * scale + 10 * scale,
-        boxRect.top + 26 * scale + 10 * scale,
-        88 * scale,
-        88 * scale,
+        boxRect.left +
+            dialoguePortraitOuterLeft * scale +
+            dialoguePortraitInnerInset * scale,
+        boxRect.top +
+            dialoguePortraitOuterTop * scale +
+            dialoguePortraitInnerInset * scale,
+        dialoguePortraitInnerSize * scale,
+        dialoguePortraitInnerSize * scale,
       );
       canvas.drawImageRect(
         portrait,
@@ -472,16 +481,11 @@ final class VideoExporter {
       );
     }
 
-    final visibleCharacters =
-        dialogue.visibleCharacters ?? dialogue.text.length;
-    final visibleText = dialogue.text.substring(
-      0,
-      visibleCharacters.clamp(0, dialogue.text.length),
-    );
+    final visibleText = visibleDialogueText(dialogue);
     final paragraphStyle = ui.ParagraphStyle(
       fontFamily: 'PhoenixPixel',
-      fontSize: 24 * scale,
-      height: 1.35,
+      fontSize: dialogueFontSize * scale,
+      height: dialogueLineHeight,
       textDirection: TextDirection.ltr,
     );
     final builder = ui.ParagraphBuilder(paragraphStyle)
@@ -489,22 +493,22 @@ final class VideoExporter {
         ui.TextStyle(
           color: Colors.white,
           fontFamily: 'PhoenixPixel',
-          fontSize: 24 * scale,
-          height: 1.35,
+          fontSize: dialogueFontSize * scale,
+          height: dialogueLineHeight,
         ),
       )
-      ..addText(_dialogueText(visibleText));
+      ..addText(dialogueTextWithLineBullets(visibleText));
     final paragraph = builder.build();
-    final textLeft = boxRect.left + (hasPortrait ? 146 : 42) * scale;
-    final textTop = boxRect.top + 36 * scale;
-    final textWidth = boxRect.right - textLeft - 42 * scale;
+    final textLeft =
+        boxRect.left +
+        (hasPortrait
+                ? dialogueTextLeftWithPortrait
+                : dialogueTextLeftWithoutPortrait) *
+            scale;
+    final textTop = boxRect.top + dialogueTextTop * scale;
+    final textWidth = boxRect.right - textLeft - dialogueTextRight * scale;
     paragraph.layout(ui.ParagraphConstraints(width: textWidth));
     canvas.drawParagraph(paragraph, Offset(textLeft, textTop));
-  }
-
-  String _dialogueText(String text) {
-    final lines = text.split('\n');
-    return [for (final line in lines) '* $line'].join('\n');
   }
 
   Future<ui.Image?> _portraitImage(StudioReady ready, String? assetId) async {

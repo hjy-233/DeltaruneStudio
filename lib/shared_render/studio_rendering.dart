@@ -14,6 +14,23 @@ final class DialogueTemplateSpec {
   final double height;
 }
 
+const dialogueMinBoxWidth = 280.0;
+const dialogueCameraHorizontalInset = 28.0;
+const dialogueBottomInset = 18.0;
+const dialogueScaledBottomInset = 20.0;
+const dialoguePortraitOuterLeft = 28.0;
+const dialoguePortraitOuterTop = 26.0;
+const dialoguePortraitOuterSize = 108.0;
+const dialoguePortraitInnerInset = 10.0;
+const dialoguePortraitInnerSize = 88.0;
+const dialogueTextLeftWithPortrait = 146.0;
+const dialogueTextLeftWithoutPortrait = 42.0;
+const dialogueTextTop = 36.0;
+const dialogueTextRight = 42.0;
+const dialogueTextBottom = 30.0;
+const dialogueFontSize = 24.0;
+const dialogueLineHeight = 1.35;
+
 DialogueTemplateSpec dialogueTemplateForStyle(DialogueStyle style) {
   return switch (style) {
     DialogueStyle.darkWorld => const DialogueTemplateSpec(
@@ -27,6 +44,19 @@ DialogueTemplateSpec dialogueTemplateForStyle(DialogueStyle style) {
       height: 152,
     ),
   };
+}
+
+String visibleDialogueText(DialogueBoxState dialogue) {
+  final visibleCharacters = dialogue.visibleCharacters ?? dialogue.text.length;
+  return dialogue.text.substring(
+    0,
+    visibleCharacters.clamp(0, dialogue.text.length),
+  );
+}
+
+String dialogueTextWithLineBullets(String text) {
+  final lines = text.split('\n');
+  return [for (final line in lines) '* $line'].join('\n');
 }
 
 String? imageAssetIdForObject({
