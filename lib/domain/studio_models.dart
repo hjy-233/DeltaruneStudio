@@ -15,6 +15,8 @@ enum VideoFitMode { contain }
 
 enum AppLanguage { system, english, chinese }
 
+enum CharacterLibraryScope { global, project }
+
 enum EventChainTriggerMode { triggerPoint, always }
 
 @freezed
@@ -52,6 +54,8 @@ abstract class EditorSettings with _$EditorSettings {
   const factory EditorSettings({
     @Default(AppLanguage.system) AppLanguage language,
     @Default(true) bool englishDialogueTypewriterByWord,
+    @Default(CharacterLibraryScope.global)
+    CharacterLibraryScope characterLibraryScope,
   }) = _EditorSettings;
 
   factory EditorSettings.fromJson(Map<String, dynamic> json) =>

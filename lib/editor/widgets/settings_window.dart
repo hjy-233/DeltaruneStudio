@@ -95,6 +95,34 @@ class _SettingsWindow extends ConsumerWidget {
               update(settings.copyWith(englishDialogueTypewriterByWord: value));
             },
           ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<CharacterLibraryScope>(
+            initialValue: settings.characterLibraryScope,
+            decoration: InputDecoration(labelText: l10n.characterLibraryScope),
+            items: [
+              DropdownMenuItem(
+                value: CharacterLibraryScope.global,
+                child: Text(l10n.characterLibraryGlobal),
+              ),
+              DropdownMenuItem(
+                value: CharacterLibraryScope.project,
+                child: Text(l10n.characterLibraryProject),
+              ),
+            ],
+            onChanged: (scope) {
+              if (scope == null) {
+                return;
+              }
+              update(settings.copyWith(characterLibraryScope: scope));
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            settings.characterLibraryScope == CharacterLibraryScope.global
+                ? l10n.characterLibraryGlobalHelp
+                : l10n.characterLibraryProjectHelp,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );

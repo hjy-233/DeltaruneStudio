@@ -79,6 +79,21 @@ class AppLocalizationsZh extends AppLocalizations {
       '当软件语言为英文且对话文本是英文时，打字机效果按词推进。';
 
   @override
+  String get characterLibraryScope => '角色库范围';
+
+  @override
+  String get characterLibraryGlobal => '全局角色库';
+
+  @override
+  String get characterLibraryGlobalHelp => '角色配置保存在应用全局角色库，所有项目都可以调用。';
+
+  @override
+  String get characterLibraryProject => '当前项目';
+
+  @override
+  String get characterLibraryProjectHelp => '角色配置只保存在当前 .drs 项目中。';
+
+  @override
   String get canvasObjects => '画布对象';
 
   @override

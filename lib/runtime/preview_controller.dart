@@ -289,9 +289,11 @@ final class TimelinePlan {
     required this.project,
     required this.scene,
     required this.chain,
-  }) : spans = _buildSceneSpans(scene),
-       audioCues = _buildSceneAudioCues(scene),
-       dialogueTypeCues = _buildSceneDialogueTypeCues(project, scene) {
+  }) {
+    tracks = _buildSceneTracks(scene);
+    spans = _buildRuntimeSpans(tracks);
+    audioCues = _buildSceneAudioCues(scene);
+    dialogueTypeCues = _buildSceneDialogueTypeCues(project, scene);
     duration = spans.fold<double>(
       0,
       (value, span) => math.max(value, span.end),
@@ -301,9 +303,10 @@ final class TimelinePlan {
   final StudioProject project;
   final Scene scene;
   final EventChain? chain;
-  final List<TimelineSpan> spans;
-  final List<TimelineAudioCue> audioCues;
-  final List<TimelineDialogueTypeCue> dialogueTypeCues;
+  late final List<TimelineSpan> spans;
+  late final List<TimelineChainTrack> tracks;
+  late final List<TimelineAudioCue> audioCues;
+  late final List<TimelineDialogueTypeCue> dialogueTypeCues;
   late final double duration;
 
   TimelineSpan? spanForEventAt(String eventId, double time) {
@@ -647,6 +650,9 @@ final class TimelinePlan {
         span.duration,
         activeStack,
       );
+      if (time >= span.end) {
+        world = _clearFinishedSpan(world, span);
+      }
       if (time <= span.end) {
         break;
       }

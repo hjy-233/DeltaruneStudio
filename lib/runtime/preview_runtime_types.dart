@@ -5,13 +5,34 @@ final class TimelineSpan {
     required this.event,
     required this.start,
     required this.end,
+    this.displayEnd,
   });
 
   final StudioEvent event;
   final double start;
   final double end;
+  final double? displayEnd;
 
   double get duration => math.max(0.1, end - start);
+
+  double get displayDuration => math.max(0.1, displayEndValue - start);
+
+  double get displayEndValue => displayEnd ?? end;
+}
+
+final class TimelineChainTrack {
+  const TimelineChainTrack({
+    required this.chain,
+    required this.spans,
+    this.offset = 0,
+  });
+
+  final EventChain chain;
+  final List<TimelineSpan> spans;
+  final double offset;
+
+  double get duration =>
+      spans.fold<double>(0, (value, span) => math.max(value, span.end));
 }
 
 final class TimelineAudioCue {

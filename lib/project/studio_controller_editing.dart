@@ -41,14 +41,16 @@ extension StudioControllerEditingActions on StudioController {
       defaultFacing: Direction.down,
       defaultExpressionId: 'idle',
     );
+    final project = current.project.copyWith(
+      characters: [...current.project.characters, character],
+    );
     _controllerState = current.copyWith(
-      project: current.project.copyWith(
-        characters: [...current.project.characters, character],
-      ),
+      project: project,
       selection: EditorSelection.character(character.id),
       isDirty: true,
       statusMessage: 'Added ${character.name}.',
     );
+    unawaited(_saveGlobalCharactersIfNeeded(project));
   }
 
   void addTriggerArea() => addTriggerPoint();
@@ -337,17 +339,15 @@ extension StudioControllerEditingActions on StudioController {
       return;
     }
     _recordHistory(current);
-    _controllerState = current.copyWith(
-      project: current.project.copyWith(
-        characters: current.project.characters
-            .map(
-              (candidate) =>
-                  candidate.id == character.id ? character : candidate,
-            )
-            .toList(),
-      ),
-      isDirty: true,
+    final project = current.project.copyWith(
+      characters: current.project.characters
+          .map(
+            (candidate) => candidate.id == character.id ? character : candidate,
+          )
+          .toList(),
     );
+    _controllerState = current.copyWith(project: project, isDirty: true);
+    unawaited(_saveGlobalCharactersIfNeeded(project));
   }
 
   void addCharacterAnimationFrame({

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 
@@ -11,6 +12,8 @@ import 'package:deltarune_studio/project/scene_trigger_tools.dart';
 import 'package:deltarune_studio/project/studio_state.dart';
 import 'package:deltarune_studio/project/web_project_download_stub.dart'
     if (dart.library.html) 'package:deltarune_studio/project/web_project_download_web.dart';
+import 'package:deltarune_studio/project/web_character_library_stub.dart'
+    if (dart.library.html) 'package:deltarune_studio/project/web_character_library_web.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -60,9 +63,10 @@ final class StudioController extends StateNotifier<StudioState> {
       final directory = Directory(lastProjectPath);
       try {
         final project = await _repository.openProject(directory);
+        final resolvedProject = await _loadGlobalCharacters(project);
         _clearHistory();
         state = StudioState.ready(
-          project: project,
+          project: resolvedProject,
           projectDirectory: directory,
           statusMessage: 'Opened last project ${directory.path}.',
         );
@@ -76,8 +80,12 @@ final class StudioController extends StateNotifier<StudioState> {
 
   Future<void> createScratchProject() async {
     final project = await _repository.createDefaultProject('Deltarune Studio');
+    final resolvedProject = await _loadGlobalCharacters(
+      project,
+      seedIfMissing: false,
+    );
     _clearHistory();
-    state = StudioState.ready(project: project);
+    state = StudioState.ready(project: resolvedProject);
   }
 
   Future<void> newProject() => createScratchProject();
@@ -99,6 +107,7 @@ final class StudioController extends StateNotifier<StudioState> {
       );
       return;
     }
+    await _saveGlobalCharactersIfNeeded(current.project);
     final directory = current.projectDirectory ?? await _defaultProjectDir();
     await _repository.saveProject(
       directory: directory,
@@ -137,6 +146,7 @@ final class StudioController extends StateNotifier<StudioState> {
     if (path == null) {
       return;
     }
+    await _saveGlobalCharactersIfNeeded(current.project);
     final directoryPath = path.path.endsWith('.drs')
         ? path.path
         : '${path.path}.drs';
@@ -174,7 +184,7 @@ final class StudioController extends StateNotifier<StudioState> {
     );
   }
 
-  void updateEditorSettings(EditorSettings settings) {
+  Future<void> updateEditorSettings(EditorSettings settings) async {
     final current = state.asReady;
     if (current == null) {
       return;
@@ -188,6 +198,14 @@ final class StudioController extends StateNotifier<StudioState> {
       isDirty: true,
       statusMessage: 'Updated editor settings.',
     );
+    if (settings.characterLibraryScope == CharacterLibraryScope.global) {
+      final latest = state.asReady ?? current;
+      final resolved = await _loadGlobalCharacters(latest.project);
+      final afterLoad = state.asReady;
+      if (afterLoad != null && afterLoad.project.id == latest.project.id) {
+        state = afterLoad.copyWith(project: resolved);
+      }
+    }
   }
 
   Future<void> openProject() async {
@@ -207,10 +225,11 @@ final class StudioController extends StateNotifier<StudioState> {
       if (json is! Map<String, dynamic>) {
         return;
       }
+      final project = _repository.migrateProjectForOpen(
+        StudioProject.fromJson(json),
+      );
       state = StudioState.ready(
-        project: _repository.migrateProjectForOpen(
-          StudioProject.fromJson(json),
-        ),
+        project: await _loadGlobalCharacters(project),
         statusMessage: 'Opened ${file.name}.',
       );
       _clearHistory();
@@ -223,7 +242,10 @@ final class StudioController extends StateNotifier<StudioState> {
     final directory = Directory(path);
     final project = await _repository.openProject(directory);
     _clearHistory();
-    state = StudioState.ready(project: project, projectDirectory: directory);
+    state = StudioState.ready(
+      project: await _loadGlobalCharacters(project),
+      projectDirectory: directory,
+    );
     await _writeLastProjectPath(directory);
   }
 }

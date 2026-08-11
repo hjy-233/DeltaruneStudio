@@ -6,15 +6,9 @@ import 'package:deltarune_studio/l10n/event_labels.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-String _triggerModeLabel(AppLocalizations l10n, EventChainTriggerMode mode) {
-  return switch (mode) {
-    EventChainTriggerMode.triggerPoint => l10n.triggerModeTriggerPoint,
-    EventChainTriggerMode.always => l10n.triggerModeAlways,
-  };
-}
 
 class EventChainPanel extends ConsumerWidget {
   const EventChainPanel({
@@ -28,186 +22,106 @@ class EventChainPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final chain = ready.activeChain;
     final preview = ref.watch(previewControllerProvider);
     final controller = ref.read(studioControllerProvider.notifier);
     final previewController = ref.read(previewControllerProvider.notifier);
     final l10n = AppLocalizations.of(context)!;
     final world = preview.world;
-    final fallbackDuration = TimelinePlan(
+    final plan = TimelinePlan(
       project: ready.project,
       scene: ready.currentScene,
-      chain: chain,
-    ).duration;
+      chain: ready.activeChain,
+    );
     final currentTime = world?.currentTime ?? 0;
-    final duration = world?.totalDuration ?? fallbackDuration;
+    final duration = world?.totalDuration ?? plan.duration;
+    final tracks = plan.tracks;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final showChainList = constraints.maxWidth >= 320;
-          return Row(
+          final pixelsPerSecond = 100.0;
+          final timelineWidth = math
+              .max(
+                constraints.maxWidth - 170,
+                math.max(760, duration * pixelsPerSecond + 120),
+              )
+              .toDouble();
+          final selectedEventId = ready.selection is EventSelection
+              ? (ready.selection! as EventSelection).eventId
+              : null;
+          return Column(
             children: [
-              if (showChainList)
-                SizedBox(
-                  width: 150,
-                  child: ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l10n.eventChains,
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: l10n.addEventChain,
-                            onPressed: controller.addEventChain,
-                            icon: const Icon(Icons.add),
-                          ),
-                        ],
-                      ),
-                      for (final candidate in ready.currentScene.eventChains)
-                        ListTile(
-                          dense: true,
-                          selected: candidate.id == chain?.id,
-                          leading: const Icon(Icons.account_tree),
-                          title: Text(
-                            candidate.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            '${_triggerModeLabel(l10n, candidate.triggerMode)} · '
-                            '${l10n.eventsCount(candidate.events.length)}',
-                          ),
-                          onTap: () => controller.selectChain(candidate.id),
-                        ),
-                    ],
-                  ),
-                ),
-              if (showChainList) const VerticalDivider(width: 1),
-              Expanded(
-                child: Column(
+              _TimelineControls(
+                preview: preview,
+                currentTime: currentTime,
+                duration: duration,
+                currentEventId: world?.currentEventId,
+                onPlay: preview.isPlaying
+                    ? previewController.pause
+                    : () => previewController.play(ready),
+                onStop: previewController.stop,
+                onSeek: (time) => previewController.seek(ready, time),
+              ),
+              const Divider(height: 1),
+              SizedBox(
+                height: 44,
+                child: Row(
                   children: [
-                    SizedBox(
-                      height: 62,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: 520,
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 12),
-                              IconButton(
-                                tooltip: preview.isPlaying
-                                    ? l10n.pause
-                                    : l10n.play,
-                                onPressed: preview.isPlaying
-                                    ? previewController.pause
-                                    : () => previewController.play(ready),
-                                icon: Icon(
-                                  preview.isPlaying
-                                      ? Icons.pause
-                                      : Icons.play_arrow,
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: l10n.stop,
-                                onPressed: previewController.stop,
-                                icon: const Icon(Icons.stop),
-                              ),
-                              SizedBox(
-                                width: 92,
-                                child: Text(
-                                  '${currentTime.toStringAsFixed(1)} / ${duration.toStringAsFixed(1)}s',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Expanded(
-                                child: Slider(
-                                  value: duration <= 0
-                                      ? 0
-                                      : currentTime.clamp(0, duration),
-                                  min: 0,
-                                  max: duration <= 0 ? 1 : duration,
-                                  onChanged: (time) =>
-                                      previewController.seek(ready, time),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 100,
-                                child: Text(
-                                  world?.currentEventId ?? l10n.noEvent,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    SizedBox(
-                      height: 44,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: 360,
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  chain?.name ?? 'No Chain',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              _AddEventMenu(
-                                enabled: chain != null,
-                                sampleCharacterId: sampleCharacterId,
-                                onSelected: controller.addEventToSelectedChain,
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Divider(height: 1),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: chain == null
-                          ? Center(child: Text(l10n.createOrSelectChain))
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.all(12),
-                              itemCount: chain.events.length,
-                              itemBuilder: (context, index) {
-                                final event = chain.events[index];
-                                final selected =
-                                    ready.selection is EventSelection &&
-                                    (ready.selection as EventSelection)
-                                            .eventId ==
-                                        event.eventId;
-                                return _EventCard(
-                                  index: index,
-                                  event: event,
-                                  selected: selected,
-                                  chainId: chain.id,
-                                  onTap: () => controller.selectEvent(
-                                    chain.id,
-                                    event.eventId,
-                                  ),
-                                  onRemove: () =>
-                                      controller.removeEvent(event.eventId),
-                                );
-                              },
-                            ),
+                      child: Text(
+                        l10n.eventChains,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
                     ),
+                    IconButton(
+                      tooltip: l10n.addEventChain,
+                      onPressed: controller.addEventChain,
+                      icon: const Icon(Icons.add),
+                    ),
+                    _AddEventMenu(
+                      enabled: ready.activeChain != null,
+                      sampleCharacterId: sampleCharacterId,
+                      onSelected: controller.addEventToSelectedChain,
+                    ),
+                    const SizedBox(width: 12),
                   ],
                 ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: tracks.isEmpty
+                    ? Center(child: Text(l10n.createOrSelectChain))
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              _TimelineRuler(
+                                width: timelineWidth,
+                                pixelsPerSecond: pixelsPerSecond,
+                              ),
+                              for (final track in tracks)
+                                _TimelineTrackRow(
+                                  track: track,
+                                  width: timelineWidth,
+                                  pixelsPerSecond: pixelsPerSecond,
+                                  currentTime: currentTime,
+                                  selectedEventId: selectedEventId,
+                                  onSelectChain: () =>
+                                      controller.selectChain(track.chain.id),
+                                  onSelectEvent: (eventId) {
+                                    controller.selectEvent(
+                                      track.chain.id,
+                                      eventId,
+                                    );
+                                  },
+                                  onRemoveEvent: controller.removeEvent,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
               ),
             ],
           );
@@ -215,6 +129,345 @@ class EventChainPanel extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _TimelineControls extends StatelessWidget {
+  const _TimelineControls({
+    required this.preview,
+    required this.currentTime,
+    required this.duration,
+    required this.currentEventId,
+    required this.onPlay,
+    required this.onStop,
+    required this.onSeek,
+  });
+
+  final PreviewState preview;
+  final double currentTime;
+  final double duration;
+  final String? currentEventId;
+  final VoidCallback onPlay;
+  final VoidCallback onStop;
+  final ValueChanged<double> onSeek;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final max = duration <= 0 ? 1.0 : duration;
+    return SizedBox(
+      height: 62,
+      child: Row(
+        children: [
+          const SizedBox(width: 8),
+          IconButton(
+            tooltip: preview.isPlaying ? l10n.pause : l10n.play,
+            onPressed: onPlay,
+            icon: Icon(preview.isPlaying ? Icons.pause : Icons.play_arrow),
+          ),
+          IconButton(
+            tooltip: l10n.stop,
+            onPressed: onStop,
+            icon: const Icon(Icons.stop),
+          ),
+          SizedBox(
+            width: 94,
+            child: Text(
+              '${currentTime.toStringAsFixed(1)} / ${duration.toStringAsFixed(1)}s',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            child: Slider(
+              value: currentTime.clamp(0, max),
+              min: 0,
+              max: max,
+              onChanged: onSeek,
+            ),
+          ),
+          SizedBox(
+            width: 130,
+            child: Text(
+              currentEventId ?? l10n.noEvent,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineRuler extends StatelessWidget {
+  const _TimelineRuler({required this.width, required this.pixelsPerSecond});
+
+  final double width;
+  final double pixelsPerSecond;
+
+  @override
+  Widget build(BuildContext context) {
+    final seconds = math.max(1, (width / pixelsPerSecond).ceil());
+    return SizedBox(
+      height: 26,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 150,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text('0s', style: Theme.of(context).textTheme.labelSmall),
+            ),
+          ),
+          SizedBox(
+            width: width,
+            child: Stack(
+              children: [
+                for (var second = 0; second <= seconds; second += 1)
+                  Positioned(
+                    left: second * pixelsPerSecond,
+                    top: 0,
+                    child: Text(
+                      '${second}s',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineTrackRow extends StatelessWidget {
+  const _TimelineTrackRow({
+    required this.track,
+    required this.width,
+    required this.pixelsPerSecond,
+    required this.currentTime,
+    required this.selectedEventId,
+    required this.onSelectChain,
+    required this.onSelectEvent,
+    required this.onRemoveEvent,
+  });
+
+  final TimelineChainTrack track;
+  final double width;
+  final double pixelsPerSecond;
+  final double currentTime;
+  final String? selectedEventId;
+  final VoidCallback onSelectChain;
+  final ValueChanged<String> onSelectEvent;
+  final ValueChanged<String> onRemoveEvent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      height: 58,
+      child: Row(
+        children: [
+          InkWell(
+            onTap: onSelectChain,
+            child: Container(
+              width: 150,
+              height: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: track.chain.triggerMode == EventChainTriggerMode.always
+                    ? theme.colorScheme.primaryContainer.withValues(alpha: 0.28)
+                    : theme.colorScheme.surfaceContainerHigh,
+                border: Border(
+                  top: BorderSide(color: theme.dividerColor),
+                  bottom: BorderSide(color: theme.dividerColor),
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  track.chain.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: width,
+            height: double.infinity,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onSelectChain,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _TimelineGridPainter(
+                        pixelsPerSecond: pixelsPerSecond,
+                        color: theme.dividerColor,
+                      ),
+                    ),
+                  ),
+                  for (final span in track.spans)
+                    _TimelineEventBlock(
+                      span: span,
+                      left: span.start * pixelsPerSecond,
+                      width: math.max(
+                        76,
+                        span.displayDuration * pixelsPerSecond,
+                      ),
+                      selected: selectedEventId == span.event.eventId,
+                      onTap: () => onSelectEvent(span.event.eventId),
+                      onRemove: () => onRemoveEvent(span.event.eventId),
+                    ),
+                  Positioned(
+                    left: currentTime * pixelsPerSecond,
+                    top: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 2,
+                        color: theme.colorScheme.error.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineGridPainter extends CustomPainter {
+  const _TimelineGridPainter({
+    required this.pixelsPerSecond,
+    required this.color,
+  });
+
+  final double pixelsPerSecond;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.35)
+      ..strokeWidth = 1;
+    for (var x = 0.0; x <= size.width; x += pixelsPerSecond) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    canvas.drawLine(
+      Offset(0, size.height - 1),
+      Offset(size.width, size.height - 1),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TimelineGridPainter oldDelegate) {
+    return oldDelegate.pixelsPerSecond != pixelsPerSecond ||
+        oldDelegate.color != color;
+  }
+}
+
+class _TimelineEventBlock extends StatelessWidget {
+  const _TimelineEventBlock({
+    required this.span,
+    required this.left,
+    required this.width,
+    required this.selected,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final TimelineSpan span;
+  final double left;
+  final double width;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final color = _eventColor(span.event);
+    return Positioned(
+      left: left + 2,
+      top: 7,
+      width: width - 4,
+      height: 44,
+      child: Tooltip(
+        message:
+            '${eventLabel(l10n, span.event)}\n'
+            '${span.start.toStringAsFixed(2)}s - '
+            '${span.displayEndValue.toStringAsFixed(2)}s',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(5),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(
+                  color: selected ? Colors.white : color,
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      eventLabel(l10n, span.event),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (selected)
+                    InkWell(
+                      onTap: onRemove,
+                      child: const Icon(
+                        Icons.close,
+                        size: 15,
+                        color: Colors.white,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _eventColor(StudioEvent event) {
+  return event.map(
+    characterMove: (_) => Colors.blue.shade700,
+    characterStartFollow: (_) => Colors.indigo.shade600,
+    characterStopFollow: (_) => Colors.indigo.shade400,
+    characterWait: (_) => Colors.blueGrey.shade600,
+    characterChangeExpression: (_) => Colors.teal.shade600,
+    dialogueSay: (_) => Colors.green.shade700,
+    cameraFollow: (_) => Colors.orange.shade700,
+    cameraFocus: (_) => Colors.deepOrange.shade600,
+    sceneFade: (_) => Colors.purple.shade600,
+    sceneChange: (_) => Colors.purple.shade800,
+    audioPlayBgm: (_) => Colors.pink.shade600,
+    audioPlaySound: (_) => Colors.pink.shade400,
+    videoPlay: (_) => Colors.red.shade700,
+  );
 }
 
 class _AddEventMenu extends StatelessWidget {
@@ -349,129 +602,6 @@ class _AddEventMenu extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _EventCard extends ConsumerWidget {
-  const _EventCard({
-    required this.index,
-    required this.event,
-    required this.selected,
-    required this.chainId,
-    required this.onTap,
-    required this.onRemove,
-  });
-
-  final int index;
-  final StudioEvent event;
-  final bool selected;
-  final String chainId;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 210,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).dividerColor,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(radius: 12, child: Text('${index + 1}')),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _title(l10n, event),
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: l10n.deleteEvent,
-                    onPressed: onRemove,
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _description(l10n, event),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (event is CharacterMoveEvent) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => ref
-                      .read(studioControllerProvider.notifier)
-                      .addPathNode(chainId, event.eventId),
-                  icon: const Icon(Icons.add_location_alt, size: 16),
-                  label: Text(l10n.addNode),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _title(AppLocalizations l10n, StudioEvent event) {
-    return eventLabel(l10n, event);
-  }
-
-  String _description(AppLocalizations l10n, StudioEvent event) {
-    return event.map(
-      characterMove: (value) => l10n.moveDescription(
-        value.path.nodes.length,
-        value.path.speed,
-        value.path.shake,
-      ),
-      characterStartFollow: (value) =>
-          '${value.followerObjectId} -> ${value.leaderObjectId}, ${value.distance}px',
-      characterStopFollow: (value) => value.followerObjectId,
-      characterWait: (value) => '${value.duration}s',
-      characterChangeExpression: (value) =>
-          '${value.expressionId}, ${value.duration}s',
-      dialogueSay: (value) => '${value.text} (${value.style.name})',
-      cameraFollow: (value) => value.targetObjectId,
-      cameraFocus: (value) => value.target.toString(),
-      sceneFade: (value) => '${value.mode.name}, ${value.duration}s',
-      sceneChange: (value) => value.entryPointId ?? value.sceneId,
-      audioPlayBgm: (value) =>
-          value.assetId.isEmpty ? l10n.noAssetSelected : value.assetId,
-      audioPlaySound: (value) =>
-          value.assetId.isEmpty ? l10n.noAssetSelected : value.assetId,
-      videoPlay: (value) =>
-          value.assetId.isEmpty ? l10n.noAssetSelected : value.assetId,
     );
   }
 }

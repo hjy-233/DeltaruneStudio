@@ -12,6 +12,98 @@ void main() {
 void _timelineTests() {
   _moveTriggerTimelineTests();
   _videoTimelineTests();
+  _trackPositionTests();
+}
+
+void _trackPositionTests() {
+  test('trigger chain track starts when the path reaches its trigger', () {
+    const characterObjectId = 'object_character';
+    const triggerObjectId = 'object_trigger';
+    const triggerId = 'trigger_door';
+    const moveChainId = 'chain_move';
+    const dialogueChainId = 'chain_dialogue';
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [
+        SceneObject.characterInstance(
+          id: characterObjectId,
+          name: 'Kris',
+          characterId: 'character_kris',
+          transform: Transform2D(x: 0, y: 0),
+          facing: Direction.right,
+        ),
+        SceneObject.triggerPoint(
+          id: triggerObjectId,
+          name: 'Door',
+          triggerId: triggerId,
+          transform: Transform2D(x: 100, y: 0, width: 8, height: 8),
+        ),
+      ],
+      triggers: const [
+        Trigger.area(
+          id: triggerId,
+          name: 'Door',
+          eventChainId: dialogueChainId,
+        ),
+      ],
+      eventChains: const [
+        EventChain(
+          id: moveChainId,
+          name: 'Move',
+          events: [
+            StudioEvent.characterMove(
+              id: 'event_move',
+              characterObjectId: characterObjectId,
+              path: MovementPath(
+                speed: 100,
+                nodes: [
+                  PathNode(id: 'node_start', x: 0, y: 0),
+                  PathNode(id: 'node_door', x: 100, y: 0),
+                ],
+              ),
+            ),
+          ],
+        ),
+        EventChain(
+          id: dialogueChainId,
+          name: 'Door Dialogue',
+          triggerMode: EventChainTriggerMode.triggerPoint,
+          events: [
+            StudioEvent.dialogueSay(
+              id: 'event_dialogue',
+              text: 'Door',
+              duration: 2,
+            ),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: const CameraPolicy.focus(
+        target: FocusTarget.point(x: 0, y: 0),
+      ),
+    );
+    final project = StudioProject(
+      schemaVersion: 2,
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [],
+      assets: const [],
+    );
+    final plan = TimelinePlan(
+      project: project,
+      scene: scene,
+      chain: scene.eventChains.first,
+    );
+    final track = plan.tracks.firstWhere(
+      (value) => value.chain.id == dialogueChainId,
+    );
+
+    expect(track.spans.single.start, closeTo(1, 0.001));
+    expect(track.spans.single.end, closeTo(3, 0.001));
+  });
 }
 
 void _moveTriggerTimelineTests() {
@@ -220,6 +312,7 @@ void _videoTimelineTests() {
       expect(plan.dialogueTypeCues.first.time, closeTo(1 + 1 / 32, 0.001));
       expect(world.dialogue, isNotNull);
       expect(world.objects[characterObjectId]!.isMoving, isFalse);
+      expect(plan.evaluate(3).dialogue, isNull);
     },
   );
 }

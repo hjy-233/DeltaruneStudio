@@ -63,6 +63,12 @@ _EditorSettings _$EditorSettingsFromJson(Map<String, dynamic> json) =>
           AppLanguage.system,
       englishDialogueTypewriterByWord:
           json['englishDialogueTypewriterByWord'] as bool? ?? true,
+      characterLibraryScope:
+          $enumDecodeNullable(
+            _$CharacterLibraryScopeEnumMap,
+            json['characterLibraryScope'],
+          ) ??
+          CharacterLibraryScope.global,
     );
 
 Map<String, dynamic> _$EditorSettingsToJson(
@@ -70,12 +76,19 @@ Map<String, dynamic> _$EditorSettingsToJson(
 ) => <String, dynamic>{
   'language': _$AppLanguageEnumMap[instance.language]!,
   'englishDialogueTypewriterByWord': instance.englishDialogueTypewriterByWord,
+  'characterLibraryScope':
+      _$CharacterLibraryScopeEnumMap[instance.characterLibraryScope]!,
 };
 
 const _$AppLanguageEnumMap = {
   AppLanguage.system: 'system',
   AppLanguage.english: 'english',
   AppLanguage.chinese: 'chinese',
+};
+
+const _$CharacterLibraryScopeEnumMap = {
+  CharacterLibraryScope.global: 'global',
+  CharacterLibraryScope.project: 'project',
 };
 
 _AssetRef _$AssetRefFromJson(Map<String, dynamic> json) => _AssetRef(

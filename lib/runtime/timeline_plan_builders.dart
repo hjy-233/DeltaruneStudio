@@ -21,22 +21,193 @@ List<TimelineSpan> _buildSpans(
   return spans;
 }
 
-List<TimelineSpan> _buildSceneSpans(Scene scene) {
-  final spans = <TimelineSpan>[];
-  for (final chain in scene.eventChains) {
-    if (chain.events.isEmpty ||
-        chain.triggerMode != EventChainTriggerMode.always) {
+List<TimelineChainTrack> _buildSceneTracks(Scene scene) {
+  final tracks = [
+    for (final chain in scene.eventChains) _buildChainTrack(scene, chain),
+  ];
+  final timelineEnd = tracks
+      .where((track) => track.chain.triggerMode == EventChainTriggerMode.always)
+      .fold<double>(0, (value, track) => math.max(value, track.duration));
+  return [
+    for (final track in tracks) _extendPersistentEventSpans(track, timelineEnd),
+  ];
+}
+
+TimelineChainTrack _extendPersistentEventSpans(
+  TimelineChainTrack track,
+  double timelineEnd,
+) {
+  if (track.chain.triggerMode != EventChainTriggerMode.always) {
+    return track;
+  }
+  return TimelineChainTrack(
+    chain: track.chain,
+    offset: track.offset,
+    spans: [
+      for (final span in track.spans)
+        _extendPersistentEventSpan(track.spans, span, timelineEnd),
+    ],
+  );
+}
+
+TimelineSpan _extendPersistentEventSpan(
+  List<TimelineSpan> spans,
+  TimelineSpan span,
+  double timelineEnd,
+) {
+  final event = span.event;
+  if (event is! CharacterStartFollowEvent) {
+    return span;
+  }
+  TimelineSpan? stop;
+  for (final candidate in spans) {
+    if (candidate.start < span.start ||
+        candidate.event is! CharacterStopFollowEvent ||
+        (candidate.event as CharacterStopFollowEvent).followerObjectId !=
+            event.followerObjectId) {
       continue;
     }
-    final chainSpans = _buildSpans(scene, chain, const {});
-    for (final span in chainSpans) {
-      spans.add(
-        TimelineSpan(event: span.event, start: span.start, end: span.end),
-      );
+    stop = candidate;
+    break;
+  }
+  return TimelineSpan(
+    event: span.event,
+    start: span.start,
+    end: span.end,
+    displayEnd: stop?.start ?? math.max(timelineEnd, span.end),
+  );
+}
+
+List<TimelineSpan> _buildRuntimeSpans(List<TimelineChainTrack> tracks) {
+  final spans = <TimelineSpan>[];
+  for (final track in tracks) {
+    if (track.chain.triggerMode != EventChainTriggerMode.always) {
+      continue;
     }
+    spans.addAll(track.spans);
   }
   spans.sort(_compareSpans);
   return spans;
+}
+
+TimelineChainTrack _buildChainTrack(Scene scene, EventChain chain) {
+  final localSpans = _buildSpans(scene, chain, const {});
+  final offset = chain.triggerMode == EventChainTriggerMode.always
+      ? 0.0
+      : _findTriggerChainOffset(scene, chain.id) ?? 0.0;
+  return TimelineChainTrack(
+    chain: chain,
+    offset: offset,
+    spans: [
+      for (final span in localSpans)
+        TimelineSpan(
+          event: span.event,
+          start: span.start + offset,
+          end: span.end + offset,
+        ),
+    ],
+  );
+}
+
+double? _findTriggerChainOffset(Scene scene, String targetChainId) {
+  for (final chain in scene.eventChains) {
+    if (chain.triggerMode != EventChainTriggerMode.always) {
+      continue;
+    }
+    final offset = _findChainOffsetInChain(scene, chain, targetChainId, 0, {
+      chain.id,
+    });
+    if (offset != null) {
+      return offset;
+    }
+  }
+  return null;
+}
+
+double? _findChainOffsetInChain(
+  Scene scene,
+  EventChain chain,
+  String targetChainId,
+  double baseOffset,
+  Set<String> stack,
+) {
+  var elapsed = 0.0;
+  for (final event in chain.events) {
+    if (event is CharacterMoveEvent) {
+      final offset = _findChainOffsetInMove(
+        scene,
+        event,
+        targetChainId,
+        baseOffset + elapsed,
+        stack,
+      );
+      if (offset != null) {
+        return offset;
+      }
+    }
+    elapsed += _eventDuration(scene, event, stack);
+  }
+  return null;
+}
+
+double? _findChainOffsetInMove(
+  Scene scene,
+  CharacterMoveEvent event,
+  String targetChainId,
+  double baseOffset,
+  Set<String> stack,
+) {
+  if (event.path.nodes.length < 2) {
+    return null;
+  }
+  var elapsed = 0.0;
+  var startX = event.path.nodes.first.x;
+  var startY = event.path.nodes.first.y;
+  for (var index = 0; index < event.path.nodes.length - 1; index += 1) {
+    final end = event.path.nodes[index + 1];
+    final target = _orthogonalTarget(startX, startY, end);
+    elapsed += _segmentDuration(
+      startX,
+      startY,
+      target.x,
+      target.y,
+      event.path.speed,
+    );
+    elapsed += end.waitSeconds ?? 0;
+    final triggerId = end.triggerId ?? triggerAtPoint(scene, end.x, end.y);
+    final linkedId = linkedTriggerId(scene, triggerId);
+    if (linkedId != null) {
+      elapsed += TimelinePlan.doorTransitionDuration;
+    }
+    final triggered = triggerChain(scene, triggerId);
+    if (triggered != null && !stack.contains(triggered.id)) {
+      if (triggered.id == targetChainId) {
+        return baseOffset + elapsed;
+      }
+      final nestedOffset = _findChainOffsetInChain(
+        scene,
+        triggered,
+        targetChainId,
+        baseOffset + elapsed,
+        {...stack, triggered.id},
+      );
+      if (nestedOffset != null) {
+        return nestedOffset;
+      }
+      elapsed += _chainDuration(scene, triggered, stack);
+    }
+    if (linkedId != null) {
+      final destination = triggerObjectPosition(scene, linkedId);
+      if (destination != null) {
+        startX = destination.x;
+        startY = destination.y;
+        continue;
+      }
+    }
+    startX = target.x;
+    startY = target.y;
+  }
+  return null;
 }
 
 List<TimelineAudioCue> _buildSceneAudioCues(Scene scene) {

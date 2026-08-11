@@ -80,6 +80,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'When the app language is English and the dialogue text is English, the typewriter reveal advances one word at a time.';
 
   @override
+  String get characterLibraryScope => 'Character library scope';
+
+  @override
+  String get characterLibraryGlobal => 'Global character library';
+
+  @override
+  String get characterLibraryGlobalHelp =>
+      'Character definitions are saved in the app-wide library and available to every project.';
+
+  @override
+  String get characterLibraryProject => 'Current project';
+
+  @override
+  String get characterLibraryProjectHelp =>
+      'Character definitions are saved only in the current .drs project.';
+
+  @override
   String get canvasObjects => 'Canvas Objects';
 
   @override

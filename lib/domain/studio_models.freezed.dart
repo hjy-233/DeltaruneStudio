@@ -626,7 +626,7 @@ as double,
 /// @nodoc
 mixin _$EditorSettings {
 
- AppLanguage get language; bool get englishDialogueTypewriterByWord;
+ AppLanguage get language; bool get englishDialogueTypewriterByWord; CharacterLibraryScope get characterLibraryScope;
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -639,16 +639,16 @@ $EditorSettingsCopyWith<EditorSettings> get copyWith => _$EditorSettingsCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord)&&(identical(other.characterLibraryScope, characterLibraryScope) || other.characterLibraryScope == characterLibraryScope));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord);
+int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord,characterLibraryScope);
 
 @override
 String toString() {
-  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord)';
+  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord, characterLibraryScope: $characterLibraryScope)';
 }
 
 
@@ -659,7 +659,7 @@ abstract mixin class $EditorSettingsCopyWith<$Res>  {
   factory $EditorSettingsCopyWith(EditorSettings value, $Res Function(EditorSettings) _then) = _$EditorSettingsCopyWithImpl;
 @useResult
 $Res call({
- AppLanguage language, bool englishDialogueTypewriterByWord
+ AppLanguage language, bool englishDialogueTypewriterByWord, CharacterLibraryScope characterLibraryScope
 });
 
 
@@ -676,11 +676,12 @@ class _$EditorSettingsCopyWithImpl<$Res>
 
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,Object? characterLibraryScope = null,}) {
   return _then(EditorSettings(
 language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
 as AppLanguage,englishDialogueTypewriterByWord: null == englishDialogueTypewriterByWord ? _self.englishDialogueTypewriterByWord : englishDialogueTypewriterByWord // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,characterLibraryScope: null == characterLibraryScope ? _self.characterLibraryScope : characterLibraryScope // ignore: cast_nullable_to_non_nullable
+as CharacterLibraryScope,
   ));
 }
 
@@ -765,10 +766,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EditorSettings() when $default != null:
-return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
+return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope);case _:
   return orElse();
 
 }
@@ -786,10 +787,10 @@ return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope)  $default,) {final _that = this;
 switch (_that) {
 case _EditorSettings():
-return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
+return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -806,10 +807,10 @@ return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AppLanguage language,  bool englishDialogueTypewriterByWord)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope)?  $default,) {final _that = this;
 switch (_that) {
 case _EditorSettings() when $default != null:
-return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
+return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope);case _:
   return null;
 
 }
@@ -821,11 +822,12 @@ return $default(_that.language,_that.englishDialogueTypewriterByWord);case _:
 @JsonSerializable()
 
 class _EditorSettings implements EditorSettings {
-  const _EditorSettings({this.language = AppLanguage.system, this.englishDialogueTypewriterByWord = true});
+  const _EditorSettings({this.language = AppLanguage.system, this.englishDialogueTypewriterByWord = true, this.characterLibraryScope = CharacterLibraryScope.global});
   factory _EditorSettings.fromJson(Map<String, dynamic> json) => _$EditorSettingsFromJson(json);
 
 @override@JsonKey() final  AppLanguage language;
 @override@JsonKey() final  bool englishDialogueTypewriterByWord;
+@override@JsonKey() final  CharacterLibraryScope characterLibraryScope;
 
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
@@ -840,16 +842,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord)&&(identical(other.characterLibraryScope, characterLibraryScope) || other.characterLibraryScope == characterLibraryScope));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord);
+int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord,characterLibraryScope);
 
 @override
 String toString() {
-  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord)';
+  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord, characterLibraryScope: $characterLibraryScope)';
 }
 
 
@@ -860,7 +862,7 @@ abstract mixin class _$EditorSettingsCopyWith<$Res> implements $EditorSettingsCo
   factory _$EditorSettingsCopyWith(_EditorSettings value, $Res Function(_EditorSettings) _then) = __$EditorSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- AppLanguage language, bool englishDialogueTypewriterByWord
+ AppLanguage language, bool englishDialogueTypewriterByWord, CharacterLibraryScope characterLibraryScope
 });
 
 
@@ -877,11 +879,12 @@ class __$EditorSettingsCopyWithImpl<$Res>
 
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,Object? characterLibraryScope = null,}) {
   return _then(_EditorSettings(
 language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
 as AppLanguage,englishDialogueTypewriterByWord: null == englishDialogueTypewriterByWord ? _self.englishDialogueTypewriterByWord : englishDialogueTypewriterByWord // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,characterLibraryScope: null == characterLibraryScope ? _self.characterLibraryScope : characterLibraryScope // ignore: cast_nullable_to_non_nullable
+as CharacterLibraryScope,
   ));
 }
 

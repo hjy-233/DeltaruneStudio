@@ -236,6 +236,36 @@ abstract class AppLocalizations {
   /// **'When the app language is English and the dialogue text is English, the typewriter reveal advances one word at a time.'**
   String get englishDialogueTypewriterByWordHelp;
 
+  /// No description provided for @characterLibraryScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Character library scope'**
+  String get characterLibraryScope;
+
+  /// No description provided for @characterLibraryGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'Global character library'**
+  String get characterLibraryGlobal;
+
+  /// No description provided for @characterLibraryGlobalHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Character definitions are saved in the app-wide library and available to every project.'**
+  String get characterLibraryGlobalHelp;
+
+  /// No description provided for @characterLibraryProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Current project'**
+  String get characterLibraryProject;
+
+  /// No description provided for @characterLibraryProjectHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Character definitions are saved only in the current .drs project.'**
+  String get characterLibraryProjectHelp;
+
   /// No description provided for @canvasObjects.
   ///
   /// In en, this message translates to:
