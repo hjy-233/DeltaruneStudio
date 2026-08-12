@@ -182,6 +182,36 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get stop;
 
+  /// No description provided for @timelineFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit All'**
+  String get timelineFit;
+
+  /// No description provided for @timelineZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline zoom'**
+  String get timelineZoom;
+
+  /// No description provided for @timelineTrackHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Track height'**
+  String get timelineTrackHeight;
+
+  /// No description provided for @timelineTriggerAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get timelineTriggerAlways;
+
+  /// No description provided for @timelineTriggerPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger point'**
+  String get timelineTriggerPoint;
+
   /// No description provided for @pause.
   ///
   /// In en, this message translates to:

@@ -51,6 +51,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stop => 'Stop';
 
   @override
+  String get timelineFit => 'Fit All';
+
+  @override
+  String get timelineZoom => 'Timeline zoom';
+
+  @override
+  String get timelineTrackHeight => 'Track height';
+
+  @override
+  String get timelineTriggerAlways => 'Always';
+
+  @override
+  String get timelineTriggerPoint => 'Trigger point';
+
+  @override
   String get pause => 'Pause';
 
   @override

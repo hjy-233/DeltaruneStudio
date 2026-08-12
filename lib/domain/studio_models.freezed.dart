@@ -357,7 +357,7 @@ $EditorSettingsCopyWith<$Res> get settings {
 /// @nodoc
 mixin _$EditorLayout {
 
- double get leftSidebarWidth; double get rightSidebarWidth; double get bottomPanelHeight;
+ double get leftSidebarWidth; double get rightSidebarWidth; double get bottomPanelHeight; double get timelinePixelsPerSecond; double get timelineTrackHeight;
 /// Create a copy of EditorLayout
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -370,16 +370,16 @@ $EditorLayoutCopyWith<EditorLayout> get copyWith => _$EditorLayoutCopyWithImpl<E
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorLayout&&(identical(other.leftSidebarWidth, leftSidebarWidth) || other.leftSidebarWidth == leftSidebarWidth)&&(identical(other.rightSidebarWidth, rightSidebarWidth) || other.rightSidebarWidth == rightSidebarWidth)&&(identical(other.bottomPanelHeight, bottomPanelHeight) || other.bottomPanelHeight == bottomPanelHeight));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorLayout&&(identical(other.leftSidebarWidth, leftSidebarWidth) || other.leftSidebarWidth == leftSidebarWidth)&&(identical(other.rightSidebarWidth, rightSidebarWidth) || other.rightSidebarWidth == rightSidebarWidth)&&(identical(other.bottomPanelHeight, bottomPanelHeight) || other.bottomPanelHeight == bottomPanelHeight)&&(identical(other.timelinePixelsPerSecond, timelinePixelsPerSecond) || other.timelinePixelsPerSecond == timelinePixelsPerSecond)&&(identical(other.timelineTrackHeight, timelineTrackHeight) || other.timelineTrackHeight == timelineTrackHeight));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,leftSidebarWidth,rightSidebarWidth,bottomPanelHeight);
+int get hashCode => Object.hash(runtimeType,leftSidebarWidth,rightSidebarWidth,bottomPanelHeight,timelinePixelsPerSecond,timelineTrackHeight);
 
 @override
 String toString() {
-  return 'EditorLayout(leftSidebarWidth: $leftSidebarWidth, rightSidebarWidth: $rightSidebarWidth, bottomPanelHeight: $bottomPanelHeight)';
+  return 'EditorLayout(leftSidebarWidth: $leftSidebarWidth, rightSidebarWidth: $rightSidebarWidth, bottomPanelHeight: $bottomPanelHeight, timelinePixelsPerSecond: $timelinePixelsPerSecond, timelineTrackHeight: $timelineTrackHeight)';
 }
 
 
@@ -390,7 +390,7 @@ abstract mixin class $EditorLayoutCopyWith<$Res>  {
   factory $EditorLayoutCopyWith(EditorLayout value, $Res Function(EditorLayout) _then) = _$EditorLayoutCopyWithImpl;
 @useResult
 $Res call({
- double leftSidebarWidth, double rightSidebarWidth, double bottomPanelHeight
+ double leftSidebarWidth, double rightSidebarWidth, double bottomPanelHeight, double timelinePixelsPerSecond, double timelineTrackHeight
 });
 
 
@@ -407,11 +407,13 @@ class _$EditorLayoutCopyWithImpl<$Res>
 
 /// Create a copy of EditorLayout
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? leftSidebarWidth = null,Object? rightSidebarWidth = null,Object? bottomPanelHeight = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? leftSidebarWidth = null,Object? rightSidebarWidth = null,Object? bottomPanelHeight = null,Object? timelinePixelsPerSecond = null,Object? timelineTrackHeight = null,}) {
   return _then(EditorLayout(
 leftSidebarWidth: null == leftSidebarWidth ? _self.leftSidebarWidth : leftSidebarWidth // ignore: cast_nullable_to_non_nullable
 as double,rightSidebarWidth: null == rightSidebarWidth ? _self.rightSidebarWidth : rightSidebarWidth // ignore: cast_nullable_to_non_nullable
 as double,bottomPanelHeight: null == bottomPanelHeight ? _self.bottomPanelHeight : bottomPanelHeight // ignore: cast_nullable_to_non_nullable
+as double,timelinePixelsPerSecond: null == timelinePixelsPerSecond ? _self.timelinePixelsPerSecond : timelinePixelsPerSecond // ignore: cast_nullable_to_non_nullable
+as double,timelineTrackHeight: null == timelineTrackHeight ? _self.timelineTrackHeight : timelineTrackHeight // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -497,10 +499,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight,  double timelinePixelsPerSecond,  double timelineTrackHeight)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EditorLayout() when $default != null:
-return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight);case _:
+return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight,_that.timelinePixelsPerSecond,_that.timelineTrackHeight);case _:
   return orElse();
 
 }
@@ -518,10 +520,10 @@ return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanel
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight,  double timelinePixelsPerSecond,  double timelineTrackHeight)  $default,) {final _that = this;
 switch (_that) {
 case _EditorLayout():
-return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight);case _:
+return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight,_that.timelinePixelsPerSecond,_that.timelineTrackHeight);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -538,10 +540,10 @@ return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanel
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double leftSidebarWidth,  double rightSidebarWidth,  double bottomPanelHeight,  double timelinePixelsPerSecond,  double timelineTrackHeight)?  $default,) {final _that = this;
 switch (_that) {
 case _EditorLayout() when $default != null:
-return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight);case _:
+return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanelHeight,_that.timelinePixelsPerSecond,_that.timelineTrackHeight);case _:
   return null;
 
 }
@@ -553,12 +555,14 @@ return $default(_that.leftSidebarWidth,_that.rightSidebarWidth,_that.bottomPanel
 @JsonSerializable()
 
 class _EditorLayout implements EditorLayout {
-  const _EditorLayout({this.leftSidebarWidth = 220, this.rightSidebarWidth = 280, this.bottomPanelHeight = 300});
+  const _EditorLayout({this.leftSidebarWidth = 220, this.rightSidebarWidth = 280, this.bottomPanelHeight = 300, this.timelinePixelsPerSecond = 100, this.timelineTrackHeight = 66});
   factory _EditorLayout.fromJson(Map<String, dynamic> json) => _$EditorLayoutFromJson(json);
 
 @override@JsonKey() final  double leftSidebarWidth;
 @override@JsonKey() final  double rightSidebarWidth;
 @override@JsonKey() final  double bottomPanelHeight;
+@override@JsonKey() final  double timelinePixelsPerSecond;
+@override@JsonKey() final  double timelineTrackHeight;
 
 /// Create a copy of EditorLayout
 /// with the given fields replaced by the non-null parameter values.
@@ -573,16 +577,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorLayout&&(identical(other.leftSidebarWidth, leftSidebarWidth) || other.leftSidebarWidth == leftSidebarWidth)&&(identical(other.rightSidebarWidth, rightSidebarWidth) || other.rightSidebarWidth == rightSidebarWidth)&&(identical(other.bottomPanelHeight, bottomPanelHeight) || other.bottomPanelHeight == bottomPanelHeight));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorLayout&&(identical(other.leftSidebarWidth, leftSidebarWidth) || other.leftSidebarWidth == leftSidebarWidth)&&(identical(other.rightSidebarWidth, rightSidebarWidth) || other.rightSidebarWidth == rightSidebarWidth)&&(identical(other.bottomPanelHeight, bottomPanelHeight) || other.bottomPanelHeight == bottomPanelHeight)&&(identical(other.timelinePixelsPerSecond, timelinePixelsPerSecond) || other.timelinePixelsPerSecond == timelinePixelsPerSecond)&&(identical(other.timelineTrackHeight, timelineTrackHeight) || other.timelineTrackHeight == timelineTrackHeight));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,leftSidebarWidth,rightSidebarWidth,bottomPanelHeight);
+int get hashCode => Object.hash(runtimeType,leftSidebarWidth,rightSidebarWidth,bottomPanelHeight,timelinePixelsPerSecond,timelineTrackHeight);
 
 @override
 String toString() {
-  return 'EditorLayout(leftSidebarWidth: $leftSidebarWidth, rightSidebarWidth: $rightSidebarWidth, bottomPanelHeight: $bottomPanelHeight)';
+  return 'EditorLayout(leftSidebarWidth: $leftSidebarWidth, rightSidebarWidth: $rightSidebarWidth, bottomPanelHeight: $bottomPanelHeight, timelinePixelsPerSecond: $timelinePixelsPerSecond, timelineTrackHeight: $timelineTrackHeight)';
 }
 
 
@@ -593,7 +597,7 @@ abstract mixin class _$EditorLayoutCopyWith<$Res> implements $EditorLayoutCopyWi
   factory _$EditorLayoutCopyWith(_EditorLayout value, $Res Function(_EditorLayout) _then) = __$EditorLayoutCopyWithImpl;
 @override @useResult
 $Res call({
- double leftSidebarWidth, double rightSidebarWidth, double bottomPanelHeight
+ double leftSidebarWidth, double rightSidebarWidth, double bottomPanelHeight, double timelinePixelsPerSecond, double timelineTrackHeight
 });
 
 
@@ -610,11 +614,13 @@ class __$EditorLayoutCopyWithImpl<$Res>
 
 /// Create a copy of EditorLayout
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? leftSidebarWidth = null,Object? rightSidebarWidth = null,Object? bottomPanelHeight = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? leftSidebarWidth = null,Object? rightSidebarWidth = null,Object? bottomPanelHeight = null,Object? timelinePixelsPerSecond = null,Object? timelineTrackHeight = null,}) {
   return _then(_EditorLayout(
 leftSidebarWidth: null == leftSidebarWidth ? _self.leftSidebarWidth : leftSidebarWidth // ignore: cast_nullable_to_non_nullable
 as double,rightSidebarWidth: null == rightSidebarWidth ? _self.rightSidebarWidth : rightSidebarWidth // ignore: cast_nullable_to_non_nullable
 as double,bottomPanelHeight: null == bottomPanelHeight ? _self.bottomPanelHeight : bottomPanelHeight // ignore: cast_nullable_to_non_nullable
+as double,timelinePixelsPerSecond: null == timelinePixelsPerSecond ? _self.timelinePixelsPerSecond : timelinePixelsPerSecond // ignore: cast_nullable_to_non_nullable
+as double,timelineTrackHeight: null == timelineTrackHeight ? _self.timelineTrackHeight : timelineTrackHeight // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }

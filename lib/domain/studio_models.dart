@@ -43,6 +43,8 @@ abstract class EditorLayout with _$EditorLayout {
     @Default(220) double leftSidebarWidth,
     @Default(280) double rightSidebarWidth,
     @Default(300) double bottomPanelHeight,
+    @Default(100) double timelinePixelsPerSecond,
+    @Default(66) double timelineTrackHeight,
   }) = _EditorLayout;
 
   factory EditorLayout.fromJson(Map<String, dynamic> json) =>

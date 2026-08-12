@@ -51,6 +51,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get stop => '停止';
 
   @override
+  String get timelineFit => '适配全部';
+
+  @override
+  String get timelineZoom => '时间线缩放';
+
+  @override
+  String get timelineTrackHeight => '轨道高度';
+
+  @override
+  String get timelineTriggerAlways => '始终';
+
+  @override
+  String get timelineTriggerPoint => '触发点';
+
+  @override
   String get pause => '暂停';
 
   @override

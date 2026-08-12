@@ -47,6 +47,10 @@ _EditorLayout _$EditorLayoutFromJson(Map<String, dynamic> json) =>
       leftSidebarWidth: (json['leftSidebarWidth'] as num?)?.toDouble() ?? 220,
       rightSidebarWidth: (json['rightSidebarWidth'] as num?)?.toDouble() ?? 280,
       bottomPanelHeight: (json['bottomPanelHeight'] as num?)?.toDouble() ?? 300,
+      timelinePixelsPerSecond:
+          (json['timelinePixelsPerSecond'] as num?)?.toDouble() ?? 100,
+      timelineTrackHeight:
+          (json['timelineTrackHeight'] as num?)?.toDouble() ?? 66,
     );
 
 Map<String, dynamic> _$EditorLayoutToJson(_EditorLayout instance) =>
@@ -54,6 +58,8 @@ Map<String, dynamic> _$EditorLayoutToJson(_EditorLayout instance) =>
       'leftSidebarWidth': instance.leftSidebarWidth,
       'rightSidebarWidth': instance.rightSidebarWidth,
       'bottomPanelHeight': instance.bottomPanelHeight,
+      'timelinePixelsPerSecond': instance.timelinePixelsPerSecond,
+      'timelineTrackHeight': instance.timelineTrackHeight,
     };
 
 _EditorSettings _$EditorSettingsFromJson(Map<String, dynamic> json) =>
