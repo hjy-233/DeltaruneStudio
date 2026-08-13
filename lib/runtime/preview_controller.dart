@@ -5,6 +5,7 @@ import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_audio_player.dart';
+import 'package:deltarune_studio/runtime/movement_path_geometry.dart';
 import 'package:deltarune_studio/runtime/runtime_world.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -72,6 +73,8 @@ final class PreviewController extends StateNotifier<PreviewState> {
       }
       if (nextTime >= plan.duration) {
         _timer?.cancel();
+        unawaited(_audioPlayer.stopAll());
+        _playedAudioEvents.clear();
         state = const PreviewState.stopped();
       } else {
         state = PreviewState.playing(
@@ -329,6 +332,7 @@ final class TimelinePlan {
       clearActiveMove: true,
       clearAudioEvents: true,
       clearActiveVideo: true,
+      teleportedFollowerIds: const {},
     );
     if (spans.isEmpty) {
       return world;
@@ -486,11 +490,18 @@ final class TimelinePlan {
     var lastX = startX;
     var lastY = startY;
     var pathDistance = 0.0;
+    var followerPath = event.path;
+    DoorDestination? finalDoorDestination;
     if (nodes.length == 1) {
       return _placeObject(current, event, startX, startY, Direction.down);
     }
     for (var index = 0; index < nodes.length - 1; index += 1) {
-      final target = _orthogonalTarget(startX, startY, nodes[index + 1]);
+      final target = movementTarget(
+        startX,
+        startY,
+        nodes[index + 1],
+        event.path.mode,
+      );
       final segmentDuration = _segmentDuration(
         startX,
         startY,
@@ -510,9 +521,13 @@ final class TimelinePlan {
           event,
           startX + dx * segmentT,
           startY + dy * segmentT,
-          _directionFor(dx, dy),
+          movementDirection(dx, dy, event.path.mode, index),
           progress: (index + segmentT) / (nodes.length - 1),
           pathDistance: pathDistance + segmentDistance * segmentT,
+          followerPath: followerPath,
+          followerProgress: followerPath == event.path
+              ? (index + segmentT) / (nodes.length - 1)
+              : segmentT,
         );
       }
       elapsed += segmentDuration;
@@ -524,9 +539,18 @@ final class TimelinePlan {
         event,
         target.x,
         target.y,
-        _directionFor(target.x - startX, target.y - startY),
+        movementDirection(
+          target.x - startX,
+          target.y - startY,
+          event.path.mode,
+          index,
+        ),
         progress: (index + 1) / (nodes.length - 1),
         pathDistance: pathDistance,
+        followerPath: followerPath,
+        followerProgress: followerPath == event.path
+            ? (index + 1) / (nodes.length - 1)
+            : 1,
       );
       startX = target.x;
       startY = target.y;
@@ -541,7 +565,7 @@ final class TimelinePlan {
       }
       elapsed += wait;
       final touchedTriggerId =
-          end.triggerId ?? triggerAtPoint(scene, end.x, end.y);
+          end.triggerId ?? triggerAtPoint(scene, target.x, target.y);
       final linkedId = linkedTriggerId(scene, touchedTriggerId);
       final destination = triggerObjectPosition(scene, linkedId);
       if (destination != null) {
@@ -562,11 +586,33 @@ final class TimelinePlan {
           progress: (index + 1) / (nodes.length - 1),
           pathDistance: pathDistance,
         ).copyWith(fadeOpacity: 0);
+        current = _teleportFollowers(
+          current,
+          event.characterObjectId,
+          destination,
+        );
+        if (index == nodes.length - 2) {
+          finalDoorDestination = destination;
+        }
         startX = destination.x;
         startY = destination.y;
         lastX = destination.x;
         lastY = destination.y;
         elapsed += doorTransitionDuration;
+        pathDistance = 0;
+        followerPath = MovementPath(
+          nodes: [
+            PathNode(
+              id: '${event.id}_teleport_$index',
+              x: destination.x,
+              y: destination.y,
+            ),
+            ...nodes.skip(index + 2),
+          ],
+          speed: event.path.speed,
+          shake: event.path.shake,
+        );
+        current = current.copyWith(teleportedFollowerIds: const {});
       }
       final triggered = triggerChain(scene, touchedTriggerId);
       if (triggered != null && !stack.contains(triggered.id)) {
@@ -582,9 +628,21 @@ final class TimelinePlan {
         }
         current = _evaluateNested(current, triggered, nestedDuration, stack);
         elapsed += nestedDuration;
+        final object = current.objects[event.characterObjectId];
+        if (object != null) {
+          lastX = object.transform.x;
+          lastY = object.transform.y;
+          startX = lastX;
+          startY = lastY;
+        }
       }
     }
-    return _placeObject(
+    final currentObject = current.objects[event.characterObjectId];
+    if (currentObject != null) {
+      lastX = currentObject.transform.x;
+      lastY = currentObject.transform.y;
+    }
+    var finished = _placeObject(
       current,
       event,
       lastX,
@@ -592,8 +650,18 @@ final class TimelinePlan {
       current.objects[event.characterObjectId]?.facing ?? Direction.down,
       progress: 1,
       pathDistance: pathDistance,
+      followerPath: followerPath,
+      followerProgress: followerPath == event.path ? 1 : 1,
       isMoving: false,
     ).copyWith(clearActiveMove: true);
+    if (finalDoorDestination != null) {
+      finished = _teleportFollowers(
+        finished,
+        event.characterObjectId,
+        finalDoorDestination,
+      );
+    }
+    return finished;
   }
 
   RuntimeWorld _applyDoorTransition(
@@ -613,12 +681,17 @@ final class TimelinePlan {
         activeMoveEventId: event.id,
       );
     }
-    final appeared = _placeObject(
+    var appeared = _placeObject(
       world,
       event,
       destination.x,
       destination.y,
       world.objects[event.characterObjectId]?.facing ?? Direction.down,
+    );
+    appeared = _teleportFollowers(
+      appeared,
+      event.characterObjectId,
+      destination,
     );
     return appeared.copyWith(
       currentEventId: event.id,
@@ -668,6 +741,8 @@ final class TimelinePlan {
     Direction facing, {
     double progress = 0,
     double? pathDistance,
+    MovementPath? followerPath,
+    double? followerProgress,
     bool isMoving = true,
   }) {
     final placed =
@@ -682,7 +757,13 @@ final class TimelinePlan {
           activeMoveEventId: event.id,
           activeMoveProgress: progress,
         );
-    return _applyFollowersFromMove(placed, event, progress, pathDistance);
+    return _applyFollowersFromMove(
+      placed,
+      event,
+      followerPath ?? event.path,
+      followerProgress ?? progress,
+      pathDistance,
+    );
   }
 
   RuntimeWorld _setMoving(RuntimeWorld world, String objectId, bool isMoving) {
@@ -691,9 +772,36 @@ final class TimelinePlan {
     });
   }
 
+  RuntimeWorld _teleportFollowers(
+    RuntimeWorld world,
+    String leaderObjectId,
+    DoorDestination destination,
+  ) {
+    var current = world;
+    for (final entry in world.followStates.entries) {
+      if (entry.value.leaderObjectId != leaderObjectId) {
+        continue;
+      }
+      current = _updateObject(current, entry.key, (object) {
+        return object.copyWith(
+          transform: object.transform.copyWith(
+            x: destination.x,
+            y: destination.y,
+          ),
+          isMoving: false,
+        );
+      });
+      current = current.copyWith(
+        teleportedFollowerIds: {...current.teleportedFollowerIds, entry.key},
+      );
+    }
+    return current;
+  }
+
   RuntimeWorld _applyFollowersFromMove(
     RuntimeWorld world,
     CharacterMoveEvent event,
+    MovementPath path,
     double progress,
     double? pathDistance,
   ) {
@@ -704,8 +812,11 @@ final class TimelinePlan {
       if (follow.leaderObjectId != event.characterObjectId) {
         continue;
       }
+      if (current.teleportedFollowerIds.contains(followerId)) {
+        continue;
+      }
       final position = _followPositionForPath(
-        event.path,
+        path,
         progress,
         pathDistance,
         follow.distance,
@@ -752,9 +863,11 @@ final class TimelinePlan {
         return FollowPosition(
           x: previous.x + (sample.x - previous.x) * t,
           y: previous.y + (sample.y - previous.y) * t,
-          direction: _directionFor(
+          direction: movementDirection(
             sample.x - previous.x,
             sample.y - previous.y,
+            path.mode,
+            samples.indexOf(sample),
           ),
           isMoving: leaderDistance > distance && progress < 1,
         );
@@ -791,7 +904,7 @@ final class TimelinePlan {
     var startY = path.nodes.first.y;
     var distance = 0.0;
     for (final node in path.nodes.skip(1)) {
-      final target = _orthogonalTarget(startX, startY, node);
+      final target = movementTarget(startX, startY, node, path.mode);
       final dx = target.x - startX;
       final dy = target.y - startY;
       distance += math.sqrt(dx * dx + dy * dy);
@@ -800,7 +913,7 @@ final class TimelinePlan {
           x: target.x,
           y: target.y,
           distance: distance,
-          direction: _directionFor(dx, dy),
+          direction: movementDirection(dx, dy, path.mode, samples.length - 1),
         ),
       );
       startX = target.x;

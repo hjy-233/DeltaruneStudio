@@ -66,6 +66,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get timelineTriggerPoint => '触发点';
 
   @override
+  String get timelineTriggerScheduled => '定时';
+
+  @override
   String get pause => '暂停';
 
   @override
@@ -73,6 +76,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get close => '关闭';
+
+  @override
+  String get unsavedChanges => '有未保存的修改';
+
+  @override
+  String get saveBeforeExit => '退出前是否保存当前项目？';
+
+  @override
+  String get discard => '放弃修改';
+
+  @override
+  String get cancel => '取消';
+
+  @override
+  String get exportScale => '导出倍率';
+
+  @override
+  String get exportResolution => '输出分辨率';
+
+  @override
+  String get exportVideo => '导出视频';
 
   @override
   String get language => '语言';
@@ -226,6 +250,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get playVideo => '播放视频';
 
   @override
+  String get triggerModeScheduled => '定时';
+
+  @override
+  String get startTime => '开始时间';
+
+  @override
   String get startFollow => '开始跟随';
 
   @override
@@ -377,6 +407,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get addPathNode => '新增路径节点';
+
+  @override
+  String get movementMode => '移动方式';
+
+  @override
+  String get movementModeFourWay => '四向移动';
+
+  @override
+  String get movementModeEightWay => '八向移动';
+
+  @override
+  String get movementModeFree => '自由移动';
 
   @override
   String get duration => '时长';

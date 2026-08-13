@@ -10,6 +10,7 @@ import 'package:deltarune_studio/l10n/event_labels.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
+import 'package:deltarune_studio/project/path_node_tools.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -450,12 +451,6 @@ class _TriggerInspector extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InspectorSectionTitle(l10n.triggerPoint),
-        InspectorStringField(
-          label: l10n.name,
-          value: ready.triggerName(value),
-          onChanged: (name) => controller.updateTrigger(_rename(value, name)),
-        ),
         _DropdownField<String>(
           label: l10n.eventChain,
           value: ready.triggerChainId(value) ?? '',
@@ -505,15 +500,6 @@ class _TriggerInspector extends ConsumerWidget {
       ],
     );
   }
-
-  Trigger _rename(Trigger trigger, String name) {
-    return trigger.map(
-      area: (value) => value.copyWith(name: name),
-      object: (value) => value.copyWith(name: name),
-      auto: (value) => value.copyWith(name: name),
-      moveComplete: (value) => value.copyWith(name: name),
-    );
-  }
 }
 
 class _ChainInspector extends ConsumerWidget {
@@ -547,6 +533,7 @@ class _ChainInspector extends ConsumerWidget {
           labelFor: (mode) => switch (mode) {
             EventChainTriggerMode.triggerPoint => l10n.triggerModeTriggerPoint,
             EventChainTriggerMode.always => l10n.triggerModeAlways,
+            EventChainTriggerMode.scheduled => l10n.triggerModeScheduled,
           },
           onChanged: (mode) =>
               controller.updateEventChain(value.copyWith(triggerMode: mode)),

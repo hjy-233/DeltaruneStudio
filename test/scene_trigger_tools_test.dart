@@ -1,8 +1,24 @@
 import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/project/scene_trigger_tools.dart';
+import 'package:deltarune_studio/project/path_node_tools.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'snaps eight-way nodes to the nearest diagonal or cardinal direction',
+    () {
+      const anchor = PathNode(id: 'anchor', x: 0, y: 0);
+      final snapped = snapNodeToDirection(
+        anchor: anchor,
+        node: const PathNode(id: 'node', x: 100, y: 90),
+        mode: MovementMode.eightWay,
+      );
+
+      expect(snapped.x, closeTo(snapped.y, 0.001));
+      expect(snapped.x, greaterThan(0));
+    },
+  );
+
   test(
     'syncs path node trigger links when nodes enter or leave trigger points',
     () {

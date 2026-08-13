@@ -640,10 +640,18 @@ class _ScenePainter extends CustomPainter {
     var startPoint = Offset(nodes.first.x, nodes.first.y);
     for (var index = 0; index < nodes.length - 1; index += 1) {
       if (activePreview && index + 1 <= progressIndex) {
-        startPoint = _orthogonalTarget(startPoint, nodes[index + 1]);
+        startPoint = _movementTarget(
+          startPoint,
+          nodes[index + 1],
+          move.event.path.mode,
+        );
         continue;
       }
-      final endPoint = _orthogonalTarget(startPoint, nodes[index + 1]);
+      final endPoint = _movementTarget(
+        startPoint,
+        nodes[index + 1],
+        move.event.path.mode,
+      );
       canvas.drawLine(
         activePreview && progressIndex > index
             ? Offset.lerp(startPoint, endPoint, progressIndex - index)!
@@ -683,13 +691,9 @@ class _ScenePainter extends CustomPainter {
     }
   }
 
-  Offset _orthogonalTarget(Offset start, PathNode target) {
-    final dx = target.x - start.dx;
-    final dy = target.y - start.dy;
-    if (dx.abs() >= dy.abs()) {
-      return Offset(target.x, start.dy);
-    }
-    return Offset(start.dx, target.y);
+  Offset _movementTarget(Offset start, PathNode target, MovementMode mode) {
+    final result = movementTarget(start.dx, start.dy, target, mode);
+    return Offset(result.x, result.y);
   }
 
   void _drawObject(

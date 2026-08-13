@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
@@ -45,6 +46,20 @@ final class StudioController extends StateNotifier<StudioState> {
   final List<_HistoryEntry> _undoStack = [];
   final List<_HistoryEntry> _redoStack = [];
   bool _restoringHistory = false;
+  double _editorInsertionX = 240;
+  double _editorInsertionY = 140;
+
+  void setEditorInsertionPoint(double x, double y) {
+    _editorInsertionX = x;
+    _editorInsertionY = y;
+  }
+
+  Transform2D _atEditorCenter(Transform2D transform) {
+    return transform.copyWith(
+      x: _editorInsertionX - transform.width * transform.scale / 2,
+      y: _editorInsertionY - transform.height * transform.scale / 2,
+    );
+  }
 
   static const _settingsFileName = 'settings.json';
   static const _lastProjectPathKey = 'lastProjectPath';

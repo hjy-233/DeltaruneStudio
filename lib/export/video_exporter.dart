@@ -16,8 +16,14 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
 final class VideoExporter {
-  VideoExporter({this.width = 640, this.height = 480, this.fps = 30});
+  static const logicalWidth = 640;
+  static const logicalHeight = 480;
 
+  VideoExporter({this.scale = 1, this.fps = 30})
+    : width = logicalWidth * scale,
+      height = logicalHeight * scale;
+
+  final int scale;
   final int width;
   final int height;
   final int fps;
@@ -309,7 +315,12 @@ final class VideoExporter {
   ) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final size = Size(width.toDouble(), height.toDouble());
+    final size = Size(logicalWidth.toDouble(), logicalHeight.toDouble());
+
+    // Keep the camera in logical pixels. The final picture is enlarged as a
+    // whole so integer export scales preserve the exact scene composition.
+    canvas.save();
+    canvas.scale(scale.toDouble());
     canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
 
     final cameraOrigin = _cameraOrigin(world, size);
@@ -333,6 +344,7 @@ final class VideoExporter {
         Paint()..color = Colors.black.withValues(alpha: world.fadeOpacity),
       );
     }
+    canvas.restore();
     final picture = recorder.endRecording();
     final image = await picture.toImage(width, height);
     final data = await image.toByteData(format: ui.ImageByteFormat.png);

@@ -19,10 +19,22 @@ class _EventInspector extends ConsumerWidget {
     }
     final controller = ref.read(studioControllerProvider.notifier);
     final l10n = AppLocalizations.of(context)!;
+    final chain = ready.currentScene.eventChains
+        .where((candidate) => candidate.id == chainId)
+        .firstOrNull;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InspectorSectionTitle(eventLabel(l10n, value)),
+        if (chain?.triggerMode == EventChainTriggerMode.scheduled)
+          InspectorNumberField(
+            label: l10n.startTime,
+            value: value.eventScheduleStart,
+            onChanged: (time) => controller.updateEvent(
+              chainId,
+              value.withScheduleStart(time.clamp(0, 99999).toDouble()),
+            ),
+          ),
         value.map(
           characterMove: (move) => _buildMoveEvent(controller, l10n, move),
           characterStartFollow: (follow) =>
@@ -88,6 +100,25 @@ class _EventInspector extends ConsumerWidget {
           onChanged: (shake) => controller.updateEvent(
             chainId,
             move.copyWith(path: move.path.copyWith(shake: shake)),
+          ),
+        ),
+        _DropdownField<MovementMode>(
+          label: l10n.movementMode,
+          value: move.path.mode,
+          values: MovementMode.values,
+          labelFor: (mode) => switch (mode) {
+            MovementMode.fourWay => l10n.movementModeFourWay,
+            MovementMode.eightWay => l10n.movementModeEightWay,
+            MovementMode.free => l10n.movementModeFree,
+          },
+          onChanged: (mode) => controller.updateEvent(
+            chainId,
+            move.copyWith(
+              path: move.path.copyWith(
+                mode: mode,
+                nodes: normalizeMovementPathNodes(move.path.nodes, mode),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 8),

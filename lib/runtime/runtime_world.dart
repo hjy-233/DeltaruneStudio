@@ -17,6 +17,7 @@ final class RuntimeWorld {
     this.cameraFollowObjectId,
     this.cameraFocusTarget,
     this.followStates = const {},
+    this.teleportedFollowerIds = const {},
   });
 
   final StudioProject project;
@@ -34,6 +35,7 @@ final class RuntimeWorld {
   final String? cameraFollowObjectId;
   final FocusTarget? cameraFocusTarget;
   final Map<String, CharacterFollowState> followStates;
+  final Set<String> teleportedFollowerIds;
 
   RuntimeWorld copyWith({
     StudioProject? project,
@@ -51,6 +53,7 @@ final class RuntimeWorld {
     String? cameraFollowObjectId,
     FocusTarget? cameraFocusTarget,
     Map<String, CharacterFollowState>? followStates,
+    Set<String>? teleportedFollowerIds,
     bool clearEvent = false,
     bool clearDialogue = false,
     bool clearActiveMove = false,
@@ -80,6 +83,8 @@ final class RuntimeWorld {
           ? null
           : cameraFocusTarget ?? this.cameraFocusTarget,
       followStates: followStates ?? this.followStates,
+      teleportedFollowerIds:
+          teleportedFollowerIds ?? this.teleportedFollowerIds,
     );
   }
 

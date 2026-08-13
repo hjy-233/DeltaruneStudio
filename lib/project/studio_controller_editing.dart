@@ -17,7 +17,7 @@ extension StudioControllerEditingActions on StudioController {
       id: StudioIds.object(),
       name: character.name,
       characterId: character.id,
-      transform: character.defaultTransform,
+      transform: _atEditorCenter(character.defaultTransform),
       facing: character.defaultFacing,
       initialExpression:
           character.defaultExpressionId ??
@@ -75,7 +75,9 @@ extension StudioControllerEditingActions on StudioController {
       id: StudioIds.object(),
       name: 'Trigger Point',
       triggerId: trigger.id,
-      transform: const Transform2D(x: 240, y: 140, width: 22, height: 22),
+      transform: _atEditorCenter(
+        const Transform2D(x: 0, y: 0, width: 22, height: 22),
+      ),
     );
     final scene = current.currentScene.copyWith(
       objects: [...current.currentScene.objects, object],
@@ -129,13 +131,47 @@ extension StudioControllerEditingActions on StudioController {
     if (current == null) {
       return;
     }
+    final normalized = _normalizeEventChain(chain);
     _replaceCurrentScene(
       current.currentScene.copyWith(
         eventChains: current.currentScene.eventChains
-            .map((candidate) => candidate.id == chain.id ? chain : candidate)
+            .map(
+              (candidate) =>
+                  candidate.id == normalized.id ? normalized : candidate,
+            )
             .toList(),
       ),
     );
+  }
+
+  void moveScheduledChain(String chainId, double startTime) {
+    final current = _controllerState.asReady;
+    final chain = current?.currentScene.eventChains
+        .where((candidate) => candidate.id == chainId)
+        .firstOrNull;
+    if (current == null ||
+        chain == null ||
+        chain.triggerMode != EventChainTriggerMode.scheduled) {
+      return;
+    }
+    updateEventChain(chain.copyWith(startTime: math.max(0.0, startTime)));
+  }
+
+  void moveScheduledEvent(String chainId, String eventId, double startTime) {
+    final current = _controllerState.asReady;
+    final chain = current?.currentScene.eventChains
+        .where((candidate) => candidate.id == chainId)
+        .firstOrNull;
+    final event = chain?.events
+        .where((candidate) => candidate.eventId == eventId)
+        .firstOrNull;
+    if (current == null ||
+        chain == null ||
+        event == null ||
+        chain.triggerMode != EventChainTriggerMode.scheduled) {
+      return;
+    }
+    updateEvent(chainId, event.withScheduleStart(math.max(0.0, startTime)));
   }
 
   void deleteEventChain(String chainId) {
@@ -178,6 +214,9 @@ extension StudioControllerEditingActions on StudioController {
         if (chain.id != chainId) {
           return chain;
         }
+        if (chain.triggerMode == EventChainTriggerMode.always) {
+          return chain.copyWith(events: [event]);
+        }
         return chain.copyWith(events: [...chain.events, event]);
       }).toList(),
     );
@@ -209,6 +248,14 @@ extension StudioControllerEditingActions on StudioController {
         }).toList(),
       ),
     );
+  }
+
+  EventChain _normalizeEventChain(EventChain chain) {
+    if (chain.triggerMode != EventChainTriggerMode.always ||
+        chain.events.length <= 1) {
+      return chain;
+    }
+    return chain.copyWith(events: [chain.events.first]);
   }
 
   void removeEvent(String eventId) {
@@ -277,6 +324,7 @@ extension StudioControllerEditingActions on StudioController {
               return node.id == nodeId ? update(node) : node;
             }).toList(),
             nodeId,
+            event.path.mode,
           ),
         ),
       ),

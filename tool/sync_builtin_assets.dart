@@ -40,7 +40,7 @@ Future<void> _syncDirectory(Directory source, Directory target) async {
     return;
   }
   if (await target.exists()) {
-    await target.delete(recursive: true);
+    await _deleteTree(target);
   }
   await target.create(recursive: true);
   await for (final entity in source.list(recursive: true)) {
@@ -53,4 +53,15 @@ Future<void> _syncDirectory(Directory source, Directory target) async {
       await entity.copy(destination);
     }
   }
+}
+
+Future<void> _deleteTree(Directory directory) async {
+  await for (final entity in directory.list(followLinks: false)) {
+    if (entity is Directory) {
+      await _deleteTree(entity);
+    } else {
+      await entity.delete();
+    }
+  }
+  await directory.delete();
 }

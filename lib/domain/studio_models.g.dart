@@ -403,6 +403,9 @@ _MovementPath _$MovementPathFromJson(Map<String, dynamic> json) =>
           .toList(),
       speed: (json['speed'] as num?)?.toDouble() ?? 320,
       shake: (json['shake'] as num?)?.toDouble() ?? 0,
+      mode:
+          $enumDecodeNullable(_$MovementModeEnumMap, json['mode']) ??
+          MovementMode.fourWay,
     );
 
 Map<String, dynamic> _$MovementPathToJson(_MovementPath instance) =>
@@ -410,7 +413,14 @@ Map<String, dynamic> _$MovementPathToJson(_MovementPath instance) =>
       'nodes': instance.nodes,
       'speed': instance.speed,
       'shake': instance.shake,
+      'mode': _$MovementModeEnumMap[instance.mode]!,
     };
+
+const _$MovementModeEnumMap = {
+  MovementMode.fourWay: 'fourWay',
+  MovementMode.eightWay: 'eightWay',
+  MovementMode.free: 'free',
+};
 
 _PathNode _$PathNodeFromJson(Map<String, dynamic> json) => _PathNode(
   id: json['id'] as String,
@@ -548,6 +558,7 @@ _EventChain _$EventChainFromJson(Map<String, dynamic> json) => _EventChain(
         json['triggerMode'],
       ) ??
       EventChainTriggerMode.always,
+  startTime: (json['startTime'] as num?)?.toDouble() ?? 0,
   events: (json['events'] as List<dynamic>)
       .map((e) => StudioEvent.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -558,12 +569,14 @@ Map<String, dynamic> _$EventChainToJson(_EventChain instance) =>
       'id': instance.id,
       'name': instance.name,
       'triggerMode': _$EventChainTriggerModeEnumMap[instance.triggerMode]!,
+      'startTime': instance.startTime,
       'events': instance.events,
     };
 
 const _$EventChainTriggerModeEnumMap = {
   EventChainTriggerMode.triggerPoint: 'triggerPoint',
   EventChainTriggerMode.always: 'always',
+  EventChainTriggerMode.scheduled: 'scheduled',
 };
 
 CharacterMoveEvent _$CharacterMoveEventFromJson(Map<String, dynamic> json) =>
@@ -571,6 +584,7 @@ CharacterMoveEvent _$CharacterMoveEventFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       characterObjectId: json['characterObjectId'] as String,
       path: MovementPath.fromJson(json['path'] as Map<String, dynamic>),
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -579,6 +593,7 @@ Map<String, dynamic> _$CharacterMoveEventToJson(CharacterMoveEvent instance) =>
       'id': instance.id,
       'characterObjectId': instance.characterObjectId,
       'path': instance.path,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -586,6 +601,7 @@ CharacterWaitEvent _$CharacterWaitEventFromJson(Map<String, dynamic> json) =>
     CharacterWaitEvent(
       id: json['id'] as String,
       duration: (json['duration'] as num?)?.toDouble() ?? 1,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -593,6 +609,7 @@ Map<String, dynamic> _$CharacterWaitEventToJson(CharacterWaitEvent instance) =>
     <String, dynamic>{
       'id': instance.id,
       'duration': instance.duration,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -603,6 +620,7 @@ CharacterChangeExpressionEvent _$CharacterChangeExpressionEventFromJson(
   characterObjectId: json['characterObjectId'] as String,
   expressionId: json['expressionId'] as String,
   duration: (json['duration'] as num?)?.toDouble() ?? 1,
+  scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
   $type: json['type'] as String?,
 );
 
@@ -613,6 +631,7 @@ Map<String, dynamic> _$CharacterChangeExpressionEventToJson(
   'characterObjectId': instance.characterObjectId,
   'expressionId': instance.expressionId,
   'duration': instance.duration,
+  'scheduleStart': instance.scheduleStart,
   'type': instance.$type,
 };
 
@@ -623,6 +642,7 @@ CharacterStartFollowEvent _$CharacterStartFollowEventFromJson(
   followerObjectId: json['followerObjectId'] as String,
   leaderObjectId: json['leaderObjectId'] as String,
   distance: (json['distance'] as num?)?.toDouble() ?? 48,
+  scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
   $type: json['type'] as String?,
 );
 
@@ -633,6 +653,7 @@ Map<String, dynamic> _$CharacterStartFollowEventToJson(
   'followerObjectId': instance.followerObjectId,
   'leaderObjectId': instance.leaderObjectId,
   'distance': instance.distance,
+  'scheduleStart': instance.scheduleStart,
   'type': instance.$type,
 };
 
@@ -641,6 +662,7 @@ CharacterStopFollowEvent _$CharacterStopFollowEventFromJson(
 ) => CharacterStopFollowEvent(
   id: json['id'] as String,
   followerObjectId: json['followerObjectId'] as String,
+  scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
   $type: json['type'] as String?,
 );
 
@@ -649,6 +671,7 @@ Map<String, dynamic> _$CharacterStopFollowEventToJson(
 ) => <String, dynamic>{
   'id': instance.id,
   'followerObjectId': instance.followerObjectId,
+  'scheduleStart': instance.scheduleStart,
   'type': instance.$type,
 };
 
@@ -662,6 +685,7 @@ DialogueSayEvent _$DialogueSayEventFromJson(Map<String, dynamic> json) =>
           $enumDecodeNullable(_$DialogueStyleEnumMap, json['style']) ??
           DialogueStyle.regular,
       duration: (json['duration'] as num?)?.toDouble() ?? 2,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -673,6 +697,7 @@ Map<String, dynamic> _$DialogueSayEventToJson(DialogueSayEvent instance) =>
       'textSoundAssetId': instance.textSoundAssetId,
       'style': _$DialogueStyleEnumMap[instance.style]!,
       'duration': instance.duration,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -685,6 +710,7 @@ CameraFollowEvent _$CameraFollowEventFromJson(Map<String, dynamic> json) =>
     CameraFollowEvent(
       id: json['id'] as String,
       targetObjectId: json['targetObjectId'] as String,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -692,6 +718,7 @@ Map<String, dynamic> _$CameraFollowEventToJson(CameraFollowEvent instance) =>
     <String, dynamic>{
       'id': instance.id,
       'targetObjectId': instance.targetObjectId,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -700,6 +727,7 @@ CameraFocusEvent _$CameraFocusEventFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       target: FocusTarget.fromJson(json['target'] as Map<String, dynamic>),
       duration: (json['duration'] as num?)?.toDouble() ?? 0.5,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -708,6 +736,7 @@ Map<String, dynamic> _$CameraFocusEventToJson(CameraFocusEvent instance) =>
       'id': instance.id,
       'target': instance.target,
       'duration': instance.duration,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -716,6 +745,7 @@ SceneFadeEvent _$SceneFadeEventFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       mode: $enumDecode(_$FadeModeEnumMap, json['mode']),
       duration: (json['duration'] as num?)?.toDouble() ?? 0.8,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -724,6 +754,7 @@ Map<String, dynamic> _$SceneFadeEventToJson(SceneFadeEvent instance) =>
       'id': instance.id,
       'mode': _$FadeModeEnumMap[instance.mode]!,
       'duration': instance.duration,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -734,6 +765,7 @@ SceneChangeEvent _$SceneChangeEventFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       sceneId: json['sceneId'] as String,
       entryPointId: json['entryPointId'] as String?,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -742,6 +774,7 @@ Map<String, dynamic> _$SceneChangeEventToJson(SceneChangeEvent instance) =>
       'id': instance.id,
       'sceneId': instance.sceneId,
       'entryPointId': instance.entryPointId,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -749,6 +782,7 @@ AudioPlayBgmEvent _$AudioPlayBgmEventFromJson(Map<String, dynamic> json) =>
     AudioPlayBgmEvent(
       id: json['id'] as String,
       assetId: json['assetId'] as String,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -756,6 +790,7 @@ Map<String, dynamic> _$AudioPlayBgmEventToJson(AudioPlayBgmEvent instance) =>
     <String, dynamic>{
       'id': instance.id,
       'assetId': instance.assetId,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 
@@ -763,6 +798,7 @@ AudioPlaySoundEvent _$AudioPlaySoundEventFromJson(Map<String, dynamic> json) =>
     AudioPlaySoundEvent(
       id: json['id'] as String,
       assetId: json['assetId'] as String,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -771,6 +807,7 @@ Map<String, dynamic> _$AudioPlaySoundEventToJson(
 ) => <String, dynamic>{
   'id': instance.id,
   'assetId': instance.assetId,
+  'scheduleStart': instance.scheduleStart,
   'type': instance.$type,
 };
 
@@ -782,6 +819,7 @@ VideoPlayEvent _$VideoPlayEventFromJson(Map<String, dynamic> json) =>
       fit:
           $enumDecodeNullable(_$VideoFitModeEnumMap, json['fit']) ??
           VideoFitMode.contain,
+      scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
       $type: json['type'] as String?,
     );
 
@@ -791,6 +829,7 @@ Map<String, dynamic> _$VideoPlayEventToJson(VideoPlayEvent instance) =>
       'assetId': instance.assetId,
       'duration': instance.duration,
       'fit': _$VideoFitModeEnumMap[instance.fit]!,
+      'scheduleStart': instance.scheduleStart,
       'type': instance.$type,
     };
 

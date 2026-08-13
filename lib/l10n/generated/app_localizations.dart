@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Trigger point'**
   String get timelineTriggerPoint;
 
+  /// No description provided for @timelineTriggerScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get timelineTriggerScheduled;
+
   /// No description provided for @pause.
   ///
   /// In en, this message translates to:
@@ -229,6 +235,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get close;
+
+  /// No description provided for @unsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedChanges;
+
+  /// No description provided for @saveBeforeExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the current project before exiting?'**
+  String get saveBeforeExit;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @exportScale.
+  ///
+  /// In en, this message translates to:
+  /// **'Export scale'**
+  String get exportScale;
+
+  /// No description provided for @exportResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Output resolution'**
+  String get exportResolution;
+
+  /// No description provided for @exportVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Export video'**
+  String get exportVideo;
 
   /// No description provided for @language.
   ///
@@ -517,6 +565,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Play Video'**
   String get playVideo;
+
+  /// No description provided for @triggerModeScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get triggerModeScheduled;
+
+  /// No description provided for @startTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get startTime;
 
   /// No description provided for @startFollow.
   ///
@@ -823,6 +883,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Path Node'**
   String get addPathNode;
+
+  /// No description provided for @movementMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Movement mode'**
+  String get movementMode;
+
+  /// No description provided for @movementModeFourWay.
+  ///
+  /// In en, this message translates to:
+  /// **'Four-way'**
+  String get movementModeFourWay;
+
+  /// No description provided for @movementModeEightWay.
+  ///
+  /// In en, this message translates to:
+  /// **'Eight-way'**
+  String get movementModeEightWay;
+
+  /// No description provided for @movementModeFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free movement'**
+  String get movementModeFree;
 
   /// No description provided for @duration.
   ///

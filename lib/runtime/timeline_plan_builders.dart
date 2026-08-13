@@ -11,13 +11,18 @@ List<TimelineSpan> _buildSpans(
   final nextStack = {...stack, chain.id};
   final spans = <TimelineSpan>[];
   var cursor = 0.0;
-  for (final event in chain.events) {
+  final events = chain.triggerMode == EventChainTriggerMode.always
+      ? chain.events.take(1)
+      : chain.events;
+  for (final event in events) {
     final duration = _eventDuration(scene, event, nextStack);
-    spans.add(
-      TimelineSpan(event: event, start: cursor, end: cursor + duration),
-    );
+    final start = chain.triggerMode == EventChainTriggerMode.scheduled
+        ? math.max(0.0, event.eventScheduleStart)
+        : cursor;
+    spans.add(TimelineSpan(event: event, start: start, end: start + duration));
     cursor += duration;
   }
+  spans.sort(_compareSpans);
   return spans;
 }
 
@@ -26,7 +31,10 @@ List<TimelineChainTrack> _buildSceneTracks(Scene scene) {
     for (final chain in scene.eventChains) _buildChainTrack(scene, chain),
   ];
   final timelineEnd = tracks
-      .where((track) => track.chain.triggerMode == EventChainTriggerMode.always)
+      .where(
+        (track) =>
+            track.chain.triggerMode != EventChainTriggerMode.triggerPoint,
+      )
       .fold<double>(0, (value, track) => math.max(value, track.duration));
   return [
     for (final track in tracks) _extendPersistentEventSpans(track, timelineEnd),
@@ -45,19 +53,24 @@ TimelineChainTrack _extendPersistentEventSpans(
     offset: track.offset,
     spans: [
       for (final span in track.spans)
-        _extendPersistentEventSpan(track.spans, span, timelineEnd),
+        _extendAlwaysEventSpan(track.spans, span, timelineEnd),
     ],
   );
 }
 
-TimelineSpan _extendPersistentEventSpan(
+TimelineSpan _extendAlwaysEventSpan(
   List<TimelineSpan> spans,
   TimelineSpan span,
   double timelineEnd,
 ) {
   final event = span.event;
   if (event is! CharacterStartFollowEvent) {
-    return span;
+    return TimelineSpan(
+      event: span.event,
+      start: span.start,
+      end: span.end,
+      displayEnd: math.max(timelineEnd, span.end),
+    );
   }
   TimelineSpan? stop;
   for (final candidate in spans) {
@@ -81,7 +94,7 @@ TimelineSpan _extendPersistentEventSpan(
 List<TimelineSpan> _buildRuntimeSpans(List<TimelineChainTrack> tracks) {
   final spans = <TimelineSpan>[];
   for (final track in tracks) {
-    if (track.chain.triggerMode != EventChainTriggerMode.always) {
+    if (track.chain.triggerMode == EventChainTriggerMode.triggerPoint) {
       continue;
     }
     spans.addAll(track.spans);
@@ -92,9 +105,12 @@ List<TimelineSpan> _buildRuntimeSpans(List<TimelineChainTrack> tracks) {
 
 TimelineChainTrack _buildChainTrack(Scene scene, EventChain chain) {
   final localSpans = _buildSpans(scene, chain, const {});
-  final offset = chain.triggerMode == EventChainTriggerMode.always
-      ? 0.0
-      : _findTriggerChainOffset(scene, chain.id) ?? 0.0;
+  final offset = switch (chain.triggerMode) {
+    EventChainTriggerMode.always => 0.0,
+    EventChainTriggerMode.scheduled => math.max(0.0, chain.startTime),
+    EventChainTriggerMode.triggerPoint =>
+      _findTriggerChainOffset(scene, chain.id) ?? 0.0,
+  };
   return TimelineChainTrack(
     chain: chain,
     offset: offset,
@@ -165,7 +181,7 @@ double? _findChainOffsetInMove(
   var startY = event.path.nodes.first.y;
   for (var index = 0; index < event.path.nodes.length - 1; index += 1) {
     final end = event.path.nodes[index + 1];
-    final target = _orthogonalTarget(startX, startY, end);
+    final target = movementTarget(startX, startY, end, event.path.mode);
     elapsed += _segmentDuration(
       startX,
       startY,
@@ -174,7 +190,8 @@ double? _findChainOffsetInMove(
       event.path.speed,
     );
     elapsed += end.waitSeconds ?? 0;
-    final triggerId = end.triggerId ?? triggerAtPoint(scene, end.x, end.y);
+    final triggerId =
+        end.triggerId ?? triggerAtPoint(scene, target.x, target.y);
     final linkedId = linkedTriggerId(scene, triggerId);
     if (linkedId != null) {
       elapsed += TimelinePlan.doorTransitionDuration;
@@ -214,11 +231,18 @@ List<TimelineAudioCue> _buildSceneAudioCues(Scene scene) {
   final cues = <TimelineAudioCue>[];
   for (final chain in scene.eventChains) {
     if (chain.events.isEmpty ||
-        chain.triggerMode != EventChainTriggerMode.always) {
+        chain.triggerMode == EventChainTriggerMode.triggerPoint) {
       continue;
     }
     final chainSpans = _buildSpans(scene, chain, const {});
-    cues.addAll(_audioCuesForSpans(scene, chainSpans, 0, const {}));
+    cues.addAll(
+      _audioCuesForSpans(
+        scene,
+        chainSpans,
+        _chainStartOffset(scene, chain),
+        const {},
+      ),
+    );
   }
   cues.sort((a, b) => a.time.compareTo(b.time));
   return cues;
@@ -231,16 +255,31 @@ List<TimelineDialogueTypeCue> _buildSceneDialogueTypeCues(
   final cues = <TimelineDialogueTypeCue>[];
   for (final chain in scene.eventChains) {
     if (chain.events.isEmpty ||
-        chain.triggerMode != EventChainTriggerMode.always) {
+        chain.triggerMode == EventChainTriggerMode.triggerPoint) {
       continue;
     }
     final chainSpans = _buildSpans(scene, chain, const {});
     cues.addAll(
-      _dialogueTypeCuesForSpans(project, scene, chainSpans, 0, const {}),
+      _dialogueTypeCuesForSpans(
+        project,
+        scene,
+        chainSpans,
+        _chainStartOffset(scene, chain),
+        const {},
+      ),
     );
   }
   cues.sort((a, b) => a.time.compareTo(b.time));
   return cues;
+}
+
+double _chainStartOffset(Scene scene, EventChain chain) {
+  return switch (chain.triggerMode) {
+    EventChainTriggerMode.always => 0.0,
+    EventChainTriggerMode.scheduled => math.max(0.0, chain.startTime),
+    EventChainTriggerMode.triggerPoint =>
+      _findTriggerChainOffset(scene, chain.id) ?? 0.0,
+  };
 }
 
 int _compareSpans(TimelineSpan a, TimelineSpan b) {
@@ -346,12 +385,19 @@ List<TimelineAudioCue> _audioCuesForMove(
   var startY = event.path.nodes.first.y;
   for (var index = 0; index < event.path.nodes.length - 1; index += 1) {
     final end = event.path.nodes[index + 1];
-    elapsed += _segmentDuration(startX, startY, end.x, end.y, event.path.speed);
-    final target = _orthogonalTarget(startX, startY, end);
+    final target = movementTarget(startX, startY, end, event.path.mode);
+    elapsed += _segmentDuration(
+      startX,
+      startY,
+      target.x,
+      target.y,
+      event.path.speed,
+    );
     startX = target.x;
     startY = target.y;
     elapsed += end.waitSeconds ?? 0;
-    final triggerId = end.triggerId ?? triggerAtPoint(scene, end.x, end.y);
+    final triggerId =
+        end.triggerId ?? triggerAtPoint(scene, target.x, target.y);
     final linkedId = linkedTriggerId(scene, triggerId);
     if (linkedId != null) {
       elapsed += TimelinePlan.doorTransitionDuration;
@@ -395,12 +441,19 @@ List<TimelineDialogueTypeCue> _dialogueTypeCuesForMove(
   var startY = event.path.nodes.first.y;
   for (var index = 0; index < event.path.nodes.length - 1; index += 1) {
     final end = event.path.nodes[index + 1];
-    elapsed += _segmentDuration(startX, startY, end.x, end.y, event.path.speed);
-    final target = _orthogonalTarget(startX, startY, end);
+    final target = movementTarget(startX, startY, end, event.path.mode);
+    elapsed += _segmentDuration(
+      startX,
+      startY,
+      target.x,
+      target.y,
+      event.path.speed,
+    );
     startX = target.x;
     startY = target.y;
     elapsed += end.waitSeconds ?? 0;
-    final triggerId = end.triggerId ?? triggerAtPoint(scene, end.x, end.y);
+    final triggerId =
+        end.triggerId ?? triggerAtPoint(scene, target.x, target.y);
     final linkedId = linkedTriggerId(scene, triggerId);
     if (linkedId != null) {
       elapsed += TimelinePlan.doorTransitionDuration;
@@ -450,18 +503,19 @@ double _eventDuration(Scene scene, StudioEvent event, Set<String> stack) {
       var startY = value.path.nodes.first.y;
       for (var index = 0; index < value.path.nodes.length - 1; index += 1) {
         final end = value.path.nodes[index + 1];
+        final target = movementTarget(startX, startY, end, value.path.mode);
         duration += _segmentDuration(
           startX,
           startY,
-          end.x,
-          end.y,
+          target.x,
+          target.y,
           value.path.speed,
         );
-        final target = _orthogonalTarget(startX, startY, end);
         startX = target.x;
         startY = target.y;
         duration += end.waitSeconds ?? 0;
-        final triggerId = end.triggerId ?? triggerAtPoint(scene, end.x, end.y);
+        final triggerId =
+            end.triggerId ?? triggerAtPoint(scene, target.x, target.y);
         if (triggerId != null) {
           final linkedId = linkedTriggerId(scene, triggerId);
           if (linkedId != null) {
@@ -493,19 +547,6 @@ double _eventDuration(Scene scene, StudioEvent event, Set<String> stack) {
     audioPlaySound: (_) => 0.1,
     videoPlay: (value) => math.max(value.duration, 0.1),
   );
-}
-
-DoorDestination _orthogonalTarget(
-  double startX,
-  double startY,
-  PathNode target,
-) {
-  final dx = target.x - startX;
-  final dy = target.y - startY;
-  if (dx.abs() >= dy.abs()) {
-    return DoorDestination(target.x, startY);
-  }
-  return DoorDestination(startX, target.y);
 }
 
 int _typewriterCharacters(
@@ -559,20 +600,8 @@ double _segmentDuration(
   double endY,
   double speed,
 ) {
-  final target = _orthogonalTarget(
-    startX,
-    startY,
-    PathNode(id: 'duration', x: endX, y: endY),
-  );
-  final dx = target.x - startX;
-  final dy = target.y - startY;
+  final dx = endX - startX;
+  final dy = endY - startY;
   final distance = math.sqrt(dx * dx + dy * dy);
   return distance / math.max(speed, 1);
-}
-
-Direction _directionFor(double dx, double dy) {
-  if (dx.abs() > dy.abs()) {
-    return dx >= 0 ? Direction.right : Direction.left;
-  }
-  return dy >= 0 ? Direction.down : Direction.up;
 }

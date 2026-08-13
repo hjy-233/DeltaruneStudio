@@ -5,11 +5,14 @@ import 'package:deltarune_studio/editor/default_event_factories.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
+import 'package:deltarune_studio/runtime/movement_path_geometry.dart';
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+
+part 'event_chain_timeline_blocks.dart';
 
 class EventChainPanel extends ConsumerStatefulWidget {
   const EventChainPanel({
@@ -26,21 +29,47 @@ class EventChainPanel extends ConsumerStatefulWidget {
 }
 
 class _EventChainPanelState extends ConsumerState<EventChainPanel> {
-  final Set<String> _collapsedChains = <String>{};
+  final ScrollController _timelineVerticalController = ScrollController();
+  final ScrollController _timelineLabelsController = ScrollController();
+  bool _syncingTimelineScroll = false;
   double _pixelsPerSecond = 100;
   double _trackHeight = 66;
+
+  @override
+  void dispose() {
+    _timelineVerticalController.dispose();
+    _timelineLabelsController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     _readLayout(widget.ready.project.editorLayout);
+    _timelineVerticalController.addListener(_syncTimelineLabels);
+  }
+
+  void _syncTimelineLabels() {
+    if (_syncingTimelineScroll ||
+        !_timelineLabelsController.hasClients ||
+        !_timelineVerticalController.hasClients) {
+      return;
+    }
+    _syncingTimelineScroll = true;
+    final target = _timelineVerticalController.offset.clamp(
+      0.0,
+      _timelineLabelsController.position.maxScrollExtent,
+    );
+    if ((_timelineLabelsController.offset - target).abs() > 0.1) {
+      _timelineLabelsController.jumpTo(target);
+    }
+    _syncingTimelineScroll = false;
   }
 
   @override
   void didUpdateWidget(covariant EventChainPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.ready.project.id != widget.ready.project.id) {
-      _collapsedChains.clear();
       _readLayout(widget.ready.project.editorLayout);
     }
   }
@@ -123,21 +152,26 @@ class _EventChainPanelState extends ConsumerState<EventChainPanel> {
                 child: Row(
                   children: [
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        l10n.eventChains,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
+                    Text(
+                      l10n.eventChains,
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                     IconButton(
                       tooltip: l10n.addEventChain,
                       onPressed: controller.addEventChain,
                       icon: const Icon(Icons.add),
                     ),
-                    _AddEventMenu(
-                      enabled: widget.ready.activeChain != null,
-                      sampleCharacterId: widget.sampleCharacterId,
-                      onSelected: controller.addEventToSelectedChain,
+                    const Spacer(),
+                    _TimelineViewControls(
+                      pixelsPerSecond: _pixelsPerSecond,
+                      trackHeight: _trackHeight,
+                      onZoom: _setZoom,
+                      onTrackHeight: _setTrackHeight,
+                      onFit: () => _setZoom(
+                        ((constraints.maxWidth - 190) / math.max(duration, 1))
+                            .clamp(20, 240)
+                            .toDouble(),
+                      ),
                     ),
                     const SizedBox(width: 12),
                   ],
@@ -171,68 +205,75 @@ class _EventChainPanelState extends ConsumerState<EventChainPanel> {
                                 _pixelsPerSecond - event.scrollDelta.dy * 0.12,
                               );
                             },
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  children: [
-                                    _TimelineRuler(
-                                      width: timelineWidth,
-                                      pixelsPerSecond: _pixelsPerSecond,
-                                    ),
-                                    for (final track in tracks)
-                                      _TimelineTrackRow(
-                                        track: track,
-                                        width: timelineWidth,
-                                        pixelsPerSecond: _pixelsPerSecond,
-                                        currentTime: currentTime,
-                                        height: _trackHeight,
-                                        project: widget.ready.project,
-                                        scene: widget.ready.currentScene,
-                                        collapsed: _collapsedChains.contains(
-                                          track.chain.id,
-                                        ),
-                                        selectedChain:
-                                            selectedChainId == track.chain.id,
-                                        selectedEventId: selectedEventId,
-                                        onToggleCollapsed: () => setState(() {
-                                          if (!_collapsedChains.add(
-                                            track.chain.id,
-                                          )) {
-                                            _collapsedChains.remove(
-                                              track.chain.id,
-                                            );
-                                          }
-                                        }),
-                                        onSelectChain: () => controller
-                                            .selectChain(track.chain.id),
-                                        onSelectEvent: (eventId) {
-                                          controller.selectEvent(
-                                            track.chain.id,
-                                            eventId,
-                                          );
-                                        },
-                                        onRemoveEvent: controller.removeEvent,
-                                      ),
-                                  ],
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 150,
+                                  child: _TimelineFixedLabels(
+                                    controller: _timelineLabelsController,
+                                    tracks: tracks,
+                                    selectedChainId: selectedChainId,
+                                    trackHeight: _trackHeight,
+                                    sampleCharacterId: widget.sampleCharacterId,
+                                    onAddEvent:
+                                        controller.addEventToSelectedChain,
+                                    onSelectChain: controller.selectChain,
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 10,
-                            bottom: 10,
-                            child: _TimelineViewControls(
-                              pixelsPerSecond: _pixelsPerSecond,
-                              trackHeight: _trackHeight,
-                              onZoom: _setZoom,
-                              onTrackHeight: _setTrackHeight,
-                              onFit: () => _setZoom(
-                                ((constraints.maxWidth - 190) /
-                                        math.max(duration, 1))
-                                    .clamp(20, 240)
-                                    .toDouble(),
-                              ),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: SizedBox(
+                                      width: timelineWidth,
+                                      child: SingleChildScrollView(
+                                        controller: _timelineVerticalController,
+                                        child: Column(
+                                          children: [
+                                            _TimelineRuler(
+                                              width: timelineWidth,
+                                              pixelsPerSecond: _pixelsPerSecond,
+                                              showLabel: false,
+                                            ),
+                                            for (final track in tracks)
+                                              _TimelineTrackRow(
+                                                track: track,
+                                                width: timelineWidth,
+                                                pixelsPerSecond:
+                                                    _pixelsPerSecond,
+                                                currentTime: currentTime,
+                                                height: _trackHeight,
+                                                project: widget.ready.project,
+                                                scene:
+                                                    widget.ready.currentScene,
+                                                selectedChain:
+                                                    selectedChainId ==
+                                                    track.chain.id,
+                                                selectedEventId:
+                                                    selectedEventId,
+                                                onSelectChain: () =>
+                                                    controller.selectChain(
+                                                      track.chain.id,
+                                                    ),
+                                                onSelectEvent: (eventId) =>
+                                                    controller.selectEvent(
+                                                      track.chain.id,
+                                                      eventId,
+                                                    ),
+                                                onRemoveEvent:
+                                                    controller.removeEvent,
+                                                onAddPathNode:
+                                                    controller.addPathNode,
+                                                onMoveScheduledEvent: controller
+                                                    .moveScheduledEvent,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -314,10 +355,15 @@ class _TimelineControls extends StatelessWidget {
 }
 
 class _TimelineRuler extends StatelessWidget {
-  const _TimelineRuler({required this.width, required this.pixelsPerSecond});
+  const _TimelineRuler({
+    required this.width,
+    required this.pixelsPerSecond,
+    this.showLabel = true,
+  });
 
   final double width;
   final double pixelsPerSecond;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -326,13 +372,17 @@ class _TimelineRuler extends StatelessWidget {
       height: 26,
       child: Row(
         children: [
-          SizedBox(
-            width: 150,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text('0s', style: Theme.of(context).textTheme.labelSmall),
+          if (showLabel)
+            SizedBox(
+              width: 150,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  '0s',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
             ),
-          ),
           SizedBox(
             width: width,
             child: Stack(
@@ -373,53 +423,48 @@ class _TimelineViewControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Material(
-      elevation: 4,
-      borderRadius: BorderRadius.circular(8),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              tooltip: l10n.timelineZoom,
-              onPressed: () => onZoom(pixelsPerSecond - 10),
-              icon: const Icon(Icons.remove, size: 17),
-            ),
-            Text(
-              '${pixelsPerSecond.round()}%',
-              style: const TextStyle(fontSize: 11),
-            ),
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              tooltip: l10n.timelineZoom,
-              onPressed: () => onZoom(pixelsPerSecond + 10),
-              icon: const Icon(Icons.add, size: 17),
-            ),
-            const VerticalDivider(width: 8),
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              tooltip: l10n.timelineFit,
-              onPressed: onFit,
-              icon: const Icon(Icons.fit_screen, size: 17),
-            ),
-            PopupMenuButton<double>(
-              tooltip: l10n.timelineTrackHeight,
-              initialValue: trackHeight,
-              onSelected: onTrackHeight,
-              itemBuilder: (context) => [
-                for (final height in [42.0, 56.0, 66.0, 82.0, 100.0, 120.0])
-                  PopupMenuItem(
-                    value: height,
-                    child: Text('${height.round()} px'),
-                  ),
-              ],
-              icon: const Icon(Icons.height, size: 17),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: l10n.timelineZoom,
+            onPressed: () => onZoom(pixelsPerSecond - 10),
+            icon: const Icon(Icons.remove, size: 17),
+          ),
+          Text(
+            '${pixelsPerSecond.round()}%',
+            style: const TextStyle(fontSize: 11),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: l10n.timelineZoom,
+            onPressed: () => onZoom(pixelsPerSecond + 10),
+            icon: const Icon(Icons.add, size: 17),
+          ),
+          const VerticalDivider(width: 8),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: l10n.timelineFit,
+            onPressed: onFit,
+            icon: const Icon(Icons.fit_screen, size: 17),
+          ),
+          PopupMenuButton<double>(
+            tooltip: l10n.timelineTrackHeight,
+            initialValue: trackHeight,
+            onSelected: onTrackHeight,
+            itemBuilder: (context) => [
+              for (final height in [42.0, 56.0, 66.0, 82.0, 100.0, 120.0])
+                PopupMenuItem(
+                  value: height,
+                  child: Text('${height.round()} px'),
+                ),
+            ],
+            icon: const Icon(Icons.height, size: 17),
+          ),
+        ],
       ),
     );
   }
@@ -434,13 +479,13 @@ class _TimelineTrackRow extends StatelessWidget {
     required this.height,
     required this.project,
     required this.scene,
-    required this.collapsed,
     required this.selectedChain,
-    required this.onToggleCollapsed,
     required this.selectedEventId,
     required this.onSelectChain,
     required this.onSelectEvent,
     required this.onRemoveEvent,
+    required this.onAddPathNode,
+    required this.onMoveScheduledEvent,
   });
 
   final TimelineChainTrack track;
@@ -450,121 +495,240 @@ class _TimelineTrackRow extends StatelessWidget {
   final double height;
   final StudioProject project;
   final Scene scene;
-  final bool collapsed;
   final bool selectedChain;
   final String? selectedEventId;
-  final VoidCallback onToggleCollapsed;
   final VoidCallback onSelectChain;
   final ValueChanged<String> onSelectEvent;
   final ValueChanged<String> onRemoveEvent;
+  final void Function(String chainId, String eventId) onAddPathNode;
+  final void Function(String chainId, String eventId, double startTime)
+  onMoveScheduledEvent;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SizedBox(
-      height: collapsed ? 44 : height,
+      height: height,
       child: Row(
         children: [
-          InkWell(
-            onTap: onSelectChain,
-            child: Container(
-              width: 150,
-              height: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: selectedChain
-                    ? theme.colorScheme.primaryContainer
-                    : theme.colorScheme.surfaceContainerHighest,
-                border: Border(
-                  top: BorderSide(color: theme.dividerColor),
-                  bottom: BorderSide(color: theme.dividerColor),
-                ),
-              ),
-              child: Row(
+          SizedBox(
+            width: width,
+            height: double.infinity,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onSelectChain,
+              child: Stack(
                 children: [
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    onPressed: onToggleCollapsed,
-                    icon: Icon(
-                      collapsed ? Icons.chevron_right : Icons.expand_more,
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _TimelineGridPainter(
+                        pixelsPerSecond: pixelsPerSecond,
+                        color: theme.dividerColor,
+                      ),
                     ),
                   ),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          track.chain.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        if (!collapsed)
-                          Text(
-                            track.chain.triggerMode ==
-                                    EventChainTriggerMode.always
-                                ? AppLocalizations.of(
-                                    context,
-                                  )!.timelineTriggerAlways
-                                : AppLocalizations.of(
-                                    context,
-                                  )!.timelineTriggerPoint,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
+                  for (final span in track.spans)
+                    _TimelineEventBlock(
+                      span: span,
+                      project: project,
+                      scene: scene,
+                      left: span.start * pixelsPerSecond,
+                      width: math.max(
+                        76,
+                        span.displayDuration * pixelsPerSecond,
+                      ),
+                      height: height - 8,
+                      selected: selectedEventId == span.event.eventId,
+                      scheduled:
+                          track.chain.triggerMode ==
+                          EventChainTriggerMode.scheduled,
+                      pixelsPerSecond: pixelsPerSecond,
+                      trackOffset: track.offset,
+                      onScheduleChanged: (time) => onMoveScheduledEvent(
+                        track.chain.id,
+                        span.event.eventId,
+                        time,
+                      ),
+                      onTap: () => onSelectEvent(span.event.eventId),
+                      onRemove: () => onRemoveEvent(span.event.eventId),
+                      onAddPathNode: span.event is CharacterMoveEvent
+                          ? () => onAddPathNode(
+                              track.chain.id,
+                              span.event.eventId,
+                            )
+                          : null,
+                    ),
+                  Positioned(
+                    left: currentTime * pixelsPerSecond,
+                    top: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 2,
+                        color: theme.colorScheme.error.withValues(alpha: 0.8),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          if (!collapsed)
+        ],
+      ),
+    );
+  }
+}
+
+class _ScheduledEventDrag extends StatefulWidget {
+  const _ScheduledEventDrag({
+    required this.pixelsPerSecond,
+    required this.startTime,
+    required this.onChanged,
+    required this.child,
+  });
+
+  final double pixelsPerSecond;
+  final double startTime;
+  final ValueChanged<double> onChanged;
+  final Widget child;
+
+  @override
+  State<_ScheduledEventDrag> createState() => _ScheduledEventDragState();
+}
+
+class _ScheduledEventDragState extends State<_ScheduledEventDrag> {
+  double _dragSeconds = 0;
+  bool _dragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onHorizontalDragStart: (_) {
+        setState(() {
+          _dragging = true;
+          _dragSeconds = 0;
+        });
+      },
+      onHorizontalDragUpdate: (details) {
+        final delta = details.primaryDelta ?? 0;
+        if (delta == 0) {
+          return;
+        }
+        setState(() {
+          _dragSeconds += delta / widget.pixelsPerSecond;
+        });
+      },
+      onHorizontalDragEnd: (_) => _commitDrag(),
+      onHorizontalDragCancel: _cancelDrag,
+      child: Transform.translate(
+        offset: _dragging
+            ? Offset(_dragSeconds * widget.pixelsPerSecond, 0)
+            : Offset.zero,
+        child: widget.child,
+      ),
+    );
+  }
+
+  void _commitDrag() {
+    if (!_dragging) {
+      return;
+    }
+    widget.onChanged(math.max(0, widget.startTime + _dragSeconds));
+    _cancelDrag();
+  }
+
+  void _cancelDrag() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _dragging = false;
+      _dragSeconds = 0;
+    });
+  }
+}
+
+class _TimelineFixedLabels extends StatelessWidget {
+  const _TimelineFixedLabels({
+    required this.controller,
+    required this.tracks,
+    required this.selectedChainId,
+    required this.onSelectChain,
+    required this.trackHeight,
+    required this.sampleCharacterId,
+    required this.onAddEvent,
+  });
+
+  final ScrollController controller;
+  final List<TimelineChainTrack> tracks;
+  final String? selectedChainId;
+  final ValueChanged<String> onSelectChain;
+  final double trackHeight;
+  final String? sampleCharacterId;
+  final ValueChanged<StudioEvent> onAddEvent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    return SingleChildScrollView(
+      controller: controller,
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          const SizedBox(height: 26),
+          for (final track in tracks)
             SizedBox(
-              width: width,
-              height: double.infinity,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onSelectChain,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _TimelineGridPainter(
-                          pixelsPerSecond: pixelsPerSecond,
-                          color: theme.dividerColor,
-                        ),
-                      ),
+              height: trackHeight,
+              child: InkWell(
+                onTap: () => onSelectChain(track.chain.id),
+                child: Container(
+                  padding: const EdgeInsets.only(left: 4, right: 12),
+                  decoration: BoxDecoration(
+                    color: selectedChainId == track.chain.id
+                        ? theme.colorScheme.primaryContainer
+                        : theme.colorScheme.surfaceContainerHighest,
+                    border: Border(
+                      top: BorderSide(color: theme.dividerColor),
+                      bottom: BorderSide(color: theme.dividerColor),
                     ),
-                    for (final span in track.spans)
-                      _TimelineEventBlock(
-                        span: span,
-                        project: project,
-                        scene: scene,
-                        left: span.start * pixelsPerSecond,
-                        width: math.max(
-                          76,
-                          span.displayDuration * pixelsPerSecond,
-                        ),
-                        height: height - 8,
-                        selected: selectedEventId == span.event.eventId,
-                        onTap: () => onSelectEvent(span.event.eventId),
-                        onRemove: () => onRemoveEvent(span.event.eventId),
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 0),
+                      _AddEventMenu(
+                        enabled: true,
+                        sampleCharacterId: sampleCharacterId,
+                        compact: true,
+                        onSelected: (event) {
+                          onSelectChain(track.chain.id);
+                          onAddEvent(event);
+                        },
                       ),
-                    Positioned(
-                      left: currentTime * pixelsPerSecond,
-                      top: 0,
-                      bottom: 0,
-                      child: IgnorePointer(
-                        child: Container(
-                          width: 2,
-                          color: theme.colorScheme.error.withValues(alpha: 0.8),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              track.chain.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(switch (track.chain.triggerMode) {
+                              EventChainTriggerMode.always =>
+                                l10n.timelineTriggerAlways,
+                              EventChainTriggerMode.triggerPoint =>
+                                l10n.timelineTriggerPoint,
+                              EventChainTriggerMode.scheduled =>
+                                l10n.timelineTriggerScheduled,
+                            }, style: theme.textTheme.labelSmall),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -602,527 +766,5 @@ class _TimelineGridPainter extends CustomPainter {
   bool shouldRepaint(covariant _TimelineGridPainter oldDelegate) {
     return oldDelegate.pixelsPerSecond != pixelsPerSecond ||
         oldDelegate.color != color;
-  }
-}
-
-class _TimelineEventBlock extends StatelessWidget {
-  const _TimelineEventBlock({
-    required this.span,
-    required this.project,
-    required this.scene,
-    required this.left,
-    required this.width,
-    required this.height,
-    required this.selected,
-    required this.onTap,
-    required this.onRemove,
-  });
-
-  final TimelineSpan span;
-  final StudioProject project;
-  final Scene scene;
-  final double left;
-  final double width;
-  final double height;
-  final bool selected;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final color = _eventColor(span.event);
-    return Positioned(
-      left: left + 2,
-      top: 7,
-      width: width - 4,
-      height: height,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(5),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.78),
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(
-                color: selected ? Colors.white : color,
-                width: selected ? 2 : 1,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: span.event is CharacterMoveEvent ? 22 : 0,
-                    right: selected ? 18 : 0,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _eventTitle(project, l10n, span.event),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        _eventDetails(project, l10n, span),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (span.event is CharacterMoveEvent)
-                  _MovePathMarkers(
-                    event: span.event as CharacterMoveEvent,
-                    duration: span.duration,
-                    width: width - 4,
-                    scene: scene,
-                    color: Colors.white70,
-                  ),
-                if (selected)
-                  Positioned(
-                    right: 2,
-                    top: 2,
-                    child: InkWell(
-                      onTap: onRemove,
-                      child: const Icon(
-                        Icons.close,
-                        size: 15,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MovePathMarkers extends StatelessWidget {
-  const _MovePathMarkers({
-    required this.event,
-    required this.duration,
-    required this.width,
-    required this.scene,
-    required this.color,
-  });
-
-  final CharacterMoveEvent event;
-  final double duration;
-  final double width;
-  final Scene scene;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final positions = _moveNodeTimeRatios(event, scene, duration);
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: Stack(
-          children: [
-            for (var index = 0; index < positions.length; index += 1)
-              Positioned(
-                left: positions[index] * width,
-                top: 2,
-                child: Transform.translate(
-                  offset: const Offset(-3, 0),
-                  child: Tooltip(
-                    message: 'Node ${index + 1}',
-                    child: Icon(Icons.circle, size: 6, color: color),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-List<double> _moveNodeTimeRatios(
-  CharacterMoveEvent event,
-  Scene scene,
-  double duration,
-) {
-  final nodes = event.path.nodes;
-  if (nodes.isEmpty) return const [];
-  final ratios = <double>[0];
-  var elapsed = 0.0;
-  var x = nodes.first.x;
-  var y = nodes.first.y;
-  for (var index = 1; index < nodes.length; index += 1) {
-    final node = nodes[index];
-    final dx = node.x - x;
-    final dy = node.y - y;
-    final targetX = dx.abs() >= dy.abs() ? node.x : x;
-    final targetY = dx.abs() >= dy.abs() ? y : node.y;
-    elapsed +=
-        math.sqrt(math.pow(targetX - x, 2) + math.pow(targetY - y, 2)) /
-        math.max(event.path.speed, 1);
-    ratios.add((elapsed / math.max(duration, 0.1)).clamp(0.0, 1.0));
-    x = targetX;
-    y = targetY;
-    elapsed += node.waitSeconds ?? 0;
-    final triggerId = node.triggerId ?? triggerAtPoint(scene, node.x, node.y);
-    if (triggerId != null) {
-      final linkedId = linkedTriggerId(scene, triggerId);
-      if (linkedId != null) {
-        elapsed += TimelinePlan.doorTransitionDuration;
-        final destination = triggerObjectPosition(scene, linkedId);
-        if (destination != null) {
-          x = destination.x;
-          y = destination.y;
-        }
-      }
-      final chain = triggerChain(scene, triggerId);
-      if (chain != null) {
-        elapsed += _timelineChainDuration(chain, scene, <String>{});
-      }
-      continue;
-    }
-  }
-  return ratios;
-}
-
-double _timelineChainDuration(
-  EventChain chain,
-  Scene scene,
-  Set<String> stack,
-) {
-  if (!stack.add(chain.id)) return 0;
-  var total = 0.0;
-  for (final event in chain.events) {
-    total += _timelineEventDuration(event, scene, stack);
-  }
-  stack.remove(chain.id);
-  return total;
-}
-
-double _timelineEventDuration(
-  StudioEvent event,
-  Scene scene,
-  Set<String> stack,
-) {
-  return event.map(
-    characterMove: (value) {
-      var total = 0.0;
-      var x = value.path.nodes.isEmpty ? 0 : value.path.nodes.first.x;
-      var y = value.path.nodes.isEmpty ? 0 : value.path.nodes.first.y;
-      for (var index = 1; index < value.path.nodes.length; index += 1) {
-        final node = value.path.nodes[index];
-        final dx = node.x - x;
-        final dy = node.y - y;
-        final targetX = dx.abs() >= dy.abs() ? node.x : x;
-        final targetY = dx.abs() >= dy.abs() ? y : node.y;
-        total +=
-            math.sqrt(math.pow(targetX - x, 2) + math.pow(targetY - y, 2)) /
-            math.max(value.path.speed, 1);
-        total += node.waitSeconds ?? 0;
-        final triggerId =
-            node.triggerId ?? triggerAtPoint(scene, node.x, node.y);
-        if (triggerId != null) {
-          final linkedId = linkedTriggerId(scene, triggerId);
-          if (linkedId != null) total += TimelinePlan.doorTransitionDuration;
-          final nested = triggerChain(scene, triggerId);
-          if (nested != null) {
-            total += _timelineChainDuration(nested, scene, stack);
-          }
-        }
-        x = targetX;
-        y = targetY;
-      }
-      return math.max(total, 0.1);
-    },
-    characterWait: (value) => value.duration,
-    characterChangeExpression: (value) => value.duration,
-    characterStartFollow: (_) => 0.1,
-    characterStopFollow: (_) => 0.1,
-    dialogueSay: (value) => value.duration,
-    cameraFollow: (_) => 0.1,
-    cameraFocus: (value) => value.duration,
-    sceneFade: (value) => value.duration,
-    sceneChange: (_) => 0.1,
-    audioPlayBgm: (_) => 0.1,
-    audioPlaySound: (_) => 0.1,
-    videoPlay: (value) => value.duration,
-  );
-}
-
-String _eventTitle(
-  StudioProject project,
-  AppLocalizations l10n,
-  StudioEvent event,
-) {
-  return event.map(
-    characterMove: (value) =>
-        '${_characterName(project, value.characterObjectId)} ${l10n.characterMove}',
-    characterStartFollow: (value) =>
-        '${_characterName(project, value.followerObjectId)} ${l10n.startFollow}',
-    characterStopFollow: (value) =>
-        '${_characterName(project, value.followerObjectId)} ${l10n.stopFollow}',
-    characterWait: (_) => l10n.wait,
-    characterChangeExpression: (value) =>
-        '${_characterName(project, value.characterObjectId)} ${l10n.changeExpression}',
-    dialogueSay: (value) => _dialoguePreview(value.text),
-    cameraFollow: (value) =>
-        '${l10n.cameraFollow}: ${_objectName(project, value.targetObjectId)}',
-    cameraFocus: (_) => l10n.cameraFocus,
-    sceneFade: (value) => '${l10n.fade}: ${value.mode.name}',
-    sceneChange: (value) =>
-        '${l10n.canvasJump}: ${_sceneName(project, value.sceneId)}',
-    audioPlayBgm: (value) =>
-        '${l10n.playBgm}: ${_assetName(project, value.assetId)}',
-    audioPlaySound: (value) =>
-        '${l10n.playSound}: ${_assetName(project, value.assetId)}',
-    videoPlay: (value) =>
-        '${l10n.playVideo}: ${_assetName(project, value.assetId)}',
-  );
-}
-
-String _eventDetails(
-  StudioProject project,
-  AppLocalizations l10n,
-  TimelineSpan span,
-) {
-  final event = span.event;
-  final interval =
-      '${span.start.toStringAsFixed(2)}-${span.displayEndValue.toStringAsFixed(2)}s';
-  final details = event.map(
-    characterMove: (value) =>
-        '${value.path.nodes.length} nodes  ${value.path.speed.round()} px/s  shake ${value.path.shake.round()}',
-    characterStartFollow: (value) => 'distance ${value.distance.round()} px',
-    characterStopFollow: (_) => l10n.stop,
-    characterWait: (value) => '${value.duration.toStringAsFixed(2)}s',
-    characterChangeExpression: (value) =>
-        '${value.expressionId}  ${value.duration.toStringAsFixed(2)}s',
-    dialogueSay: (value) =>
-        '${value.style.name}  ${value.duration.toStringAsFixed(2)}s',
-    cameraFollow: (_) => l10n.cameraFollow,
-    cameraFocus: (value) => '${value.duration.toStringAsFixed(2)}s',
-    sceneFade: (value) =>
-        '${value.mode.name}  ${value.duration.toStringAsFixed(2)}s',
-    sceneChange: (value) => _sceneName(project, value.sceneId),
-    audioPlayBgm: (value) => _assetName(project, value.assetId),
-    audioPlaySound: (value) => _assetName(project, value.assetId),
-    videoPlay: (value) => _assetName(project, value.assetId),
-  );
-  return '$details  $interval';
-}
-
-String _dialoguePreview(String text) {
-  final oneLine = text.replaceAll(RegExp(r'\s+'), ' ').trim();
-  if (oneLine.isEmpty) return '...';
-  return oneLine.length > 24 ? '${oneLine.substring(0, 24)}...' : oneLine;
-}
-
-String _characterName(StudioProject project, String objectId) {
-  final object = _findObject(project, objectId);
-  if (object is CharacterInstanceObject) return object.name;
-  return objectId.isEmpty ? '?' : objectId;
-}
-
-String _objectName(StudioProject project, String objectId) {
-  final object = _findObject(project, objectId);
-  return object?.map(
-        characterInstance: (value) => value.name,
-        prop: (value) => value.name,
-        background: (value) => value.name,
-        triggerPoint: (value) => value.name,
-        triggerArea: (value) => value.name,
-      ) ??
-      (objectId.isEmpty ? '?' : objectId);
-}
-
-String _sceneName(StudioProject project, String sceneId) {
-  for (final scene in project.scenes) {
-    if (scene.id == sceneId) return scene.name;
-  }
-  return sceneId;
-}
-
-String _assetName(StudioProject project, String assetId) {
-  for (final asset in project.assets) {
-    if (asset.id == assetId) return asset.originalName;
-  }
-  return assetId.isEmpty ? '?' : assetId;
-}
-
-SceneObject? _findObject(StudioProject project, String objectId) {
-  for (final scene in project.scenes) {
-    for (final object in scene.objects) {
-      if (object.objectId == objectId) return object;
-    }
-  }
-  return null;
-}
-
-Color _eventColor(StudioEvent event) {
-  return event.map(
-    characterMove: (_) => Colors.blue.shade700,
-    characterStartFollow: (_) => Colors.indigo.shade600,
-    characterStopFollow: (_) => Colors.indigo.shade400,
-    characterWait: (_) => Colors.blueGrey.shade600,
-    characterChangeExpression: (_) => Colors.teal.shade600,
-    dialogueSay: (_) => Colors.green.shade700,
-    cameraFollow: (_) => Colors.orange.shade700,
-    cameraFocus: (_) => Colors.deepOrange.shade600,
-    sceneFade: (_) => Colors.purple.shade600,
-    sceneChange: (_) => Colors.purple.shade800,
-    audioPlayBgm: (_) => Colors.pink.shade600,
-    audioPlaySound: (_) => Colors.pink.shade400,
-    videoPlay: (_) => Colors.red.shade700,
-  );
-}
-
-class _AddEventMenu extends StatelessWidget {
-  const _AddEventMenu({
-    required this.enabled,
-    required this.sampleCharacterId,
-    required this.onSelected,
-  });
-
-  final bool enabled;
-  final String? sampleCharacterId;
-  final ValueChanged<StudioEvent> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return PopupMenuButton<StudioEvent>(
-      enabled: enabled,
-      tooltip: l10n.addEvent,
-      onSelected: onSelected,
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: defaultMoveEvent(sampleCharacterId),
-          child: Text(l10n.characterMove),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.characterStartFollow(
-            id: StudioIds.event(),
-            followerObjectId: sampleCharacterId ?? '',
-            leaderObjectId: sampleCharacterId ?? '',
-          ),
-          child: Text(l10n.startFollow),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.characterStopFollow(
-            id: StudioIds.event(),
-            followerObjectId: sampleCharacterId ?? '',
-          ),
-          child: Text(l10n.stopFollow),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.characterWait(id: StudioIds.event(), duration: 1),
-          child: Text(l10n.wait),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.characterChangeExpression(
-            id: StudioIds.event(),
-            characterObjectId: sampleCharacterId ?? '',
-            expressionId: 'idle',
-            duration: 1,
-          ),
-          child: Text(l10n.changeExpression),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.dialogueSay(
-            id: StudioIds.event(),
-            text: '...',
-            style: DialogueStyle.regular,
-            duration: 2,
-          ),
-          child: Text(l10n.dialogue),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.sceneFade(
-            id: StudioIds.event(),
-            mode: FadeMode.out,
-            duration: 0.8,
-          ),
-          child: Text(l10n.fadeOut),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.cameraFollow(
-            id: StudioIds.event(),
-            targetObjectId: sampleCharacterId ?? '',
-          ),
-          child: Text(l10n.cameraFollow),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.cameraFocus(
-            id: StudioIds.event(),
-            target: const FocusTarget.point(x: 240, y: 135),
-          ),
-          child: Text(l10n.cameraFocus),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.audioPlaySound(id: StudioIds.event(), assetId: ''),
-          child: Text(l10n.playSound),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.audioPlayBgm(id: StudioIds.event(), assetId: ''),
-          child: Text(l10n.playBgm),
-        ),
-        PopupMenuItem(
-          value: StudioEvent.videoPlay(id: StudioIds.event(), assetId: ''),
-          child: Text(l10n.playVideo),
-        ),
-      ],
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: enabled
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).disabledColor,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          color: enabled
-              ? Theme.of(context).colorScheme.primaryContainer
-              : Theme.of(context).disabledColor.withValues(alpha: 0.12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.add,
-                size: 18,
-                color: enabled
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Theme.of(context).disabledColor,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                l10n.addEvent,
-                style: TextStyle(
-                  color: enabled
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).disabledColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

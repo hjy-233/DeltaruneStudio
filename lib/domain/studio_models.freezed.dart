@@ -3669,7 +3669,7 @@ as double,
 /// @nodoc
 mixin _$MovementPath {
 
- List<PathNode> get nodes; double get speed; double get shake;
+ List<PathNode> get nodes; double get speed; double get shake; MovementMode get mode;
 /// Create a copy of MovementPath
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3682,16 +3682,16 @@ $MovementPathCopyWith<MovementPath> get copyWith => _$MovementPathCopyWithImpl<M
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MovementPath&&const DeepCollectionEquality().equals(other.nodes, nodes)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.shake, shake) || other.shake == shake));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MovementPath&&const DeepCollectionEquality().equals(other.nodes, nodes)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.shake, shake) || other.shake == shake)&&(identical(other.mode, mode) || other.mode == mode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(nodes),speed,shake);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(nodes),speed,shake,mode);
 
 @override
 String toString() {
-  return 'MovementPath(nodes: $nodes, speed: $speed, shake: $shake)';
+  return 'MovementPath(nodes: $nodes, speed: $speed, shake: $shake, mode: $mode)';
 }
 
 
@@ -3702,7 +3702,7 @@ abstract mixin class $MovementPathCopyWith<$Res>  {
   factory $MovementPathCopyWith(MovementPath value, $Res Function(MovementPath) _then) = _$MovementPathCopyWithImpl;
 @useResult
 $Res call({
- List<PathNode> nodes, double speed, double shake
+ List<PathNode> nodes, double speed, double shake, MovementMode mode
 });
 
 
@@ -3719,12 +3719,13 @@ class _$MovementPathCopyWithImpl<$Res>
 
 /// Create a copy of MovementPath
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? nodes = null,Object? speed = null,Object? shake = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? nodes = null,Object? speed = null,Object? shake = null,Object? mode = null,}) {
   return _then(MovementPath(
 nodes: null == nodes ? _self.nodes : nodes // ignore: cast_nullable_to_non_nullable
 as List<PathNode>,speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
 as double,shake: null == shake ? _self.shake : shake // ignore: cast_nullable_to_non_nullable
-as double,
+as double,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as MovementMode,
   ));
 }
 
@@ -3809,10 +3810,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<PathNode> nodes,  double speed,  double shake)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<PathNode> nodes,  double speed,  double shake,  MovementMode mode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MovementPath() when $default != null:
-return $default(_that.nodes,_that.speed,_that.shake);case _:
+return $default(_that.nodes,_that.speed,_that.shake,_that.mode);case _:
   return orElse();
 
 }
@@ -3830,10 +3831,10 @@ return $default(_that.nodes,_that.speed,_that.shake);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<PathNode> nodes,  double speed,  double shake)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<PathNode> nodes,  double speed,  double shake,  MovementMode mode)  $default,) {final _that = this;
 switch (_that) {
 case _MovementPath():
-return $default(_that.nodes,_that.speed,_that.shake);case _:
+return $default(_that.nodes,_that.speed,_that.shake,_that.mode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -3850,10 +3851,10 @@ return $default(_that.nodes,_that.speed,_that.shake);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<PathNode> nodes,  double speed,  double shake)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<PathNode> nodes,  double speed,  double shake,  MovementMode mode)?  $default,) {final _that = this;
 switch (_that) {
 case _MovementPath() when $default != null:
-return $default(_that.nodes,_that.speed,_that.shake);case _:
+return $default(_that.nodes,_that.speed,_that.shake,_that.mode);case _:
   return null;
 
 }
@@ -3865,7 +3866,7 @@ return $default(_that.nodes,_that.speed,_that.shake);case _:
 @JsonSerializable()
 
 class _MovementPath implements MovementPath {
-  const _MovementPath({required  List<PathNode> nodes, this.speed = 320, this.shake = 0}): _nodes = nodes;
+  const _MovementPath({required  List<PathNode> nodes, this.speed = 320, this.shake = 0, this.mode = MovementMode.fourWay}): _nodes = nodes;
   factory _MovementPath.fromJson(Map<String, dynamic> json) => _$MovementPathFromJson(json);
 
  final  List<PathNode> _nodes;
@@ -3877,6 +3878,7 @@ class _MovementPath implements MovementPath {
 
 @override@JsonKey() final  double speed;
 @override@JsonKey() final  double shake;
+@override@JsonKey() final  MovementMode mode;
 
 /// Create a copy of MovementPath
 /// with the given fields replaced by the non-null parameter values.
@@ -3891,16 +3893,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MovementPath&&const DeepCollectionEquality().equals(other._nodes, _nodes)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.shake, shake) || other.shake == shake));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MovementPath&&const DeepCollectionEquality().equals(other._nodes, _nodes)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.shake, shake) || other.shake == shake)&&(identical(other.mode, mode) || other.mode == mode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_nodes),speed,shake);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_nodes),speed,shake,mode);
 
 @override
 String toString() {
-  return 'MovementPath(nodes: $nodes, speed: $speed, shake: $shake)';
+  return 'MovementPath(nodes: $nodes, speed: $speed, shake: $shake, mode: $mode)';
 }
 
 
@@ -3911,7 +3913,7 @@ abstract mixin class _$MovementPathCopyWith<$Res> implements $MovementPathCopyWi
   factory _$MovementPathCopyWith(_MovementPath value, $Res Function(_MovementPath) _then) = __$MovementPathCopyWithImpl;
 @override @useResult
 $Res call({
- List<PathNode> nodes, double speed, double shake
+ List<PathNode> nodes, double speed, double shake, MovementMode mode
 });
 
 
@@ -3928,12 +3930,13 @@ class __$MovementPathCopyWithImpl<$Res>
 
 /// Create a copy of MovementPath
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? nodes = null,Object? speed = null,Object? shake = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? nodes = null,Object? speed = null,Object? shake = null,Object? mode = null,}) {
   return _then(_MovementPath(
 nodes: null == nodes ? _self._nodes : nodes // ignore: cast_nullable_to_non_nullable
 as List<PathNode>,speed: null == speed ? _self.speed : speed // ignore: cast_nullable_to_non_nullable
 as double,shake: null == shake ? _self.shake : shake // ignore: cast_nullable_to_non_nullable
-as double,
+as double,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+as MovementMode,
   ));
 }
 
@@ -5329,7 +5332,7 @@ as String?,
 /// @nodoc
 mixin _$EventChain {
 
- String get id; String get name; EventChainTriggerMode get triggerMode; List<StudioEvent> get events;
+ String get id; String get name; EventChainTriggerMode get triggerMode; double get startTime; List<StudioEvent> get events;
 /// Create a copy of EventChain
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5342,16 +5345,16 @@ $EventChainCopyWith<EventChain> get copyWith => _$EventChainCopyWithImpl<EventCh
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerMode, triggerMode) || other.triggerMode == triggerMode)&&const DeepCollectionEquality().equals(other.events, events));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerMode, triggerMode) || other.triggerMode == triggerMode)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&const DeepCollectionEquality().equals(other.events, events));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,triggerMode,const DeepCollectionEquality().hash(events));
+int get hashCode => Object.hash(runtimeType,id,name,triggerMode,startTime,const DeepCollectionEquality().hash(events));
 
 @override
 String toString() {
-  return 'EventChain(id: $id, name: $name, triggerMode: $triggerMode, events: $events)';
+  return 'EventChain(id: $id, name: $name, triggerMode: $triggerMode, startTime: $startTime, events: $events)';
 }
 
 
@@ -5362,7 +5365,7 @@ abstract mixin class $EventChainCopyWith<$Res>  {
   factory $EventChainCopyWith(EventChain value, $Res Function(EventChain) _then) = _$EventChainCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, EventChainTriggerMode triggerMode, List<StudioEvent> events
+ String id, String name, EventChainTriggerMode triggerMode, double startTime, List<StudioEvent> events
 });
 
 
@@ -5379,12 +5382,13 @@ class _$EventChainCopyWithImpl<$Res>
 
 /// Create a copy of EventChain
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? triggerMode = null,Object? events = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? triggerMode = null,Object? startTime = null,Object? events = null,}) {
   return _then(EventChain(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,triggerMode: null == triggerMode ? _self.triggerMode : triggerMode // ignore: cast_nullable_to_non_nullable
-as EventChainTriggerMode,events: null == events ? _self.events : events // ignore: cast_nullable_to_non_nullable
+as EventChainTriggerMode,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
+as double,events: null == events ? _self.events : events // ignore: cast_nullable_to_non_nullable
 as List<StudioEvent>,
   ));
 }
@@ -5470,10 +5474,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  EventChainTriggerMode triggerMode,  List<StudioEvent> events)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  EventChainTriggerMode triggerMode,  double startTime,  List<StudioEvent> events)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EventChain() when $default != null:
-return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
+return $default(_that.id,_that.name,_that.triggerMode,_that.startTime,_that.events);case _:
   return orElse();
 
 }
@@ -5491,10 +5495,10 @@ return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  EventChainTriggerMode triggerMode,  List<StudioEvent> events)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  EventChainTriggerMode triggerMode,  double startTime,  List<StudioEvent> events)  $default,) {final _that = this;
 switch (_that) {
 case _EventChain():
-return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
+return $default(_that.id,_that.name,_that.triggerMode,_that.startTime,_that.events);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -5511,10 +5515,10 @@ return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  EventChainTriggerMode triggerMode,  List<StudioEvent> events)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  EventChainTriggerMode triggerMode,  double startTime,  List<StudioEvent> events)?  $default,) {final _that = this;
 switch (_that) {
 case _EventChain() when $default != null:
-return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
+return $default(_that.id,_that.name,_that.triggerMode,_that.startTime,_that.events);case _:
   return null;
 
 }
@@ -5526,12 +5530,13 @@ return $default(_that.id,_that.name,_that.triggerMode,_that.events);case _:
 @JsonSerializable()
 
 class _EventChain implements EventChain {
-  const _EventChain({required this.id, required this.name, this.triggerMode = EventChainTriggerMode.always, required  List<StudioEvent> events}): _events = events;
+  const _EventChain({required this.id, required this.name, this.triggerMode = EventChainTriggerMode.always, this.startTime = 0, required  List<StudioEvent> events}): _events = events;
   factory _EventChain.fromJson(Map<String, dynamic> json) => _$EventChainFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override@JsonKey() final  EventChainTriggerMode triggerMode;
+@override@JsonKey() final  double startTime;
  final  List<StudioEvent> _events;
 @override List<StudioEvent> get events {
   if (_events is EqualUnmodifiableListView) return _events;
@@ -5553,16 +5558,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerMode, triggerMode) || other.triggerMode == triggerMode)&&const DeepCollectionEquality().equals(other._events, _events));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventChain&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.triggerMode, triggerMode) || other.triggerMode == triggerMode)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&const DeepCollectionEquality().equals(other._events, _events));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,triggerMode,const DeepCollectionEquality().hash(_events));
+int get hashCode => Object.hash(runtimeType,id,name,triggerMode,startTime,const DeepCollectionEquality().hash(_events));
 
 @override
 String toString() {
-  return 'EventChain(id: $id, name: $name, triggerMode: $triggerMode, events: $events)';
+  return 'EventChain(id: $id, name: $name, triggerMode: $triggerMode, startTime: $startTime, events: $events)';
 }
 
 
@@ -5573,7 +5578,7 @@ abstract mixin class _$EventChainCopyWith<$Res> implements $EventChainCopyWith<$
   factory _$EventChainCopyWith(_EventChain value, $Res Function(_EventChain) _then) = __$EventChainCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, EventChainTriggerMode triggerMode, List<StudioEvent> events
+ String id, String name, EventChainTriggerMode triggerMode, double startTime, List<StudioEvent> events
 });
 
 
@@ -5590,12 +5595,13 @@ class __$EventChainCopyWithImpl<$Res>
 
 /// Create a copy of EventChain
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? triggerMode = null,Object? events = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? triggerMode = null,Object? startTime = null,Object? events = null,}) {
   return _then(_EventChain(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,triggerMode: null == triggerMode ? _self.triggerMode : triggerMode // ignore: cast_nullable_to_non_nullable
-as EventChainTriggerMode,events: null == events ? _self._events : events // ignore: cast_nullable_to_non_nullable
+as EventChainTriggerMode,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
+as double,events: null == events ? _self._events : events // ignore: cast_nullable_to_non_nullable
 as List<StudioEvent>,
   ));
 }
@@ -5674,7 +5680,7 @@ StudioEvent _$StudioEventFromJson(
 /// @nodoc
 mixin _$StudioEvent {
 
- String get id;
+ String get id; double get scheduleStart;
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -5687,16 +5693,16 @@ $StudioEventCopyWith<StudioEvent> get copyWith => _$StudioEventCopyWithImpl<Stud
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioEvent&&(identical(other.id, id) || other.id == id));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudioEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id);
+int get hashCode => Object.hash(runtimeType,id,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent(id: $id)';
+  return 'StudioEvent(id: $id, scheduleStart: $scheduleStart)';
 }
 
 
@@ -5707,7 +5713,7 @@ abstract mixin class $StudioEventCopyWith<$Res>  {
   factory $StudioEventCopyWith(StudioEvent value, $Res Function(StudioEvent) _then) = _$StudioEventCopyWithImpl;
 @useResult
 $Res call({
- String id
+ String id, double scheduleStart
 });
 
 
@@ -5724,10 +5730,11 @@ class _$StudioEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? scheduleStart = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,
+as String,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -5845,22 +5852,22 @@ return videoPlay(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult Function( String id,  double duration)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId,  double duration)?  characterChangeExpression,TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult Function( String id,  String followerObjectId)?  characterStopFollow,TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult Function( String id,  String targetObjectId)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult Function( String id,  String assetId)?  audioPlayBgm,TResult Function( String id,  String assetId)?  audioPlaySound,TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)?  characterMove,TResult Function( String id,  double duration,  double scheduleStart)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)?  characterChangeExpression,TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)?  characterStartFollow,TResult Function( String id,  String followerObjectId,  double scheduleStart)?  characterStopFollow,TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)?  dialogueSay,TResult Function( String id,  String targetObjectId,  double scheduleStart)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration,  double scheduleStart)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration,  double scheduleStart)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)?  sceneChange,TResult Function( String id,  String assetId,  double scheduleStart)?  audioPlayBgm,TResult Function( String id,  String assetId,  double scheduleStart)?  audioPlaySound,TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)?  videoPlay,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
-return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent() when characterWait != null:
-return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration);case CharacterStartFollowEvent() when characterStartFollow != null:
-return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent() when characterStopFollow != null:
-return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent() when dialogueSay != null:
-return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
-return cameraFollow(_that.id,_that.targetObjectId);case CameraFocusEvent() when cameraFocus != null:
-return cameraFocus(_that.id,_that.target,_that.duration);case SceneFadeEvent() when sceneFade != null:
-return sceneFade(_that.id,_that.mode,_that.duration);case SceneChangeEvent() when sceneChange != null:
-return sceneChange(_that.id,_that.sceneId,_that.entryPointId);case AudioPlayBgmEvent() when audioPlayBgm != null:
-return audioPlayBgm(_that.id,_that.assetId);case AudioPlaySoundEvent() when audioPlaySound != null:
-return audioPlaySound(_that.id,_that.assetId);case VideoPlayEvent() when videoPlay != null:
-return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);case _:
+return characterMove(_that.id,_that.characterObjectId,_that.path,_that.scheduleStart);case CharacterWaitEvent() when characterWait != null:
+return characterWait(_that.id,_that.duration,_that.scheduleStart);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration,_that.scheduleStart);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance,_that.scheduleStart);case CharacterStopFollowEvent() when characterStopFollow != null:
+return characterStopFollow(_that.id,_that.followerObjectId,_that.scheduleStart);case DialogueSayEvent() when dialogueSay != null:
+return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration,_that.scheduleStart);case CameraFollowEvent() when cameraFollow != null:
+return cameraFollow(_that.id,_that.targetObjectId,_that.scheduleStart);case CameraFocusEvent() when cameraFocus != null:
+return cameraFocus(_that.id,_that.target,_that.duration,_that.scheduleStart);case SceneFadeEvent() when sceneFade != null:
+return sceneFade(_that.id,_that.mode,_that.duration,_that.scheduleStart);case SceneChangeEvent() when sceneChange != null:
+return sceneChange(_that.id,_that.sceneId,_that.entryPointId,_that.scheduleStart);case AudioPlayBgmEvent() when audioPlayBgm != null:
+return audioPlayBgm(_that.id,_that.assetId,_that.scheduleStart);case AudioPlaySoundEvent() when audioPlaySound != null:
+return audioPlaySound(_that.id,_that.assetId,_that.scheduleStart);case VideoPlayEvent() when videoPlay != null:
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);case _:
   return orElse();
 
 }
@@ -5878,22 +5885,22 @@ return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path)  characterMove,required TResult Function( String id,  double duration)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId,  double duration)  characterChangeExpression,required TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)  characterStartFollow,required TResult Function( String id,  String followerObjectId)  characterStopFollow,required TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)  dialogueSay,required TResult Function( String id,  String targetObjectId)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId)  sceneChange,required TResult Function( String id,  String assetId)  audioPlayBgm,required TResult Function( String id,  String assetId)  audioPlaySound,required TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit)  videoPlay,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)  characterMove,required TResult Function( String id,  double duration,  double scheduleStart)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)  characterChangeExpression,required TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)  characterStartFollow,required TResult Function( String id,  String followerObjectId,  double scheduleStart)  characterStopFollow,required TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)  dialogueSay,required TResult Function( String id,  String targetObjectId,  double scheduleStart)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration,  double scheduleStart)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration,  double scheduleStart)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)  sceneChange,required TResult Function( String id,  String assetId,  double scheduleStart)  audioPlayBgm,required TResult Function( String id,  String assetId,  double scheduleStart)  audioPlaySound,required TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)  videoPlay,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent():
-return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent():
-return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent():
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration);case CharacterStartFollowEvent():
-return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent():
-return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent():
-return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent():
-return cameraFollow(_that.id,_that.targetObjectId);case CameraFocusEvent():
-return cameraFocus(_that.id,_that.target,_that.duration);case SceneFadeEvent():
-return sceneFade(_that.id,_that.mode,_that.duration);case SceneChangeEvent():
-return sceneChange(_that.id,_that.sceneId,_that.entryPointId);case AudioPlayBgmEvent():
-return audioPlayBgm(_that.id,_that.assetId);case AudioPlaySoundEvent():
-return audioPlaySound(_that.id,_that.assetId);case VideoPlayEvent():
-return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);}
+return characterMove(_that.id,_that.characterObjectId,_that.path,_that.scheduleStart);case CharacterWaitEvent():
+return characterWait(_that.id,_that.duration,_that.scheduleStart);case CharacterChangeExpressionEvent():
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration,_that.scheduleStart);case CharacterStartFollowEvent():
+return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance,_that.scheduleStart);case CharacterStopFollowEvent():
+return characterStopFollow(_that.id,_that.followerObjectId,_that.scheduleStart);case DialogueSayEvent():
+return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration,_that.scheduleStart);case CameraFollowEvent():
+return cameraFollow(_that.id,_that.targetObjectId,_that.scheduleStart);case CameraFocusEvent():
+return cameraFocus(_that.id,_that.target,_that.duration,_that.scheduleStart);case SceneFadeEvent():
+return sceneFade(_that.id,_that.mode,_that.duration,_that.scheduleStart);case SceneChangeEvent():
+return sceneChange(_that.id,_that.sceneId,_that.entryPointId,_that.scheduleStart);case AudioPlayBgmEvent():
+return audioPlayBgm(_that.id,_that.assetId,_that.scheduleStart);case AudioPlaySoundEvent():
+return audioPlaySound(_that.id,_that.assetId,_that.scheduleStart);case VideoPlayEvent():
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -5907,22 +5914,22 @@ return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path)?  characterMove,TResult? Function( String id,  double duration)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId,  double duration)?  characterChangeExpression,TResult? Function( String id,  String followerObjectId,  String leaderObjectId,  double distance)?  characterStartFollow,TResult? Function( String id,  String followerObjectId)?  characterStopFollow,TResult? Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration)?  dialogueSay,TResult? Function( String id,  String targetObjectId)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId)?  sceneChange,TResult? Function( String id,  String assetId)?  audioPlayBgm,TResult? Function( String id,  String assetId)?  audioPlaySound,TResult? Function( String id,  String assetId,  double duration,  VideoFitMode fit)?  videoPlay,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)?  characterMove,TResult? Function( String id,  double duration,  double scheduleStart)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)?  characterChangeExpression,TResult? Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)?  characterStartFollow,TResult? Function( String id,  String followerObjectId,  double scheduleStart)?  characterStopFollow,TResult? Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)?  dialogueSay,TResult? Function( String id,  String targetObjectId,  double scheduleStart)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration,  double scheduleStart)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration,  double scheduleStart)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)?  sceneChange,TResult? Function( String id,  String assetId,  double scheduleStart)?  audioPlayBgm,TResult? Function( String id,  String assetId,  double scheduleStart)?  audioPlaySound,TResult? Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)?  videoPlay,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
-return characterMove(_that.id,_that.characterObjectId,_that.path);case CharacterWaitEvent() when characterWait != null:
-return characterWait(_that.id,_that.duration);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
-return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration);case CharacterStartFollowEvent() when characterStartFollow != null:
-return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance);case CharacterStopFollowEvent() when characterStopFollow != null:
-return characterStopFollow(_that.id,_that.followerObjectId);case DialogueSayEvent() when dialogueSay != null:
-return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration);case CameraFollowEvent() when cameraFollow != null:
-return cameraFollow(_that.id,_that.targetObjectId);case CameraFocusEvent() when cameraFocus != null:
-return cameraFocus(_that.id,_that.target,_that.duration);case SceneFadeEvent() when sceneFade != null:
-return sceneFade(_that.id,_that.mode,_that.duration);case SceneChangeEvent() when sceneChange != null:
-return sceneChange(_that.id,_that.sceneId,_that.entryPointId);case AudioPlayBgmEvent() when audioPlayBgm != null:
-return audioPlayBgm(_that.id,_that.assetId);case AudioPlaySoundEvent() when audioPlaySound != null:
-return audioPlaySound(_that.id,_that.assetId);case VideoPlayEvent() when videoPlay != null:
-return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);case _:
+return characterMove(_that.id,_that.characterObjectId,_that.path,_that.scheduleStart);case CharacterWaitEvent() when characterWait != null:
+return characterWait(_that.id,_that.duration,_that.scheduleStart);case CharacterChangeExpressionEvent() when characterChangeExpression != null:
+return characterChangeExpression(_that.id,_that.characterObjectId,_that.expressionId,_that.duration,_that.scheduleStart);case CharacterStartFollowEvent() when characterStartFollow != null:
+return characterStartFollow(_that.id,_that.followerObjectId,_that.leaderObjectId,_that.distance,_that.scheduleStart);case CharacterStopFollowEvent() when characterStopFollow != null:
+return characterStopFollow(_that.id,_that.followerObjectId,_that.scheduleStart);case DialogueSayEvent() when dialogueSay != null:
+return dialogueSay(_that.id,_that.text,_that.portraitAssetId,_that.textSoundAssetId,_that.style,_that.duration,_that.scheduleStart);case CameraFollowEvent() when cameraFollow != null:
+return cameraFollow(_that.id,_that.targetObjectId,_that.scheduleStart);case CameraFocusEvent() when cameraFocus != null:
+return cameraFocus(_that.id,_that.target,_that.duration,_that.scheduleStart);case SceneFadeEvent() when sceneFade != null:
+return sceneFade(_that.id,_that.mode,_that.duration,_that.scheduleStart);case SceneChangeEvent() when sceneChange != null:
+return sceneChange(_that.id,_that.sceneId,_that.entryPointId,_that.scheduleStart);case AudioPlayBgmEvent() when audioPlayBgm != null:
+return audioPlayBgm(_that.id,_that.assetId,_that.scheduleStart);case AudioPlaySoundEvent() when audioPlaySound != null:
+return audioPlaySound(_that.id,_that.assetId,_that.scheduleStart);case VideoPlayEvent() when videoPlay != null:
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);case _:
   return null;
 
 }
@@ -5934,12 +5941,13 @@ return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit);case _:
 @JsonSerializable()
 
 class CharacterMoveEvent extends StudioEvent {
-  const CharacterMoveEvent({required this.id, required this.characterObjectId, required this.path,  String? $type}): $type = $type ?? 'character.move',super._();
+  const CharacterMoveEvent({required this.id, required this.characterObjectId, required this.path, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'character.move',super._();
   factory CharacterMoveEvent.fromJson(Map<String, dynamic> json) => _$CharacterMoveEventFromJson(json);
 
 @override final  String id;
  final  String characterObjectId;
  final  MovementPath path;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -5958,16 +5966,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterMoveEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.characterObjectId, characterObjectId) || other.characterObjectId == characterObjectId)&&(identical(other.path, path) || other.path == path));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterMoveEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.characterObjectId, characterObjectId) || other.characterObjectId == characterObjectId)&&(identical(other.path, path) || other.path == path)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,characterObjectId,path);
+int get hashCode => Object.hash(runtimeType,id,characterObjectId,path,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.characterMove(id: $id, characterObjectId: $characterObjectId, path: $path)';
+  return 'StudioEvent.characterMove(id: $id, characterObjectId: $characterObjectId, path: $path, scheduleStart: $scheduleStart)';
 }
 
 
@@ -5978,7 +5986,7 @@ abstract mixin class $CharacterMoveEventCopyWith<$Res> implements $StudioEventCo
   factory $CharacterMoveEventCopyWith(CharacterMoveEvent value, $Res Function(CharacterMoveEvent) _then) = _$CharacterMoveEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String characterObjectId, MovementPath path
+ String id, String characterObjectId, MovementPath path, double scheduleStart
 });
 
 
@@ -5995,12 +6003,13 @@ class _$CharacterMoveEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? characterObjectId = null,Object? path = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? characterObjectId = null,Object? path = null,Object? scheduleStart = null,}) {
   return _then(CharacterMoveEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,characterObjectId: null == characterObjectId ? _self.characterObjectId : characterObjectId // ignore: cast_nullable_to_non_nullable
 as String,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
-as MovementPath,
+as MovementPath,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -6020,11 +6029,12 @@ $MovementPathCopyWith<$Res> get path {
 @JsonSerializable()
 
 class CharacterWaitEvent extends StudioEvent {
-  const CharacterWaitEvent({required this.id, this.duration = 1,  String? $type}): $type = $type ?? 'character.wait',super._();
+  const CharacterWaitEvent({required this.id, this.duration = 1, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'character.wait',super._();
   factory CharacterWaitEvent.fromJson(Map<String, dynamic> json) => _$CharacterWaitEventFromJson(json);
 
 @override final  String id;
 @JsonKey() final  double duration;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6043,16 +6053,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterWaitEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterWaitEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,duration);
+int get hashCode => Object.hash(runtimeType,id,duration,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.characterWait(id: $id, duration: $duration)';
+  return 'StudioEvent.characterWait(id: $id, duration: $duration, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6063,7 +6073,7 @@ abstract mixin class $CharacterWaitEventCopyWith<$Res> implements $StudioEventCo
   factory $CharacterWaitEventCopyWith(CharacterWaitEvent value, $Res Function(CharacterWaitEvent) _then) = _$CharacterWaitEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, double duration
+ String id, double duration, double scheduleStart
 });
 
 
@@ -6080,10 +6090,11 @@ class _$CharacterWaitEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? duration = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? duration = null,Object? scheduleStart = null,}) {
   return _then(CharacterWaitEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -6095,13 +6106,14 @@ as double,
 @JsonSerializable()
 
 class CharacterChangeExpressionEvent extends StudioEvent {
-  const CharacterChangeExpressionEvent({required this.id, required this.characterObjectId, required this.expressionId, this.duration = 1,  String? $type}): $type = $type ?? 'character.changeExpression',super._();
+  const CharacterChangeExpressionEvent({required this.id, required this.characterObjectId, required this.expressionId, this.duration = 1, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'character.changeExpression',super._();
   factory CharacterChangeExpressionEvent.fromJson(Map<String, dynamic> json) => _$CharacterChangeExpressionEventFromJson(json);
 
 @override final  String id;
  final  String characterObjectId;
  final  String expressionId;
 @JsonKey() final  double duration;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6120,16 +6132,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterChangeExpressionEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.characterObjectId, characterObjectId) || other.characterObjectId == characterObjectId)&&(identical(other.expressionId, expressionId) || other.expressionId == expressionId)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterChangeExpressionEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.characterObjectId, characterObjectId) || other.characterObjectId == characterObjectId)&&(identical(other.expressionId, expressionId) || other.expressionId == expressionId)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,characterObjectId,expressionId,duration);
+int get hashCode => Object.hash(runtimeType,id,characterObjectId,expressionId,duration,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.characterChangeExpression(id: $id, characterObjectId: $characterObjectId, expressionId: $expressionId, duration: $duration)';
+  return 'StudioEvent.characterChangeExpression(id: $id, characterObjectId: $characterObjectId, expressionId: $expressionId, duration: $duration, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6140,7 +6152,7 @@ abstract mixin class $CharacterChangeExpressionEventCopyWith<$Res> implements $S
   factory $CharacterChangeExpressionEventCopyWith(CharacterChangeExpressionEvent value, $Res Function(CharacterChangeExpressionEvent) _then) = _$CharacterChangeExpressionEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String characterObjectId, String expressionId, double duration
+ String id, String characterObjectId, String expressionId, double duration, double scheduleStart
 });
 
 
@@ -6157,12 +6169,13 @@ class _$CharacterChangeExpressionEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? characterObjectId = null,Object? expressionId = null,Object? duration = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? characterObjectId = null,Object? expressionId = null,Object? duration = null,Object? scheduleStart = null,}) {
   return _then(CharacterChangeExpressionEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,characterObjectId: null == characterObjectId ? _self.characterObjectId : characterObjectId // ignore: cast_nullable_to_non_nullable
 as String,expressionId: null == expressionId ? _self.expressionId : expressionId // ignore: cast_nullable_to_non_nullable
 as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -6174,13 +6187,14 @@ as double,
 @JsonSerializable()
 
 class CharacterStartFollowEvent extends StudioEvent {
-  const CharacterStartFollowEvent({required this.id, required this.followerObjectId, required this.leaderObjectId, this.distance = 48,  String? $type}): $type = $type ?? 'character.startFollow',super._();
+  const CharacterStartFollowEvent({required this.id, required this.followerObjectId, required this.leaderObjectId, this.distance = 48, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'character.startFollow',super._();
   factory CharacterStartFollowEvent.fromJson(Map<String, dynamic> json) => _$CharacterStartFollowEventFromJson(json);
 
 @override final  String id;
  final  String followerObjectId;
  final  String leaderObjectId;
 @JsonKey() final  double distance;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6199,16 +6213,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterStartFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.followerObjectId, followerObjectId) || other.followerObjectId == followerObjectId)&&(identical(other.leaderObjectId, leaderObjectId) || other.leaderObjectId == leaderObjectId)&&(identical(other.distance, distance) || other.distance == distance));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterStartFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.followerObjectId, followerObjectId) || other.followerObjectId == followerObjectId)&&(identical(other.leaderObjectId, leaderObjectId) || other.leaderObjectId == leaderObjectId)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,followerObjectId,leaderObjectId,distance);
+int get hashCode => Object.hash(runtimeType,id,followerObjectId,leaderObjectId,distance,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.characterStartFollow(id: $id, followerObjectId: $followerObjectId, leaderObjectId: $leaderObjectId, distance: $distance)';
+  return 'StudioEvent.characterStartFollow(id: $id, followerObjectId: $followerObjectId, leaderObjectId: $leaderObjectId, distance: $distance, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6219,7 +6233,7 @@ abstract mixin class $CharacterStartFollowEventCopyWith<$Res> implements $Studio
   factory $CharacterStartFollowEventCopyWith(CharacterStartFollowEvent value, $Res Function(CharacterStartFollowEvent) _then) = _$CharacterStartFollowEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String followerObjectId, String leaderObjectId, double distance
+ String id, String followerObjectId, String leaderObjectId, double distance, double scheduleStart
 });
 
 
@@ -6236,12 +6250,13 @@ class _$CharacterStartFollowEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? followerObjectId = null,Object? leaderObjectId = null,Object? distance = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? followerObjectId = null,Object? leaderObjectId = null,Object? distance = null,Object? scheduleStart = null,}) {
   return _then(CharacterStartFollowEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,followerObjectId: null == followerObjectId ? _self.followerObjectId : followerObjectId // ignore: cast_nullable_to_non_nullable
 as String,leaderObjectId: null == leaderObjectId ? _self.leaderObjectId : leaderObjectId // ignore: cast_nullable_to_non_nullable
 as String,distance: null == distance ? _self.distance : distance // ignore: cast_nullable_to_non_nullable
+as double,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -6253,11 +6268,12 @@ as double,
 @JsonSerializable()
 
 class CharacterStopFollowEvent extends StudioEvent {
-  const CharacterStopFollowEvent({required this.id, required this.followerObjectId,  String? $type}): $type = $type ?? 'character.stopFollow',super._();
+  const CharacterStopFollowEvent({required this.id, required this.followerObjectId, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'character.stopFollow',super._();
   factory CharacterStopFollowEvent.fromJson(Map<String, dynamic> json) => _$CharacterStopFollowEventFromJson(json);
 
 @override final  String id;
  final  String followerObjectId;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6276,16 +6292,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterStopFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.followerObjectId, followerObjectId) || other.followerObjectId == followerObjectId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharacterStopFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.followerObjectId, followerObjectId) || other.followerObjectId == followerObjectId)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,followerObjectId);
+int get hashCode => Object.hash(runtimeType,id,followerObjectId,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.characterStopFollow(id: $id, followerObjectId: $followerObjectId)';
+  return 'StudioEvent.characterStopFollow(id: $id, followerObjectId: $followerObjectId, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6296,7 +6312,7 @@ abstract mixin class $CharacterStopFollowEventCopyWith<$Res> implements $StudioE
   factory $CharacterStopFollowEventCopyWith(CharacterStopFollowEvent value, $Res Function(CharacterStopFollowEvent) _then) = _$CharacterStopFollowEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String followerObjectId
+ String id, String followerObjectId, double scheduleStart
 });
 
 
@@ -6313,11 +6329,12 @@ class _$CharacterStopFollowEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? followerObjectId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? followerObjectId = null,Object? scheduleStart = null,}) {
   return _then(CharacterStopFollowEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,followerObjectId: null == followerObjectId ? _self.followerObjectId : followerObjectId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -6328,7 +6345,7 @@ as String,
 @JsonSerializable()
 
 class DialogueSayEvent extends StudioEvent {
-  const DialogueSayEvent({required this.id, required this.text, this.portraitAssetId, this.textSoundAssetId, this.style = DialogueStyle.regular, this.duration = 2,  String? $type}): $type = $type ?? 'dialogue.say',super._();
+  const DialogueSayEvent({required this.id, required this.text, this.portraitAssetId, this.textSoundAssetId, this.style = DialogueStyle.regular, this.duration = 2, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'dialogue.say',super._();
   factory DialogueSayEvent.fromJson(Map<String, dynamic> json) => _$DialogueSayEventFromJson(json);
 
 @override final  String id;
@@ -6337,6 +6354,7 @@ class DialogueSayEvent extends StudioEvent {
  final  String? textSoundAssetId;
 @JsonKey() final  DialogueStyle style;
 @JsonKey() final  double duration;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6355,16 +6373,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DialogueSayEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.text, text) || other.text == text)&&(identical(other.portraitAssetId, portraitAssetId) || other.portraitAssetId == portraitAssetId)&&(identical(other.textSoundAssetId, textSoundAssetId) || other.textSoundAssetId == textSoundAssetId)&&(identical(other.style, style) || other.style == style)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DialogueSayEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.text, text) || other.text == text)&&(identical(other.portraitAssetId, portraitAssetId) || other.portraitAssetId == portraitAssetId)&&(identical(other.textSoundAssetId, textSoundAssetId) || other.textSoundAssetId == textSoundAssetId)&&(identical(other.style, style) || other.style == style)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,text,portraitAssetId,textSoundAssetId,style,duration);
+int get hashCode => Object.hash(runtimeType,id,text,portraitAssetId,textSoundAssetId,style,duration,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.dialogueSay(id: $id, text: $text, portraitAssetId: $portraitAssetId, textSoundAssetId: $textSoundAssetId, style: $style, duration: $duration)';
+  return 'StudioEvent.dialogueSay(id: $id, text: $text, portraitAssetId: $portraitAssetId, textSoundAssetId: $textSoundAssetId, style: $style, duration: $duration, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6375,7 +6393,7 @@ abstract mixin class $DialogueSayEventCopyWith<$Res> implements $StudioEventCopy
   factory $DialogueSayEventCopyWith(DialogueSayEvent value, $Res Function(DialogueSayEvent) _then) = _$DialogueSayEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String text, String? portraitAssetId, String? textSoundAssetId, DialogueStyle style, double duration
+ String id, String text, String? portraitAssetId, String? textSoundAssetId, DialogueStyle style, double duration, double scheduleStart
 });
 
 
@@ -6392,7 +6410,7 @@ class _$DialogueSayEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? text = null,Object? portraitAssetId = freezed,Object? textSoundAssetId = freezed,Object? style = null,Object? duration = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? text = null,Object? portraitAssetId = freezed,Object? textSoundAssetId = freezed,Object? style = null,Object? duration = null,Object? scheduleStart = null,}) {
   return _then(DialogueSayEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
@@ -6400,6 +6418,7 @@ as String,portraitAssetId: freezed == portraitAssetId ? _self.portraitAssetId : 
 as String?,textSoundAssetId: freezed == textSoundAssetId ? _self.textSoundAssetId : textSoundAssetId // ignore: cast_nullable_to_non_nullable
 as String?,style: null == style ? _self.style : style // ignore: cast_nullable_to_non_nullable
 as DialogueStyle,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -6411,11 +6430,12 @@ as double,
 @JsonSerializable()
 
 class CameraFollowEvent extends StudioEvent {
-  const CameraFollowEvent({required this.id, required this.targetObjectId,  String? $type}): $type = $type ?? 'camera.follow',super._();
+  const CameraFollowEvent({required this.id, required this.targetObjectId, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'camera.follow',super._();
   factory CameraFollowEvent.fromJson(Map<String, dynamic> json) => _$CameraFollowEventFromJson(json);
 
 @override final  String id;
  final  String targetObjectId;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6434,16 +6454,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.targetObjectId, targetObjectId) || other.targetObjectId == targetObjectId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraFollowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.targetObjectId, targetObjectId) || other.targetObjectId == targetObjectId)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,targetObjectId);
+int get hashCode => Object.hash(runtimeType,id,targetObjectId,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.cameraFollow(id: $id, targetObjectId: $targetObjectId)';
+  return 'StudioEvent.cameraFollow(id: $id, targetObjectId: $targetObjectId, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6454,7 +6474,7 @@ abstract mixin class $CameraFollowEventCopyWith<$Res> implements $StudioEventCop
   factory $CameraFollowEventCopyWith(CameraFollowEvent value, $Res Function(CameraFollowEvent) _then) = _$CameraFollowEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String targetObjectId
+ String id, String targetObjectId, double scheduleStart
 });
 
 
@@ -6471,11 +6491,12 @@ class _$CameraFollowEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? targetObjectId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? targetObjectId = null,Object? scheduleStart = null,}) {
   return _then(CameraFollowEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,targetObjectId: null == targetObjectId ? _self.targetObjectId : targetObjectId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -6486,12 +6507,13 @@ as String,
 @JsonSerializable()
 
 class CameraFocusEvent extends StudioEvent {
-  const CameraFocusEvent({required this.id, required this.target, this.duration = 0.5,  String? $type}): $type = $type ?? 'camera.focus',super._();
+  const CameraFocusEvent({required this.id, required this.target, this.duration = 0.5, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'camera.focus',super._();
   factory CameraFocusEvent.fromJson(Map<String, dynamic> json) => _$CameraFocusEventFromJson(json);
 
 @override final  String id;
  final  FocusTarget target;
 @JsonKey() final  double duration;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6510,16 +6532,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraFocusEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.target, target) || other.target == target)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraFocusEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.target, target) || other.target == target)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,target,duration);
+int get hashCode => Object.hash(runtimeType,id,target,duration,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.cameraFocus(id: $id, target: $target, duration: $duration)';
+  return 'StudioEvent.cameraFocus(id: $id, target: $target, duration: $duration, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6530,7 +6552,7 @@ abstract mixin class $CameraFocusEventCopyWith<$Res> implements $StudioEventCopy
   factory $CameraFocusEventCopyWith(CameraFocusEvent value, $Res Function(CameraFocusEvent) _then) = _$CameraFocusEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, FocusTarget target, double duration
+ String id, FocusTarget target, double duration, double scheduleStart
 });
 
 
@@ -6547,11 +6569,12 @@ class _$CameraFocusEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? target = null,Object? duration = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? target = null,Object? duration = null,Object? scheduleStart = null,}) {
   return _then(CameraFocusEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,target: null == target ? _self.target : target // ignore: cast_nullable_to_non_nullable
 as FocusTarget,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -6572,12 +6595,13 @@ $FocusTargetCopyWith<$Res> get target {
 @JsonSerializable()
 
 class SceneFadeEvent extends StudioEvent {
-  const SceneFadeEvent({required this.id, required this.mode, this.duration = 0.8,  String? $type}): $type = $type ?? 'scene.fade',super._();
+  const SceneFadeEvent({required this.id, required this.mode, this.duration = 0.8, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'scene.fade',super._();
   factory SceneFadeEvent.fromJson(Map<String, dynamic> json) => _$SceneFadeEventFromJson(json);
 
 @override final  String id;
  final  FadeMode mode;
 @JsonKey() final  double duration;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6596,16 +6620,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SceneFadeEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.duration, duration) || other.duration == duration));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SceneFadeEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,mode,duration);
+int get hashCode => Object.hash(runtimeType,id,mode,duration,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.sceneFade(id: $id, mode: $mode, duration: $duration)';
+  return 'StudioEvent.sceneFade(id: $id, mode: $mode, duration: $duration, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6616,7 +6640,7 @@ abstract mixin class $SceneFadeEventCopyWith<$Res> implements $StudioEventCopyWi
   factory $SceneFadeEventCopyWith(SceneFadeEvent value, $Res Function(SceneFadeEvent) _then) = _$SceneFadeEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, FadeMode mode, double duration
+ String id, FadeMode mode, double duration, double scheduleStart
 });
 
 
@@ -6633,11 +6657,12 @@ class _$SceneFadeEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? mode = null,Object? duration = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? mode = null,Object? duration = null,Object? scheduleStart = null,}) {
   return _then(SceneFadeEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
 as FadeMode,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -6649,12 +6674,13 @@ as double,
 @JsonSerializable()
 
 class SceneChangeEvent extends StudioEvent {
-  const SceneChangeEvent({required this.id, required this.sceneId, this.entryPointId,  String? $type}): $type = $type ?? 'scene.change',super._();
+  const SceneChangeEvent({required this.id, required this.sceneId, this.entryPointId, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'scene.change',super._();
   factory SceneChangeEvent.fromJson(Map<String, dynamic> json) => _$SceneChangeEventFromJson(json);
 
 @override final  String id;
  final  String sceneId;
  final  String? entryPointId;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6673,16 +6699,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SceneChangeEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.sceneId, sceneId) || other.sceneId == sceneId)&&(identical(other.entryPointId, entryPointId) || other.entryPointId == entryPointId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SceneChangeEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.sceneId, sceneId) || other.sceneId == sceneId)&&(identical(other.entryPointId, entryPointId) || other.entryPointId == entryPointId)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,sceneId,entryPointId);
+int get hashCode => Object.hash(runtimeType,id,sceneId,entryPointId,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.sceneChange(id: $id, sceneId: $sceneId, entryPointId: $entryPointId)';
+  return 'StudioEvent.sceneChange(id: $id, sceneId: $sceneId, entryPointId: $entryPointId, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6693,7 +6719,7 @@ abstract mixin class $SceneChangeEventCopyWith<$Res> implements $StudioEventCopy
   factory $SceneChangeEventCopyWith(SceneChangeEvent value, $Res Function(SceneChangeEvent) _then) = _$SceneChangeEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String sceneId, String? entryPointId
+ String id, String sceneId, String? entryPointId, double scheduleStart
 });
 
 
@@ -6710,12 +6736,13 @@ class _$SceneChangeEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sceneId = null,Object? entryPointId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sceneId = null,Object? entryPointId = freezed,Object? scheduleStart = null,}) {
   return _then(SceneChangeEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,sceneId: null == sceneId ? _self.sceneId : sceneId // ignore: cast_nullable_to_non_nullable
 as String,entryPointId: freezed == entryPointId ? _self.entryPointId : entryPointId // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -6726,11 +6753,12 @@ as String?,
 @JsonSerializable()
 
 class AudioPlayBgmEvent extends StudioEvent {
-  const AudioPlayBgmEvent({required this.id, required this.assetId,  String? $type}): $type = $type ?? 'audio.playBgm',super._();
+  const AudioPlayBgmEvent({required this.id, required this.assetId, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'audio.playBgm',super._();
   factory AudioPlayBgmEvent.fromJson(Map<String, dynamic> json) => _$AudioPlayBgmEventFromJson(json);
 
 @override final  String id;
  final  String assetId;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6749,16 +6777,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioPlayBgmEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.assetId, assetId) || other.assetId == assetId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioPlayBgmEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,assetId);
+int get hashCode => Object.hash(runtimeType,id,assetId,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.audioPlayBgm(id: $id, assetId: $assetId)';
+  return 'StudioEvent.audioPlayBgm(id: $id, assetId: $assetId, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6769,7 +6797,7 @@ abstract mixin class $AudioPlayBgmEventCopyWith<$Res> implements $StudioEventCop
   factory $AudioPlayBgmEventCopyWith(AudioPlayBgmEvent value, $Res Function(AudioPlayBgmEvent) _then) = _$AudioPlayBgmEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String assetId
+ String id, String assetId, double scheduleStart
 });
 
 
@@ -6786,11 +6814,12 @@ class _$AudioPlayBgmEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? assetId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? assetId = null,Object? scheduleStart = null,}) {
   return _then(AudioPlayBgmEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,assetId: null == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -6801,11 +6830,12 @@ as String,
 @JsonSerializable()
 
 class AudioPlaySoundEvent extends StudioEvent {
-  const AudioPlaySoundEvent({required this.id, required this.assetId,  String? $type}): $type = $type ?? 'audio.playSound',super._();
+  const AudioPlaySoundEvent({required this.id, required this.assetId, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'audio.playSound',super._();
   factory AudioPlaySoundEvent.fromJson(Map<String, dynamic> json) => _$AudioPlaySoundEventFromJson(json);
 
 @override final  String id;
  final  String assetId;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6824,16 +6854,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioPlaySoundEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.assetId, assetId) || other.assetId == assetId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioPlaySoundEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,assetId);
+int get hashCode => Object.hash(runtimeType,id,assetId,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.audioPlaySound(id: $id, assetId: $assetId)';
+  return 'StudioEvent.audioPlaySound(id: $id, assetId: $assetId, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6844,7 +6874,7 @@ abstract mixin class $AudioPlaySoundEventCopyWith<$Res> implements $StudioEventC
   factory $AudioPlaySoundEventCopyWith(AudioPlaySoundEvent value, $Res Function(AudioPlaySoundEvent) _then) = _$AudioPlaySoundEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String assetId
+ String id, String assetId, double scheduleStart
 });
 
 
@@ -6861,11 +6891,12 @@ class _$AudioPlaySoundEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? assetId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? assetId = null,Object? scheduleStart = null,}) {
   return _then(AudioPlaySoundEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,assetId: null == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -6876,13 +6907,14 @@ as String,
 @JsonSerializable()
 
 class VideoPlayEvent extends StudioEvent {
-  const VideoPlayEvent({required this.id, required this.assetId, this.duration = 3, this.fit = VideoFitMode.contain,  String? $type}): $type = $type ?? 'video.play',super._();
+  const VideoPlayEvent({required this.id, required this.assetId, this.duration = 3, this.fit = VideoFitMode.contain, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'video.play',super._();
   factory VideoPlayEvent.fromJson(Map<String, dynamic> json) => _$VideoPlayEventFromJson(json);
 
 @override final  String id;
  final  String assetId;
 @JsonKey() final  double duration;
 @JsonKey() final  VideoFitMode fit;
+@override@JsonKey() final  double scheduleStart;
 
 @JsonKey(name: 'type')
 final String $type;
@@ -6901,16 +6933,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VideoPlayEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.fit, fit) || other.fit == fit));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VideoPlayEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.fit, fit) || other.fit == fit)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,assetId,duration,fit);
+int get hashCode => Object.hash(runtimeType,id,assetId,duration,fit,scheduleStart);
 
 @override
 String toString() {
-  return 'StudioEvent.videoPlay(id: $id, assetId: $assetId, duration: $duration, fit: $fit)';
+  return 'StudioEvent.videoPlay(id: $id, assetId: $assetId, duration: $duration, fit: $fit, scheduleStart: $scheduleStart)';
 }
 
 
@@ -6921,7 +6953,7 @@ abstract mixin class $VideoPlayEventCopyWith<$Res> implements $StudioEventCopyWi
   factory $VideoPlayEventCopyWith(VideoPlayEvent value, $Res Function(VideoPlayEvent) _then) = _$VideoPlayEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String assetId, double duration, VideoFitMode fit
+ String id, String assetId, double duration, VideoFitMode fit, double scheduleStart
 });
 
 
@@ -6938,13 +6970,14 @@ class _$VideoPlayEventCopyWithImpl<$Res>
 
 /// Create a copy of StudioEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? assetId = null,Object? duration = null,Object? fit = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? assetId = null,Object? duration = null,Object? fit = null,Object? scheduleStart = null,}) {
   return _then(VideoPlayEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,assetId: null == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
 as String,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as double,fit: null == fit ? _self.fit : fit // ignore: cast_nullable_to_non_nullable
-as VideoFitMode,
+as VideoFitMode,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 

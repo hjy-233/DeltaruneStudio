@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/runtime/movement_path_geometry.dart';
 
 final class MovementFrame {
   const MovementFrame({
@@ -25,11 +26,12 @@ final class MovementRunner {
     for (var index = 0; index < path.nodes.length - 1; index += 1) {
       final start = path.nodes[index];
       final end = path.nodes[index + 1];
-      final dx = end.x - start.x;
-      final dy = end.y - start.y;
+      final target = movementTarget(start.x, start.y, end, path.mode);
+      final dx = target.x - start.x;
+      final dy = target.y - start.y;
       final distance = math.sqrt(dx * dx + dy * dy);
       final frameCount = math.max(1, (distance / path.speed * 60).round());
-      final facing = _directionFor(dx, dy);
+      final facing = movementDirection(dx, dy, path.mode, index);
       for (var frame = 1; frame <= frameCount; frame += 1) {
         final t = frame / frameCount;
         final eased = Curves.smoothStep(t);
@@ -48,13 +50,6 @@ final class MovementRunner {
         );
       }
     }
-  }
-
-  Direction _directionFor(double dx, double dy) {
-    if (dx.abs() > dy.abs()) {
-      return dx >= 0 ? Direction.right : Direction.left;
-    }
-    return dy >= 0 ? Direction.down : Direction.up;
   }
 
   (double, double) _deterministicShake({

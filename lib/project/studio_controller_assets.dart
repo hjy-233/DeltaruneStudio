@@ -14,7 +14,9 @@ extension StudioControllerAssetActions on StudioController {
       id: StudioIds.object(),
       name: asset.originalName,
       assetId: asset.id,
-      transform: const Transform2D(x: 40, y: 40, width: 320, height: 180),
+      transform: _atEditorCenter(
+        const Transform2D(x: 0, y: 0, width: 320, height: 180),
+      ),
     );
     _appendObject(object, selection: EditorSelection.object(object.objectId));
   }
@@ -24,7 +26,9 @@ extension StudioControllerAssetActions on StudioController {
       id: StudioIds.object(),
       name: 'Room',
       assetId: '',
-      transform: const Transform2D(x: 40, y: 40, width: 360, height: 220),
+      transform: _atEditorCenter(
+        const Transform2D(x: 0, y: 0, width: 360, height: 220),
+      ),
     );
     _appendObject(object, selection: EditorSelection.object(object.objectId));
   }
@@ -42,7 +46,9 @@ extension StudioControllerAssetActions on StudioController {
       id: StudioIds.object(),
       name: asset.originalName,
       assetId: asset.id,
-      transform: const Transform2D(x: 120, y: 120, width: 64, height: 64),
+      transform: _atEditorCenter(
+        const Transform2D(x: 0, y: 0, width: 64, height: 64),
+      ),
     );
     _appendObject(object, selection: EditorSelection.object(object.objectId));
   }

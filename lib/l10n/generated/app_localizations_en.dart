@@ -66,6 +66,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timelineTriggerPoint => 'Trigger point';
 
   @override
+  String get timelineTriggerScheduled => 'Scheduled';
+
+  @override
   String get pause => 'Pause';
 
   @override
@@ -73,6 +76,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get close => 'Close';
+
+  @override
+  String get unsavedChanges => 'Unsaved changes';
+
+  @override
+  String get saveBeforeExit => 'Save the current project before exiting?';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get exportScale => 'Export scale';
+
+  @override
+  String get exportResolution => 'Output resolution';
+
+  @override
+  String get exportVideo => 'Export video';
 
   @override
   String get language => 'Language';
@@ -229,6 +253,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playVideo => 'Play Video';
 
   @override
+  String get triggerModeScheduled => 'Scheduled';
+
+  @override
+  String get startTime => 'Start time';
+
+  @override
   String get startFollow => 'Start Follow';
 
   @override
@@ -382,6 +412,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addPathNode => 'Add Path Node';
+
+  @override
+  String get movementMode => 'Movement mode';
+
+  @override
+  String get movementModeFourWay => 'Four-way';
+
+  @override
+  String get movementModeEightWay => 'Eight-way';
+
+  @override
+  String get movementModeFree => 'Free movement';
 
   @override
   String get duration => 'Duration';

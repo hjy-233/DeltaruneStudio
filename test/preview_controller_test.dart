@@ -16,6 +16,179 @@ void _timelineTests() {
 }
 
 void _trackPositionTests() {
+  test('scheduled chain track starts at its configured start time', () {
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [],
+      triggers: const [],
+      eventChains: const [
+        EventChain(
+          id: 'chain_scheduled',
+          name: 'Timed Dialogue',
+          triggerMode: EventChainTriggerMode.scheduled,
+          startTime: 2.5,
+          events: [
+            StudioEvent.dialogueSay(
+              id: 'event_dialogue',
+              text: 'Timed',
+              duration: 1,
+            ),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: const CameraPolicy.focus(
+        target: FocusTarget.point(x: 0, y: 0),
+      ),
+    );
+    final project = StudioProject(
+      schemaVersion: 2,
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [],
+      assets: const [],
+    );
+    final plan = TimelinePlan(project: project, scene: scene, chain: null);
+    final track = plan.tracks.single;
+
+    expect(track.offset, closeTo(2.5, 0.001));
+    expect(track.spans.single.start, closeTo(2.5, 0.001));
+    expect(track.spans.single.end, closeTo(3.5, 0.001));
+    expect(plan.duration, closeTo(3.5, 0.001));
+    expect(plan.evaluate(2.4).dialogue, isNull);
+    expect(plan.evaluate(2.6).dialogue, isNotNull);
+    expect(plan.evaluate(3.5).dialogue, isNull);
+  });
+
+  test('scheduled chain events can each define their own start time', () {
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [],
+      triggers: const [],
+      eventChains: const [
+        EventChain(
+          id: 'chain_scheduled',
+          name: 'Timed Events',
+          triggerMode: EventChainTriggerMode.scheduled,
+          events: [
+            StudioEvent.dialogueSay(
+              id: 'event_late',
+              text: 'Late',
+              duration: 1,
+              scheduleStart: 3,
+            ),
+            StudioEvent.dialogueSay(
+              id: 'event_early',
+              text: 'Early',
+              duration: 1,
+              scheduleStart: 1,
+            ),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: const CameraPolicy.focus(
+        target: FocusTarget.point(x: 0, y: 0),
+      ),
+    );
+    final project = StudioProject(
+      schemaVersion: 2,
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [],
+      assets: const [],
+    );
+    final plan = TimelinePlan(project: project, scene: scene, chain: null);
+    final spans = plan.tracks.single.spans;
+
+    expect(spans.map((span) => span.event.eventId), [
+      'event_early',
+      'event_late',
+    ]);
+    expect(spans.first.start, closeTo(1, 0.001));
+    expect(spans.last.start, closeTo(3, 0.001));
+    expect(plan.duration, closeTo(4, 0.001));
+    expect(plan.evaluate(1.2).dialogue?.text, 'Early');
+    expect(plan.evaluate(2.2).dialogue, isNull);
+    expect(plan.evaluate(3.2).dialogue?.text, 'Late');
+  });
+
+  test('always chain uses one event and displays it across the timeline', () {
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [
+        SceneObject.characterInstance(
+          id: 'object_kris',
+          name: 'Kris',
+          characterId: 'character_kris',
+          transform: Transform2D(x: 0, y: 0),
+          facing: Direction.right,
+        ),
+      ],
+      triggers: const [],
+      eventChains: const [
+        EventChain(
+          id: 'chain_move',
+          name: 'Move',
+          events: [
+            StudioEvent.characterMove(
+              id: 'event_move',
+              characterObjectId: 'object_kris',
+              path: MovementPath(
+                speed: 100,
+                nodes: [
+                  PathNode(id: 'node_start', x: 0, y: 0),
+                  PathNode(id: 'node_end', x: 300, y: 0),
+                ],
+              ),
+            ),
+          ],
+        ),
+        EventChain(
+          id: 'chain_bgm',
+          name: 'BGM',
+          triggerMode: EventChainTriggerMode.always,
+          events: [
+            StudioEvent.audioPlayBgm(id: 'event_bgm', assetId: 'asset_bgm'),
+            StudioEvent.audioPlaySound(
+              id: 'event_extra',
+              assetId: 'asset_extra',
+            ),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: const CameraPolicy.focus(
+        target: FocusTarget.point(x: 0, y: 0),
+      ),
+    );
+    final project = StudioProject(
+      schemaVersion: 2,
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [],
+      assets: const [],
+    );
+    final plan = TimelinePlan(project: project, scene: scene, chain: null);
+    final bgmTrack = plan.tracks.firstWhere(
+      (track) => track.chain.id == 'chain_bgm',
+    );
+
+    expect(bgmTrack.spans, hasLength(1));
+    expect(bgmTrack.spans.single.event.eventId, 'event_bgm');
+    expect(bgmTrack.spans.single.end, closeTo(0.1, 0.001));
+    expect(bgmTrack.spans.single.displayEndValue, closeTo(3, 0.001));
+  });
+
   test('trigger chain track starts when the path reaches its trigger', () {
     const characterObjectId = 'object_character';
     const triggerObjectId = 'object_trigger';
@@ -107,6 +280,92 @@ void _trackPositionTests() {
 }
 
 void _moveTriggerTimelineTests() {
+  test(
+    'move ending on a trigger stays on its final node after nested chain',
+    () {
+      const characterObjectId = 'object_kris';
+      const triggerId = 'trigger_dialogue';
+      const dialogueChainId = 'chain_dialogue';
+      final scene = Scene(
+        id: 'scene_main',
+        name: 'Main Canvas',
+        objects: const [
+          SceneObject.characterInstance(
+            id: characterObjectId,
+            name: 'Kris',
+            characterId: 'character_kris',
+            transform: Transform2D(x: 0, y: 0),
+            facing: Direction.right,
+          ),
+          SceneObject.triggerPoint(
+            id: 'object_trigger_point',
+            name: 'Trigger Point',
+            triggerId: triggerId,
+            transform: Transform2D(x: 100, y: -4, width: 8, height: 8),
+          ),
+        ],
+        triggers: const [
+          Trigger.area(
+            id: triggerId,
+            name: 'Trigger Point',
+            eventChainId: dialogueChainId,
+          ),
+        ],
+        eventChains: const [
+          EventChain(
+            id: 'chain_move',
+            name: 'Move',
+            events: [
+              StudioEvent.characterMove(
+                id: 'event_move',
+                characterObjectId: characterObjectId,
+                path: MovementPath(
+                  speed: 100,
+                  nodes: [
+                    PathNode(id: 'node_start', x: 0, y: 0),
+                    PathNode(id: 'node_end', x: 100, y: 0),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          EventChain(
+            id: dialogueChainId,
+            name: 'Dialogue',
+            triggerMode: EventChainTriggerMode.triggerPoint,
+            events: [
+              StudioEvent.dialogueSay(
+                id: 'event_dialogue',
+                text: 'Stop',
+                duration: 1,
+              ),
+            ],
+          ),
+        ],
+        interestPoints: const [],
+        cameraPolicy: const CameraPolicy.focus(
+          target: FocusTarget.point(x: 0, y: 0),
+        ),
+      );
+      final project = StudioProject(
+        schemaVersion: 2,
+        id: 'project_test',
+        name: 'Test',
+        currentSceneId: scene.id,
+        scenes: [scene],
+        characters: const [],
+        assets: const [],
+      );
+      final plan = TimelinePlan(project: project, scene: scene, chain: null);
+      final world = plan.evaluate(plan.duration);
+      final object = world.objects[characterObjectId]!;
+
+      expect(object.transform.x, closeTo(100, 0.001));
+      expect(object.transform.y, closeTo(0, 0.001));
+      expect(object.isMoving, isFalse);
+    },
+  );
+
   test(
     'move node touching trigger point schedules trigger sound immediately',
     () {
@@ -352,11 +611,7 @@ void _dialogueTests() {
       characters: const [],
       assets: const [],
     );
-    final plan = TimelinePlan(
-      project: project,
-      scene: scene,
-      chain: scene.eventChains.single,
-    );
+    final plan = TimelinePlan(project: project, scene: scene, chain: null);
 
     expect(plan.evaluate(0.5).dialogue, isNotNull);
     expect(plan.evaluate(1).dialogue, isNull);
@@ -404,6 +659,12 @@ void _basicFollowTests() {
               leaderObjectId: leaderObjectId,
               distance: 32,
             ),
+          ],
+        ),
+        EventChain(
+          id: 'chain_move',
+          name: 'Move',
+          events: [
             StudioEvent.characterMove(
               id: 'event_move',
               characterObjectId: leaderObjectId,
@@ -440,20 +701,16 @@ void _basicFollowTests() {
       ],
       assets: const [],
     );
-    final plan = TimelinePlan(
-      project: project,
-      scene: scene,
-      chain: scene.eventChains.single,
-    );
+    final plan = TimelinePlan(project: project, scene: scene, chain: null);
 
     final movingWorld = plan.evaluate(0.6);
     expect(
       movingWorld.objects[leaderObjectId]!.transform.x,
-      closeTo(160, 0.001),
+      closeTo(192, 0.001),
     );
     expect(
       movingWorld.objects[followerObjectId]!.transform.x,
-      closeTo(128, 0.001),
+      closeTo(160, 0.001),
     );
     expect(movingWorld.objects[followerObjectId]!.isMoving, isTrue);
 
@@ -666,6 +923,7 @@ void _expressionTests() {
         EventChain(
           id: 'chain_expression',
           name: 'Expression',
+          triggerMode: EventChainTriggerMode.scheduled,
           events: [
             StudioEvent.characterChangeExpression(
               id: 'event_expression',
@@ -673,7 +931,11 @@ void _expressionTests() {
               expressionId: 'talk',
               duration: 1,
             ),
-            StudioEvent.characterWait(id: 'event_wait', duration: 1),
+            StudioEvent.characterWait(
+              id: 'event_wait',
+              duration: 1,
+              scheduleStart: 1,
+            ),
           ],
         ),
       ],

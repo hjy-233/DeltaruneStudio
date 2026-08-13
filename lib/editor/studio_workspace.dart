@@ -46,6 +46,7 @@ class _WorkspaceBodyState extends ConsumerState<_WorkspaceBody> {
   double _rightWidth = 280;
   double _bottomHeight = 300;
   bool _isExportingVideo = false;
+  int _exportScale = 1;
   String? _layoutProjectId;
 
   @override
@@ -240,7 +241,17 @@ class _WorkspaceBodyState extends ConsumerState<_WorkspaceBody> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.movie_creation_outlined),
-                label: const Text('导出视频'),
+                label: Text('${l10n.exportVideo} ${_exportScale}x'),
+              ),
+              PopupMenuButton<int>(
+                tooltip: l10n.exportScale,
+                initialValue: _exportScale,
+                onSelected: (scale) => setState(() => _exportScale = scale),
+                itemBuilder: (context) => [
+                  for (final scale in [1, 2, 4, 8, 16])
+                    PopupMenuItem(value: scale, child: Text('${scale}x')),
+                ],
+                icon: const Icon(Icons.expand_more),
               ),
               const SizedBox(width: 16),
             ],
@@ -372,11 +383,15 @@ class _WorkspaceBodyState extends ConsumerState<_WorkspaceBody> {
     if (location == null) {
       return;
     }
+    if (!context.mounted) {
+      return;
+    }
+    final scale = _exportScale;
     final outputPath = _videoPathWithExtension(location.path);
     setState(() => _isExportingVideo = true);
     try {
       final builtIns = ref.read(builtInAssetLibraryProvider).valueOrNull;
-      await VideoExporter().export(
+      await VideoExporter(scale: scale).export(
         ready: ready,
         outputPath: outputPath,
         builtIns: builtIns,

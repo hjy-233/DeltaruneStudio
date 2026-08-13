@@ -9,6 +9,7 @@ import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/path_node_tools.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
+import 'package:deltarune_studio/runtime/movement_path_geometry.dart';
 import 'package:deltarune_studio/runtime/runtime_world.dart';
 import 'package:deltarune_studio/shared_render/studio_rendering.dart';
 import 'package:flutter/gestures.dart';
@@ -99,6 +100,12 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final size = Size(constraints.maxWidth, constraints.maxHeight);
+                if (!useRuntime) {
+                  final center = _toScene(size.center(Offset.zero));
+                  ref
+                      .read(studioControllerProvider.notifier)
+                      .setEditorInsertionPoint(center.dx, center.dy);
+                }
                 final effectivePan = useRuntime
                     ? _runtimePan(world, size)
                     : _pan;
@@ -128,9 +135,14 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
     if (signal is! PointerScrollEvent) {
       return;
     }
+    final cursor = signal.localPosition;
     setState(() {
-      final next = _scale - signal.scrollDelta.dy * 0.001;
-      _scale = next.clamp(0.35, 4);
+      final scenePoint = (cursor - _pan) / _scale;
+      final next = (_scale - signal.scrollDelta.dy * 0.001)
+          .clamp(0.35, 4)
+          .toDouble();
+      _scale = next;
+      _pan = cursor - scenePoint * _scale;
     });
   }
 
@@ -585,6 +597,7 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
         return node.id == dragNode.nodeId ? nextNode : node;
       }).toList(),
       dragNode.nodeId,
+      selectedMove.event.path.mode,
     );
     return SelectedMoveEvent(
       chainId: selectedMove.chainId,

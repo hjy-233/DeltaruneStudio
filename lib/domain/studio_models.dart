@@ -7,6 +7,8 @@ enum AssetKind { background, character, audio, prop, dialoguePortrait, video }
 
 enum Direction { up, down, left, right }
 
+enum MovementMode { fourWay, eightWay, free }
+
 enum FadeMode { in_, out }
 
 enum DialogueStyle { regular, darkWorld }
@@ -17,7 +19,7 @@ enum AppLanguage { system, english, chinese }
 
 enum CharacterLibraryScope { global, project }
 
-enum EventChainTriggerMode { triggerPoint, always }
+enum EventChainTriggerMode { triggerPoint, always, scheduled }
 
 @freezed
 abstract class StudioProject with _$StudioProject {
@@ -246,6 +248,7 @@ abstract class MovementPath with _$MovementPath {
     required List<PathNode> nodes,
     @Default(320) double speed,
     @Default(0) double shake,
+    @Default(MovementMode.fourWay) MovementMode mode,
   }) = _MovementPath;
 
   factory MovementPath.fromJson(Map<String, dynamic> json) =>
@@ -340,6 +343,7 @@ abstract class EventChain with _$EventChain {
     required String id,
     required String name,
     @Default(EventChainTriggerMode.always) EventChainTriggerMode triggerMode,
+    @Default(0) double startTime,
     required List<StudioEvent> events,
   }) = _EventChain;
 
@@ -356,12 +360,14 @@ sealed class StudioEvent with _$StudioEvent {
     required String id,
     required String characterObjectId,
     required MovementPath path,
+    @Default(0) double scheduleStart,
   }) = CharacterMoveEvent;
 
   @FreezedUnionValue('character.wait')
   const factory StudioEvent.characterWait({
     required String id,
     @Default(1) double duration,
+    @Default(0) double scheduleStart,
   }) = CharacterWaitEvent;
 
   @FreezedUnionValue('character.changeExpression')
@@ -370,6 +376,7 @@ sealed class StudioEvent with _$StudioEvent {
     required String characterObjectId,
     required String expressionId,
     @Default(1) double duration,
+    @Default(0) double scheduleStart,
   }) = CharacterChangeExpressionEvent;
 
   @FreezedUnionValue('character.startFollow')
@@ -378,12 +385,14 @@ sealed class StudioEvent with _$StudioEvent {
     required String followerObjectId,
     required String leaderObjectId,
     @Default(48) double distance,
+    @Default(0) double scheduleStart,
   }) = CharacterStartFollowEvent;
 
   @FreezedUnionValue('character.stopFollow')
   const factory StudioEvent.characterStopFollow({
     required String id,
     required String followerObjectId,
+    @Default(0) double scheduleStart,
   }) = CharacterStopFollowEvent;
 
   @FreezedUnionValue('dialogue.say')
@@ -394,12 +403,14 @@ sealed class StudioEvent with _$StudioEvent {
     String? textSoundAssetId,
     @Default(DialogueStyle.regular) DialogueStyle style,
     @Default(2) double duration,
+    @Default(0) double scheduleStart,
   }) = DialogueSayEvent;
 
   @FreezedUnionValue('camera.follow')
   const factory StudioEvent.cameraFollow({
     required String id,
     required String targetObjectId,
+    @Default(0) double scheduleStart,
   }) = CameraFollowEvent;
 
   @FreezedUnionValue('camera.focus')
@@ -407,6 +418,7 @@ sealed class StudioEvent with _$StudioEvent {
     required String id,
     required FocusTarget target,
     @Default(0.5) double duration,
+    @Default(0) double scheduleStart,
   }) = CameraFocusEvent;
 
   @FreezedUnionValue('scene.fade')
@@ -414,6 +426,7 @@ sealed class StudioEvent with _$StudioEvent {
     required String id,
     required FadeMode mode,
     @Default(0.8) double duration,
+    @Default(0) double scheduleStart,
   }) = SceneFadeEvent;
 
   @FreezedUnionValue('scene.change')
@@ -421,18 +434,21 @@ sealed class StudioEvent with _$StudioEvent {
     required String id,
     required String sceneId,
     String? entryPointId,
+    @Default(0) double scheduleStart,
   }) = SceneChangeEvent;
 
   @FreezedUnionValue('audio.playBgm')
   const factory StudioEvent.audioPlayBgm({
     required String id,
     required String assetId,
+    @Default(0) double scheduleStart,
   }) = AudioPlayBgmEvent;
 
   @FreezedUnionValue('audio.playSound')
   const factory StudioEvent.audioPlaySound({
     required String id,
     required String assetId,
+    @Default(0) double scheduleStart,
   }) = AudioPlaySoundEvent;
 
   @FreezedUnionValue('video.play')
@@ -441,6 +457,7 @@ sealed class StudioEvent with _$StudioEvent {
     required String assetId,
     @Default(3) double duration,
     @Default(VideoFitMode.contain) VideoFitMode fit,
+    @Default(0) double scheduleStart,
   }) = VideoPlayEvent;
 
   String get eventId => map(
@@ -457,6 +474,39 @@ sealed class StudioEvent with _$StudioEvent {
     audioPlayBgm: (value) => value.id,
     audioPlaySound: (value) => value.id,
     videoPlay: (value) => value.id,
+  );
+
+  double get eventScheduleStart => map(
+    characterMove: (value) => value.scheduleStart,
+    characterWait: (value) => value.scheduleStart,
+    characterChangeExpression: (value) => value.scheduleStart,
+    characterStartFollow: (value) => value.scheduleStart,
+    characterStopFollow: (value) => value.scheduleStart,
+    dialogueSay: (value) => value.scheduleStart,
+    cameraFollow: (value) => value.scheduleStart,
+    cameraFocus: (value) => value.scheduleStart,
+    sceneFade: (value) => value.scheduleStart,
+    sceneChange: (value) => value.scheduleStart,
+    audioPlayBgm: (value) => value.scheduleStart,
+    audioPlaySound: (value) => value.scheduleStart,
+    videoPlay: (value) => value.scheduleStart,
+  );
+
+  StudioEvent withScheduleStart(double startTime) => map(
+    characterMove: (value) => value.copyWith(scheduleStart: startTime),
+    characterWait: (value) => value.copyWith(scheduleStart: startTime),
+    characterChangeExpression: (value) =>
+        value.copyWith(scheduleStart: startTime),
+    characterStartFollow: (value) => value.copyWith(scheduleStart: startTime),
+    characterStopFollow: (value) => value.copyWith(scheduleStart: startTime),
+    dialogueSay: (value) => value.copyWith(scheduleStart: startTime),
+    cameraFollow: (value) => value.copyWith(scheduleStart: startTime),
+    cameraFocus: (value) => value.copyWith(scheduleStart: startTime),
+    sceneFade: (value) => value.copyWith(scheduleStart: startTime),
+    sceneChange: (value) => value.copyWith(scheduleStart: startTime),
+    audioPlayBgm: (value) => value.copyWith(scheduleStart: startTime),
+    audioPlaySound: (value) => value.copyWith(scheduleStart: startTime),
+    videoPlay: (value) => value.copyWith(scheduleStart: startTime),
   );
 
   factory StudioEvent.fromJson(Map<String, dynamic> json) =>
