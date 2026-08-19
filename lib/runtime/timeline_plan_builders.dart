@@ -305,6 +305,7 @@ int _eventPriority(StudioEvent event) {
     audioPlayBgm: (_) => 9,
     audioPlaySound: (_) => 9,
     videoPlay: (_) => 10,
+    overlayShow: (_) => 11,
   );
 }
 
@@ -546,6 +547,12 @@ double _eventDuration(Scene scene, StudioEvent event, Set<String> stack) {
     audioPlayBgm: (_) => 0.1,
     audioPlaySound: (_) => 0.1,
     videoPlay: (value) => math.max(value.duration, 0.1),
+    overlayShow: (value) => math.max(
+      value.contentKind == OverlayContentKind.video
+          ? value.videoFallbackDuration
+          : value.duration,
+      0.1,
+    ),
   );
 }
 

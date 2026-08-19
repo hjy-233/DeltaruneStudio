@@ -16,5 +16,6 @@ String eventLabel(AppLocalizations l10n, StudioEvent event) {
     audioPlayBgm: (_) => l10n.playBgm,
     audioPlaySound: (_) => l10n.playSound,
     videoPlay: (_) => l10n.playVideo,
+    overlayShow: (_) => 'Overlay',
   );
 }

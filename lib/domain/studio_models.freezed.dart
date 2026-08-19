@@ -5665,6 +5665,10 @@ StudioEvent _$StudioEventFromJson(
           return VideoPlayEvent.fromJson(
             json
           );
+                case 'overlay.show':
+          return OverlayShowEvent.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -5755,7 +5759,7 @@ extension StudioEventPatterns on StudioEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CharacterMoveEvent value)?  characterMove,TResult Function( CharacterWaitEvent value)?  characterWait,TResult Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult Function( CharacterStartFollowEvent value)?  characterStartFollow,TResult Function( CharacterStopFollowEvent value)?  characterStopFollow,TResult Function( DialogueSayEvent value)?  dialogueSay,TResult Function( CameraFollowEvent value)?  cameraFollow,TResult Function( CameraFocusEvent value)?  cameraFocus,TResult Function( SceneFadeEvent value)?  sceneFade,TResult Function( SceneChangeEvent value)?  sceneChange,TResult Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult Function( AudioPlaySoundEvent value)?  audioPlaySound,TResult Function( VideoPlayEvent value)?  videoPlay,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CharacterMoveEvent value)?  characterMove,TResult Function( CharacterWaitEvent value)?  characterWait,TResult Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult Function( CharacterStartFollowEvent value)?  characterStartFollow,TResult Function( CharacterStopFollowEvent value)?  characterStopFollow,TResult Function( DialogueSayEvent value)?  dialogueSay,TResult Function( CameraFollowEvent value)?  cameraFollow,TResult Function( CameraFocusEvent value)?  cameraFocus,TResult Function( SceneFadeEvent value)?  sceneFade,TResult Function( SceneChangeEvent value)?  sceneChange,TResult Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult Function( AudioPlaySoundEvent value)?  audioPlaySound,TResult Function( VideoPlayEvent value)?  videoPlay,TResult Function( OverlayShowEvent value)?  overlayShow,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
@@ -5771,7 +5775,8 @@ return sceneFade(_that);case SceneChangeEvent() when sceneChange != null:
 return sceneChange(_that);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that);case AudioPlaySoundEvent() when audioPlaySound != null:
 return audioPlaySound(_that);case VideoPlayEvent() when videoPlay != null:
-return videoPlay(_that);case _:
+return videoPlay(_that);case OverlayShowEvent() when overlayShow != null:
+return overlayShow(_that);case _:
   return orElse();
 
 }
@@ -5789,7 +5794,7 @@ return videoPlay(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CharacterMoveEvent value)  characterMove,required TResult Function( CharacterWaitEvent value)  characterWait,required TResult Function( CharacterChangeExpressionEvent value)  characterChangeExpression,required TResult Function( CharacterStartFollowEvent value)  characterStartFollow,required TResult Function( CharacterStopFollowEvent value)  characterStopFollow,required TResult Function( DialogueSayEvent value)  dialogueSay,required TResult Function( CameraFollowEvent value)  cameraFollow,required TResult Function( CameraFocusEvent value)  cameraFocus,required TResult Function( SceneFadeEvent value)  sceneFade,required TResult Function( SceneChangeEvent value)  sceneChange,required TResult Function( AudioPlayBgmEvent value)  audioPlayBgm,required TResult Function( AudioPlaySoundEvent value)  audioPlaySound,required TResult Function( VideoPlayEvent value)  videoPlay,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CharacterMoveEvent value)  characterMove,required TResult Function( CharacterWaitEvent value)  characterWait,required TResult Function( CharacterChangeExpressionEvent value)  characterChangeExpression,required TResult Function( CharacterStartFollowEvent value)  characterStartFollow,required TResult Function( CharacterStopFollowEvent value)  characterStopFollow,required TResult Function( DialogueSayEvent value)  dialogueSay,required TResult Function( CameraFollowEvent value)  cameraFollow,required TResult Function( CameraFocusEvent value)  cameraFocus,required TResult Function( SceneFadeEvent value)  sceneFade,required TResult Function( SceneChangeEvent value)  sceneChange,required TResult Function( AudioPlayBgmEvent value)  audioPlayBgm,required TResult Function( AudioPlaySoundEvent value)  audioPlaySound,required TResult Function( VideoPlayEvent value)  videoPlay,required TResult Function( OverlayShowEvent value)  overlayShow,}){
 final _that = this;
 switch (_that) {
 case CharacterMoveEvent():
@@ -5805,7 +5810,8 @@ return sceneFade(_that);case SceneChangeEvent():
 return sceneChange(_that);case AudioPlayBgmEvent():
 return audioPlayBgm(_that);case AudioPlaySoundEvent():
 return audioPlaySound(_that);case VideoPlayEvent():
-return videoPlay(_that);}
+return videoPlay(_that);case OverlayShowEvent():
+return overlayShow(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -5819,7 +5825,7 @@ return videoPlay(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CharacterMoveEvent value)?  characterMove,TResult? Function( CharacterWaitEvent value)?  characterWait,TResult? Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult? Function( CharacterStartFollowEvent value)?  characterStartFollow,TResult? Function( CharacterStopFollowEvent value)?  characterStopFollow,TResult? Function( DialogueSayEvent value)?  dialogueSay,TResult? Function( CameraFollowEvent value)?  cameraFollow,TResult? Function( CameraFocusEvent value)?  cameraFocus,TResult? Function( SceneFadeEvent value)?  sceneFade,TResult? Function( SceneChangeEvent value)?  sceneChange,TResult? Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult? Function( AudioPlaySoundEvent value)?  audioPlaySound,TResult? Function( VideoPlayEvent value)?  videoPlay,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CharacterMoveEvent value)?  characterMove,TResult? Function( CharacterWaitEvent value)?  characterWait,TResult? Function( CharacterChangeExpressionEvent value)?  characterChangeExpression,TResult? Function( CharacterStartFollowEvent value)?  characterStartFollow,TResult? Function( CharacterStopFollowEvent value)?  characterStopFollow,TResult? Function( DialogueSayEvent value)?  dialogueSay,TResult? Function( CameraFollowEvent value)?  cameraFollow,TResult? Function( CameraFocusEvent value)?  cameraFocus,TResult? Function( SceneFadeEvent value)?  sceneFade,TResult? Function( SceneChangeEvent value)?  sceneChange,TResult? Function( AudioPlayBgmEvent value)?  audioPlayBgm,TResult? Function( AudioPlaySoundEvent value)?  audioPlaySound,TResult? Function( VideoPlayEvent value)?  videoPlay,TResult? Function( OverlayShowEvent value)?  overlayShow,}){
 final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
@@ -5835,7 +5841,8 @@ return sceneFade(_that);case SceneChangeEvent() when sceneChange != null:
 return sceneChange(_that);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that);case AudioPlaySoundEvent() when audioPlaySound != null:
 return audioPlaySound(_that);case VideoPlayEvent() when videoPlay != null:
-return videoPlay(_that);case _:
+return videoPlay(_that);case OverlayShowEvent() when overlayShow != null:
+return overlayShow(_that);case _:
   return null;
 
 }
@@ -5852,7 +5859,7 @@ return videoPlay(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)?  characterMove,TResult Function( String id,  double duration,  double scheduleStart)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)?  characterChangeExpression,TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)?  characterStartFollow,TResult Function( String id,  String followerObjectId,  double scheduleStart)?  characterStopFollow,TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)?  dialogueSay,TResult Function( String id,  String targetObjectId,  double scheduleStart)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration,  double scheduleStart)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration,  double scheduleStart)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)?  sceneChange,TResult Function( String id,  String assetId,  double scheduleStart)?  audioPlayBgm,TResult Function( String id,  String assetId,  double scheduleStart)?  audioPlaySound,TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)?  videoPlay,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)?  characterMove,TResult Function( String id,  double duration,  double scheduleStart)?  characterWait,TResult Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)?  characterChangeExpression,TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)?  characterStartFollow,TResult Function( String id,  String followerObjectId,  double scheduleStart)?  characterStopFollow,TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)?  dialogueSay,TResult Function( String id,  String targetObjectId,  double scheduleStart)?  cameraFollow,TResult Function( String id,  FocusTarget target,  double duration,  double scheduleStart)?  cameraFocus,TResult Function( String id,  FadeMode mode,  double duration,  double scheduleStart)?  sceneFade,TResult Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)?  sceneChange,TResult Function( String id,  String assetId,  double scheduleStart)?  audioPlayBgm,TResult Function( String id,  String assetId,  double scheduleStart)?  audioPlaySound,TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)?  videoPlay,TResult Function( String id,  OverlaySpace space,  OverlayContentKind contentKind,  String? assetId,  String? text,  String color,  OverlayTextStyle textStyle,  OverlayAnchor anchor,  Transform2D transform,  double opacity,  double rotation,  int zIndex,  String? boundObjectId,  double fadeIn,  double fadeOut,  double duration,  double videoFallbackDuration,  double scheduleStart)?  overlayShow,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that.id,_that.characterObjectId,_that.path,_that.scheduleStart);case CharacterWaitEvent() when characterWait != null:
@@ -5867,7 +5874,8 @@ return sceneFade(_that.id,_that.mode,_that.duration,_that.scheduleStart);case Sc
 return sceneChange(_that.id,_that.sceneId,_that.entryPointId,_that.scheduleStart);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that.id,_that.assetId,_that.scheduleStart);case AudioPlaySoundEvent() when audioPlaySound != null:
 return audioPlaySound(_that.id,_that.assetId,_that.scheduleStart);case VideoPlayEvent() when videoPlay != null:
-return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);case _:
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);case OverlayShowEvent() when overlayShow != null:
+return overlayShow(_that.id,_that.space,_that.contentKind,_that.assetId,_that.text,_that.color,_that.textStyle,_that.anchor,_that.transform,_that.opacity,_that.rotation,_that.zIndex,_that.boundObjectId,_that.fadeIn,_that.fadeOut,_that.duration,_that.videoFallbackDuration,_that.scheduleStart);case _:
   return orElse();
 
 }
@@ -5885,7 +5893,7 @@ return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleS
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)  characterMove,required TResult Function( String id,  double duration,  double scheduleStart)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)  characterChangeExpression,required TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)  characterStartFollow,required TResult Function( String id,  String followerObjectId,  double scheduleStart)  characterStopFollow,required TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)  dialogueSay,required TResult Function( String id,  String targetObjectId,  double scheduleStart)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration,  double scheduleStart)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration,  double scheduleStart)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)  sceneChange,required TResult Function( String id,  String assetId,  double scheduleStart)  audioPlayBgm,required TResult Function( String id,  String assetId,  double scheduleStart)  audioPlaySound,required TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)  videoPlay,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)  characterMove,required TResult Function( String id,  double duration,  double scheduleStart)  characterWait,required TResult Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)  characterChangeExpression,required TResult Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)  characterStartFollow,required TResult Function( String id,  String followerObjectId,  double scheduleStart)  characterStopFollow,required TResult Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)  dialogueSay,required TResult Function( String id,  String targetObjectId,  double scheduleStart)  cameraFollow,required TResult Function( String id,  FocusTarget target,  double duration,  double scheduleStart)  cameraFocus,required TResult Function( String id,  FadeMode mode,  double duration,  double scheduleStart)  sceneFade,required TResult Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)  sceneChange,required TResult Function( String id,  String assetId,  double scheduleStart)  audioPlayBgm,required TResult Function( String id,  String assetId,  double scheduleStart)  audioPlaySound,required TResult Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)  videoPlay,required TResult Function( String id,  OverlaySpace space,  OverlayContentKind contentKind,  String? assetId,  String? text,  String color,  OverlayTextStyle textStyle,  OverlayAnchor anchor,  Transform2D transform,  double opacity,  double rotation,  int zIndex,  String? boundObjectId,  double fadeIn,  double fadeOut,  double duration,  double videoFallbackDuration,  double scheduleStart)  overlayShow,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent():
 return characterMove(_that.id,_that.characterObjectId,_that.path,_that.scheduleStart);case CharacterWaitEvent():
@@ -5900,7 +5908,8 @@ return sceneFade(_that.id,_that.mode,_that.duration,_that.scheduleStart);case Sc
 return sceneChange(_that.id,_that.sceneId,_that.entryPointId,_that.scheduleStart);case AudioPlayBgmEvent():
 return audioPlayBgm(_that.id,_that.assetId,_that.scheduleStart);case AudioPlaySoundEvent():
 return audioPlaySound(_that.id,_that.assetId,_that.scheduleStart);case VideoPlayEvent():
-return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);}
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);case OverlayShowEvent():
+return overlayShow(_that.id,_that.space,_that.contentKind,_that.assetId,_that.text,_that.color,_that.textStyle,_that.anchor,_that.transform,_that.opacity,_that.rotation,_that.zIndex,_that.boundObjectId,_that.fadeIn,_that.fadeOut,_that.duration,_that.videoFallbackDuration,_that.scheduleStart);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -5914,7 +5923,7 @@ return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleS
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)?  characterMove,TResult? Function( String id,  double duration,  double scheduleStart)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)?  characterChangeExpression,TResult? Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)?  characterStartFollow,TResult? Function( String id,  String followerObjectId,  double scheduleStart)?  characterStopFollow,TResult? Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)?  dialogueSay,TResult? Function( String id,  String targetObjectId,  double scheduleStart)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration,  double scheduleStart)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration,  double scheduleStart)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)?  sceneChange,TResult? Function( String id,  String assetId,  double scheduleStart)?  audioPlayBgm,TResult? Function( String id,  String assetId,  double scheduleStart)?  audioPlaySound,TResult? Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)?  videoPlay,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String characterObjectId,  MovementPath path,  double scheduleStart)?  characterMove,TResult? Function( String id,  double duration,  double scheduleStart)?  characterWait,TResult? Function( String id,  String characterObjectId,  String expressionId,  double duration,  double scheduleStart)?  characterChangeExpression,TResult? Function( String id,  String followerObjectId,  String leaderObjectId,  double distance,  double scheduleStart)?  characterStartFollow,TResult? Function( String id,  String followerObjectId,  double scheduleStart)?  characterStopFollow,TResult? Function( String id,  String text,  String? portraitAssetId,  String? textSoundAssetId,  DialogueStyle style,  double duration,  double scheduleStart)?  dialogueSay,TResult? Function( String id,  String targetObjectId,  double scheduleStart)?  cameraFollow,TResult? Function( String id,  FocusTarget target,  double duration,  double scheduleStart)?  cameraFocus,TResult? Function( String id,  FadeMode mode,  double duration,  double scheduleStart)?  sceneFade,TResult? Function( String id,  String sceneId,  String? entryPointId,  double scheduleStart)?  sceneChange,TResult? Function( String id,  String assetId,  double scheduleStart)?  audioPlayBgm,TResult? Function( String id,  String assetId,  double scheduleStart)?  audioPlaySound,TResult? Function( String id,  String assetId,  double duration,  VideoFitMode fit,  double scheduleStart)?  videoPlay,TResult? Function( String id,  OverlaySpace space,  OverlayContentKind contentKind,  String? assetId,  String? text,  String color,  OverlayTextStyle textStyle,  OverlayAnchor anchor,  Transform2D transform,  double opacity,  double rotation,  int zIndex,  String? boundObjectId,  double fadeIn,  double fadeOut,  double duration,  double videoFallbackDuration,  double scheduleStart)?  overlayShow,}) {final _that = this;
 switch (_that) {
 case CharacterMoveEvent() when characterMove != null:
 return characterMove(_that.id,_that.characterObjectId,_that.path,_that.scheduleStart);case CharacterWaitEvent() when characterWait != null:
@@ -5929,7 +5938,8 @@ return sceneFade(_that.id,_that.mode,_that.duration,_that.scheduleStart);case Sc
 return sceneChange(_that.id,_that.sceneId,_that.entryPointId,_that.scheduleStart);case AudioPlayBgmEvent() when audioPlayBgm != null:
 return audioPlayBgm(_that.id,_that.assetId,_that.scheduleStart);case AudioPlaySoundEvent() when audioPlaySound != null:
 return audioPlaySound(_that.id,_that.assetId,_that.scheduleStart);case VideoPlayEvent() when videoPlay != null:
-return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);case _:
+return videoPlay(_that.id,_that.assetId,_that.duration,_that.fit,_that.scheduleStart);case OverlayShowEvent() when overlayShow != null:
+return overlayShow(_that.id,_that.space,_that.contentKind,_that.assetId,_that.text,_that.color,_that.textStyle,_that.anchor,_that.transform,_that.opacity,_that.rotation,_that.zIndex,_that.boundObjectId,_that.fadeIn,_that.fadeOut,_that.duration,_that.videoFallbackDuration,_that.scheduleStart);case _:
   return null;
 
 }
@@ -6982,6 +6992,131 @@ as double,
 }
 
 
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class OverlayShowEvent extends StudioEvent {
+  const OverlayShowEvent({required this.id, this.space = OverlaySpace.camera, this.contentKind = OverlayContentKind.image, this.assetId, this.text, this.color = '#FFFFFFFF', this.textStyle = const OverlayTextStyle(), this.anchor = OverlayAnchor.center, this.transform = const Transform2D(x: 0, y: 0, width: 160, height: 90), this.opacity = 1, this.rotation = 0, this.zIndex = 0, this.boundObjectId, this.fadeIn = 0, this.fadeOut = 0, this.duration = 2, this.videoFallbackDuration = 3, this.scheduleStart = 0,  String? $type}): $type = $type ?? 'overlay.show',super._();
+  factory OverlayShowEvent.fromJson(Map<String, dynamic> json) => _$OverlayShowEventFromJson(json);
+
+@override final  String id;
+@JsonKey() final  OverlaySpace space;
+@JsonKey() final  OverlayContentKind contentKind;
+ final  String? assetId;
+ final  String? text;
+@JsonKey() final  String color;
+@JsonKey() final  OverlayTextStyle textStyle;
+@JsonKey() final  OverlayAnchor anchor;
+@JsonKey() final  Transform2D transform;
+@JsonKey() final  double opacity;
+@JsonKey() final  double rotation;
+@JsonKey() final  int zIndex;
+ final  String? boundObjectId;
+@JsonKey() final  double fadeIn;
+@JsonKey() final  double fadeOut;
+@JsonKey() final  double duration;
+@JsonKey() final  double videoFallbackDuration;
+@override@JsonKey() final  double scheduleStart;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$OverlayShowEventCopyWith<OverlayShowEvent> get copyWith => _$OverlayShowEventCopyWithImpl<OverlayShowEvent>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$OverlayShowEventToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OverlayShowEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.space, space) || other.space == space)&&(identical(other.contentKind, contentKind) || other.contentKind == contentKind)&&(identical(other.assetId, assetId) || other.assetId == assetId)&&(identical(other.text, text) || other.text == text)&&(identical(other.color, color) || other.color == color)&&(identical(other.textStyle, textStyle) || other.textStyle == textStyle)&&(identical(other.anchor, anchor) || other.anchor == anchor)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.opacity, opacity) || other.opacity == opacity)&&(identical(other.rotation, rotation) || other.rotation == rotation)&&(identical(other.zIndex, zIndex) || other.zIndex == zIndex)&&(identical(other.boundObjectId, boundObjectId) || other.boundObjectId == boundObjectId)&&(identical(other.fadeIn, fadeIn) || other.fadeIn == fadeIn)&&(identical(other.fadeOut, fadeOut) || other.fadeOut == fadeOut)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.videoFallbackDuration, videoFallbackDuration) || other.videoFallbackDuration == videoFallbackDuration)&&(identical(other.scheduleStart, scheduleStart) || other.scheduleStart == scheduleStart));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,space,contentKind,assetId,text,color,textStyle,anchor,transform,opacity,rotation,zIndex,boundObjectId,fadeIn,fadeOut,duration,videoFallbackDuration,scheduleStart);
+
+@override
+String toString() {
+  return 'StudioEvent.overlayShow(id: $id, space: $space, contentKind: $contentKind, assetId: $assetId, text: $text, color: $color, textStyle: $textStyle, anchor: $anchor, transform: $transform, opacity: $opacity, rotation: $rotation, zIndex: $zIndex, boundObjectId: $boundObjectId, fadeIn: $fadeIn, fadeOut: $fadeOut, duration: $duration, videoFallbackDuration: $videoFallbackDuration, scheduleStart: $scheduleStart)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $OverlayShowEventCopyWith<$Res> implements $StudioEventCopyWith<$Res> {
+  factory $OverlayShowEventCopyWith(OverlayShowEvent value, $Res Function(OverlayShowEvent) _then) = _$OverlayShowEventCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, OverlaySpace space, OverlayContentKind contentKind, String? assetId, String? text, String color, OverlayTextStyle textStyle, OverlayAnchor anchor, Transform2D transform, double opacity, double rotation, int zIndex, String? boundObjectId, double fadeIn, double fadeOut, double duration, double videoFallbackDuration, double scheduleStart
+});
+
+
+$OverlayTextStyleCopyWith<$Res> get textStyle;$Transform2DCopyWith<$Res> get transform;
+
+}
+/// @nodoc
+class _$OverlayShowEventCopyWithImpl<$Res>
+    implements $OverlayShowEventCopyWith<$Res> {
+  _$OverlayShowEventCopyWithImpl(this._self, this._then);
+
+  final OverlayShowEvent _self;
+  final $Res Function(OverlayShowEvent) _then;
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? space = null,Object? contentKind = null,Object? assetId = freezed,Object? text = freezed,Object? color = null,Object? textStyle = null,Object? anchor = null,Object? transform = null,Object? opacity = null,Object? rotation = null,Object? zIndex = null,Object? boundObjectId = freezed,Object? fadeIn = null,Object? fadeOut = null,Object? duration = null,Object? videoFallbackDuration = null,Object? scheduleStart = null,}) {
+  return _then(OverlayShowEvent(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,space: null == space ? _self.space : space // ignore: cast_nullable_to_non_nullable
+as OverlaySpace,contentKind: null == contentKind ? _self.contentKind : contentKind // ignore: cast_nullable_to_non_nullable
+as OverlayContentKind,assetId: freezed == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
+as String?,text: freezed == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String?,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
+as String,textStyle: null == textStyle ? _self.textStyle : textStyle // ignore: cast_nullable_to_non_nullable
+as OverlayTextStyle,anchor: null == anchor ? _self.anchor : anchor // ignore: cast_nullable_to_non_nullable
+as OverlayAnchor,transform: null == transform ? _self.transform : transform // ignore: cast_nullable_to_non_nullable
+as Transform2D,opacity: null == opacity ? _self.opacity : opacity // ignore: cast_nullable_to_non_nullable
+as double,rotation: null == rotation ? _self.rotation : rotation // ignore: cast_nullable_to_non_nullable
+as double,zIndex: null == zIndex ? _self.zIndex : zIndex // ignore: cast_nullable_to_non_nullable
+as int,boundObjectId: freezed == boundObjectId ? _self.boundObjectId : boundObjectId // ignore: cast_nullable_to_non_nullable
+as String?,fadeIn: null == fadeIn ? _self.fadeIn : fadeIn // ignore: cast_nullable_to_non_nullable
+as double,fadeOut: null == fadeOut ? _self.fadeOut : fadeOut // ignore: cast_nullable_to_non_nullable
+as double,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as double,videoFallbackDuration: null == videoFallbackDuration ? _self.videoFallbackDuration : videoFallbackDuration // ignore: cast_nullable_to_non_nullable
+as double,scheduleStart: null == scheduleStart ? _self.scheduleStart : scheduleStart // ignore: cast_nullable_to_non_nullable
+as double,
+  ));
+}
+
+/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$OverlayTextStyleCopyWith<$Res> get textStyle {
+  
+  return $OverlayTextStyleCopyWith<$Res>(_self.textStyle, (value) {
+    return _then(_self.copyWith(textStyle: value));
+  });
+}/// Create a copy of StudioEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$Transform2DCopyWith<$Res> get transform {
+  
+  return $Transform2DCopyWith<$Res>(_self.transform, (value) {
+    return _then(_self.copyWith(transform: value));
+  });
+}
 }
 
 CameraPolicy _$CameraPolicyFromJson(

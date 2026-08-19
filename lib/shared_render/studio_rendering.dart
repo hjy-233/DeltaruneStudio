@@ -73,54 +73,137 @@ String? imageAssetIdForObject({
       if (character == null) {
         return null;
       }
-      final expressionId =
-          runtimeObject?.expressionId ?? value.initialExpression;
-      final expression = character.expressions
-          .where((expression) => expression.id == expressionId)
-          .firstOrNull;
-      final expressionFrames = <String>[];
-      if (expression != null) {
-        expressionFrames.addAll(expression.assetIds);
-        if ((expression.assetId ?? '').isNotEmpty) {
-          expressionFrames.add(expression.assetId!);
-        }
+      final expressionAssetId = _expressionAssetIdForCharacter(
+        character: character,
+        expressionId: runtimeObject?.expressionId ?? value.initialExpression,
+        currentTime: currentTime,
+      );
+      if (runtimeObject?.expressionOverrideActive == true &&
+          expressionAssetId != null) {
+        return expressionAssetId;
       }
-      if (expressionFrames.isNotEmpty) {
-        if (expressionFrames.length == 1) {
-          return expressionFrames.first;
-        }
-        final fps = expression!.framesPerSecond <= 0
-            ? 6.0
-            : expression.framesPerSecond;
-        final frame = (currentTime * fps).floor();
-        final frameIndex = expression.loop
-            ? frame % expressionFrames.length
-            : frame.clamp(0, expressionFrames.length - 1);
-        return expressionFrames[frameIndex];
-      }
-      if (character.animations.isEmpty) {
-        return null;
+      if ((runtimeObject?.movementPoseAssetId ?? '').isNotEmpty) {
+        return runtimeObject!.movementPoseAssetId;
       }
       final facing = runtimeObject?.facing ?? value.facing;
-      final facingFrames = character.animations
-          .where((animation) => animation.direction == facing)
-          .toList();
-      final neutralFrames = character.animations
-          .where((animation) => animation.direction == null)
-          .toList();
-      final frames = facingFrames.isNotEmpty
-          ? facingFrames
-          : neutralFrames.isNotEmpty
-          ? neutralFrames
-          : character.animations;
-      if (frames.length == 1 || runtimeObject?.isMoving == false) {
+      final movementAssetId = movementAssetIdForCharacter(
+        character: character,
+        facing: facing,
+        isMoving: runtimeObject?.isMoving ?? false,
+        currentTime: currentTime,
+      );
+      if (movementAssetId != null) {
+        return movementAssetId;
+      }
+      if (expressionAssetId != null) {
+        return expressionAssetId;
+      }
+      final frames = _animationFramesForFacing(character, facing);
+      if (frames.isEmpty) {
+        return null;
+      }
+      if (frames.length == 1) {
         return frames.first.assetId;
       }
-      final frameIndex = ((currentTime / 0.22).floor()) % frames.length;
+      final frameIndex = _frameIndex(
+        currentTime: currentTime,
+        framesPerSecond: 1 / 0.22,
+        frameCount: frames.length,
+      );
       return frames[frameIndex].assetId;
     },
     orElse: () => null,
   );
+}
+
+String? _expressionAssetIdForCharacter({
+  required Character character,
+  required String? expressionId,
+  required double currentTime,
+}) {
+  final expression = character.expressions
+      .where((expression) => expression.id == expressionId)
+      .firstOrNull;
+  final expressionFrames = <String>[];
+  if (expression != null) {
+    expressionFrames.addAll(expression.assetIds);
+    if ((expression.assetId ?? '').isNotEmpty) {
+      expressionFrames.add(expression.assetId!);
+    }
+  }
+  if (expressionFrames.isEmpty) {
+    return null;
+  }
+  if (expressionFrames.length == 1) {
+    return expressionFrames.first;
+  }
+  final frameIndex = _frameIndex(
+    currentTime: currentTime,
+    framesPerSecond: expression!.framesPerSecond,
+    frameCount: expressionFrames.length,
+    loop: expression.loop,
+  );
+  return expressionFrames[frameIndex];
+}
+
+String? movementAssetIdForCharacter({
+  required Character character,
+  required Direction facing,
+  required bool isMoving,
+  required double currentTime,
+}) {
+  if (!isMoving) {
+    return null;
+  }
+  final frames = _animationFramesForFacing(character, facing);
+  if (frames.isEmpty) {
+    return null;
+  }
+  if (frames.length == 1) {
+    return frames.first.assetId;
+  }
+  final frameIndex = _frameIndex(
+    currentTime: currentTime,
+    framesPerSecond: 1 / 0.22,
+    frameCount: frames.length,
+  );
+  return frames[frameIndex].assetId;
+}
+
+String? standingMovementAssetIdForCharacter({
+  required Character character,
+  required Direction facing,
+}) {
+  final frames = _animationFramesForFacing(character, facing);
+  return frames.isEmpty ? null : frames.first.assetId;
+}
+
+List<AnimationClip> _animationFramesForFacing(
+  Character character,
+  Direction facing,
+) {
+  final facingFrames = character.animations
+      .where((animation) => animation.direction == facing)
+      .toList();
+  final neutralFrames = character.animations
+      .where((animation) => animation.direction == null)
+      .toList();
+  return facingFrames.isNotEmpty
+      ? facingFrames
+      : neutralFrames.isNotEmpty
+      ? neutralFrames
+      : character.animations;
+}
+
+int _frameIndex({
+  required double currentTime,
+  required double framesPerSecond,
+  required int frameCount,
+  bool loop = true,
+}) {
+  final fps = framesPerSecond <= 0 ? 6.0 : framesPerSecond;
+  final frame = (currentTime * fps).floor();
+  return loop ? frame % frameCount : frame.clamp(0, frameCount - 1);
 }
 
 extension _FirstOrNull<T> on Iterable<T> {

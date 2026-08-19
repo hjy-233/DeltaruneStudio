@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:deltarune_studio/domain/studio_models.dart';
 import 'package:deltarune_studio/project/project_repository.dart';
@@ -94,6 +95,66 @@ void main() {
     );
   });
 
+  test('migrates character events away from non-character object ids', () {
+    final project = StudioProject(
+      id: 'project_bad_move',
+      name: 'Bad Move',
+      currentSceneId: 'scene_main',
+      scenes: const [
+        Scene(
+          id: 'scene_main',
+          name: 'Main Canvas',
+          objects: [
+            SceneObject.background(
+              id: 'object_room',
+              name: 'Room',
+              assetId: 'asset_room',
+              transform: Transform2D(x: 0, y: 0, width: 640, height: 480),
+            ),
+            SceneObject.characterInstance(
+              id: 'object_ralsei',
+              name: 'Ralsei',
+              characterId: 'character_ralsei',
+              transform: Transform2D(x: 120, y: 180),
+              facing: Direction.down,
+            ),
+          ],
+          triggers: [],
+          eventChains: [
+            EventChain(
+              id: 'chain_move',
+              name: 'Move',
+              events: [
+                StudioEvent.characterMove(
+                  id: 'event_move',
+                  characterObjectId: 'object_room',
+                  path: MovementPath(
+                    nodes: [
+                      PathNode(id: 'node_start', x: 0, y: 0),
+                      PathNode(id: 'node_end', x: 100, y: 0),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+          interestPoints: [],
+          cameraPolicy: CameraPolicy.focus(
+            target: FocusTarget.point(x: 0, y: 0),
+          ),
+        ),
+      ],
+      characters: const [],
+      assets: const [],
+    );
+
+    final migrated = ProjectRepository().migrateProjectForOpen(project);
+    final event = migrated.scenes.single.eventChains.single.events.single;
+
+    expect(event, isA<CharacterMoveEvent>());
+    expect((event as CharacterMoveEvent).characterObjectId, 'object_ralsei');
+  });
+
   test('video event serializes and contributes timeline duration', () {
     const video = StudioEvent.videoPlay(
       id: 'event_video',
@@ -135,5 +196,29 @@ void main() {
     final plan = TimelinePlan(project: project, scene: scene, chain: null);
     expect(plan.duration, closeTo(4.5, 0.001));
     expect(plan.evaluate(1).activeVideo?.assetId, 'asset_video');
+  });
+
+  test('asset byte import can preserve a known asset id', () async {
+    final directory = await Directory.systemTemp.createTemp('drs_repo_test_');
+    addTearDown(() async {
+      if (await directory.exists()) {
+        await directory.delete(recursive: true);
+      }
+    });
+
+    final asset = await ProjectRepository().importAssetBytes(
+      projectDirectory: directory,
+      bytes: [1, 2, 3],
+      kind: AssetKind.character,
+      originalName: 'kris.png',
+      id: 'asset_kris',
+    );
+
+    expect(asset.id, 'asset_kris');
+    expect(asset.relativePath, contains('asset_kris_kris.png'));
+    expect(
+      await File('${directory.path}/${asset.relativePath}').exists(),
+      isTrue,
+    );
   });
 }

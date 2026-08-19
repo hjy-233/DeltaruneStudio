@@ -327,11 +327,20 @@ class _WorkspaceBodyState extends ConsumerState<_WorkspaceBody> {
           height: _bottomHeight,
           child: EventChainPanel(
             ready: ready,
-            sampleCharacterId: ready.currentScene.objects.firstOrNullObjectId,
+            sampleCharacterId: _firstCharacterObjectId(ready.currentScene),
           ),
         ),
       ],
     );
+  }
+
+  String? _firstCharacterObjectId(Scene scene) {
+    for (final object in scene.objects) {
+      if (object is CharacterInstanceObject) {
+        return object.id;
+      }
+    }
+    return null;
   }
 
   Widget _horizontalResize(ValueChanged<double> updateWidth) {
@@ -506,16 +515,5 @@ class _ResizeHandle extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-extension on List<SceneObject> {
-  String? get firstOrNullObjectId {
-    for (final object in this) {
-      if (object is CharacterInstanceObject) {
-        return object.id;
-      }
-    }
-    return isEmpty ? null : first.objectId;
   }
 }

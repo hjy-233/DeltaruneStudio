@@ -6,9 +6,15 @@ extension StudioControllerPreferenceActions on StudioController {
     return File(p.join(settings.parent.path, 'characters.json'));
   }
 
+  Future<Directory> _characterLibraryAssetDirectory() async {
+    final settings = await _settingsFile();
+    return Directory(p.join(settings.parent.path, 'character_assets'));
+  }
+
   Future<StudioProject> _loadGlobalCharacters(
     StudioProject project, {
     bool seedIfMissing = true,
+    Directory? projectDirectory,
   }) async {
     if (project.settings.characterLibraryScope !=
         CharacterLibraryScope.global) {
@@ -19,21 +25,19 @@ extension StudioControllerPreferenceActions on StudioController {
       if (encoded != null && encoded.isNotEmpty) {
         try {
           final decoded = jsonDecode(encoded);
-          if (decoded is List) {
-            final characters = [
-              for (final item in decoded)
-                if (item is Map<String, dynamic>) Character.fromJson(item),
-            ];
-            if (characters.isNotEmpty) {
-              return project.copyWith(characters: characters);
-            }
+          final package = _decodeGlobalCharacterPackage(decoded);
+          if (package.characters.isNotEmpty) {
+            return project.copyWith(
+              characters: package.characters,
+              assets: _mergeAssets(project.assets, package.assets),
+            );
           }
         } on Object {
           return project;
         }
       }
       if (seedIfMissing) {
-        _writeWebCharacters(project.characters);
+        _writeWebCharacterPackage(project, const []);
       }
       return project;
     }
@@ -41,18 +45,20 @@ extension StudioControllerPreferenceActions on StudioController {
       final file = await _characterLibraryFile();
       if (await file.exists()) {
         final decoded = jsonDecode(await file.readAsString());
-        if (decoded is List) {
-          final characters = [
-            for (final item in decoded)
-              if (item is Map<String, dynamic>) Character.fromJson(item),
-          ];
-          if (characters.isNotEmpty) {
-            return project.copyWith(characters: characters);
-          }
+        final package = _decodeGlobalCharacterPackage(decoded);
+        if (package.characters.isNotEmpty) {
+          final importedAssets = await _importGlobalCharacterAssets(
+            package.assets,
+            projectDirectory,
+          );
+          return project.copyWith(
+            characters: package.characters,
+            assets: _mergeAssets(project.assets, importedAssets),
+          );
         }
       }
       if (seedIfMissing) {
-        await _writeGlobalCharacters(project.characters);
+        await _writeGlobalCharacterPackage(project, projectDirectory);
       }
     } on Object {
       return project;
@@ -60,40 +66,218 @@ extension StudioControllerPreferenceActions on StudioController {
     return project;
   }
 
-  Future<void> _saveGlobalCharactersIfNeeded(StudioProject project) async {
+  Future<void> _saveGlobalCharactersIfNeeded(
+    StudioProject project, {
+    Directory? projectDirectory,
+  }) async {
     if (project.settings.characterLibraryScope !=
         CharacterLibraryScope.global) {
       return;
     }
     if (kIsWeb) {
-      _writeWebCharacters(project.characters);
+      _writeWebCharacterPackage(project, _characterAssets(project));
       return;
     }
-    await _writeGlobalCharacters(project.characters);
+    await _writeGlobalCharacterPackage(project, projectDirectory);
   }
 
-  void _writeWebCharacters(List<Character> characters) {
+  void _writeWebCharacterPackage(StudioProject project, List<AssetRef> assets) {
     const encoder = JsonEncoder();
     writeWebCharacterLibraryCookie(
-      encoder.convert([for (final character in characters) character.toJson()]),
+      encoder.convert(_globalCharacterPackageJson(project.characters, assets)),
     );
   }
 
-  Future<void> _writeGlobalCharacters(List<Character> characters) async {
+  Future<void> _writeGlobalCharacterPackage(
+    StudioProject project,
+    Directory? projectDirectory,
+  ) async {
     final file = await _characterLibraryFile();
+    final assets = await _copyCharacterAssetsToGlobalLibrary(
+      project,
+      projectDirectory,
+    );
     const encoder = JsonEncoder.withIndent('  ');
     await file.writeAsString(
-      encoder.convert([for (final character in characters) character.toJson()]),
+      encoder.convert(_globalCharacterPackageJson(project.characters, assets)),
       flush: true,
     );
   }
 
-  Future<Directory> _defaultProjectDir() async {
-    final home = Platform.environment['HOME'];
-    final basePath = home == null || home.isEmpty
-        ? Directory.current.path
-        : p.join(home, 'Documents');
-    return Directory(p.join(basePath, 'Deltarune Studio', 'Demo.drs'));
+  Map<String, Object?> _globalCharacterPackageJson(
+    List<Character> characters,
+    List<AssetRef> assets,
+  ) {
+    return {
+      'version': 2,
+      'characters': [for (final character in characters) character.toJson()],
+      'assets': [for (final asset in assets) asset.toJson()],
+    };
+  }
+
+  ({List<Character> characters, List<AssetRef> assets})
+  _decodeGlobalCharacterPackage(Object? decoded) {
+    if (decoded is List) {
+      return (
+        characters: [
+          for (final item in decoded)
+            if (item is Map<String, dynamic>) Character.fromJson(item),
+        ],
+        assets: const <AssetRef>[],
+      );
+    }
+    if (decoded is Map<String, dynamic>) {
+      final rawCharacters = decoded['characters'];
+      final rawAssets = decoded['assets'];
+      return (
+        characters: [
+          if (rawCharacters is List)
+            for (final item in rawCharacters)
+              if (item is Map<String, dynamic>) Character.fromJson(item),
+        ],
+        assets: [
+          if (rawAssets is List)
+            for (final item in rawAssets)
+              if (item is Map<String, dynamic>) AssetRef.fromJson(item),
+        ],
+      );
+    }
+    return (characters: const <Character>[], assets: const <AssetRef>[]);
+  }
+
+  List<AssetRef> _characterAssets(StudioProject project) {
+    final ids = _characterAssetIds(project.characters);
+    return [
+      for (final asset in project.assets)
+        if (ids.contains(asset.id)) asset,
+    ];
+  }
+
+  Set<String> _characterAssetIds(List<Character> characters) {
+    return {
+      for (final character in characters)
+        for (final animation in character.animations)
+          if (animation.assetId.isNotEmpty) animation.assetId,
+      for (final character in characters)
+        for (final expression in character.expressions) ...[
+          if (expression.assetId != null && expression.assetId!.isNotEmpty)
+            expression.assetId!,
+          ...expression.assetIds.where((id) => id.isNotEmpty),
+        ],
+    };
+  }
+
+  List<AssetRef> _mergeAssets(
+    List<AssetRef> existing,
+    List<AssetRef> incoming,
+  ) {
+    final seen = {for (final asset in existing) asset.id};
+    return [
+      ...existing,
+      for (final asset in incoming)
+        if (seen.add(asset.id)) asset,
+    ];
+  }
+
+  Future<List<AssetRef>> _copyCharacterAssetsToGlobalLibrary(
+    StudioProject project,
+    Directory? projectDirectory,
+  ) async {
+    final assets = _characterAssets(project);
+    if (projectDirectory == null) {
+      return [
+        for (final asset in assets)
+          if (asset.dataUri != null && asset.dataUri!.isNotEmpty) asset,
+      ];
+    }
+    final directory = await _characterLibraryAssetDirectory();
+    await directory.create(recursive: true);
+    final copied = <AssetRef>[];
+    for (final asset in assets) {
+      final dataUri = asset.dataUri;
+      if (dataUri != null && dataUri.isNotEmpty) {
+        copied.add(asset);
+        continue;
+      }
+      final source = File(p.join(projectDirectory.path, asset.relativePath));
+      if (!await source.exists()) {
+        continue;
+      }
+      final targetPath = p.join(
+        directory.path,
+        '${asset.id}_${asset.originalName}',
+      );
+      await source.copy(targetPath);
+      copied.add(
+        asset.copyWith(
+          relativePath: p.relative(targetPath, from: directory.path),
+          dataUri: null,
+        ),
+      );
+    }
+    return copied;
+  }
+
+  Future<List<AssetRef>> _importGlobalCharacterAssets(
+    List<AssetRef> assets,
+    Directory? projectDirectory,
+  ) async {
+    if (kIsWeb || projectDirectory == null) {
+      return assets;
+    }
+    final globalDirectory = await _characterLibraryAssetDirectory();
+    final imported = <AssetRef>[];
+    for (final asset in assets) {
+      if (asset.dataUri != null && asset.dataUri!.isNotEmpty) {
+        imported.add(asset);
+        continue;
+      }
+      final source = File(p.join(globalDirectory.path, asset.relativePath));
+      if (!await source.exists()) {
+        continue;
+      }
+      final target = await _repository.importAssetBytes(
+        projectDirectory: projectDirectory,
+        bytes: await source.readAsBytes(),
+        kind: asset.kind,
+        originalName: asset.originalName,
+        id: asset.id,
+      );
+      imported.add(target);
+    }
+    return imported;
+  }
+
+  Future<StudioProject> _materializeDataUriAssets(
+    StudioProject project,
+    Directory directory,
+  ) async {
+    final assets = <AssetRef>[];
+    for (final asset in project.assets) {
+      final dataUri = asset.dataUri;
+      if (dataUri == null || dataUri.isEmpty) {
+        assets.add(asset);
+        continue;
+      }
+      final bytes = _bytesFromDataUri(dataUri);
+      final materialized = await _repository.importAssetBytes(
+        projectDirectory: directory,
+        bytes: bytes,
+        kind: asset.kind,
+        originalName: asset.originalName,
+        id: asset.id,
+      );
+      assets.add(materialized);
+    }
+    return project.copyWith(assets: assets);
+  }
+
+  List<int> _bytesFromDataUri(String dataUri) {
+    final comma = dataUri.indexOf(',');
+    if (comma < 0) {
+      return const [];
+    }
+    return base64Decode(dataUri.substring(comma + 1));
   }
 
   Future<File> _settingsFile() async {

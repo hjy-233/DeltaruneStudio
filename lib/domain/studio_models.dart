@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'overlay_models.dart';
 
 part 'studio_models.freezed.dart';
 part 'studio_models.g.dart';
@@ -460,6 +461,29 @@ sealed class StudioEvent with _$StudioEvent {
     @Default(0) double scheduleStart,
   }) = VideoPlayEvent;
 
+  @FreezedUnionValue('overlay.show')
+  const factory StudioEvent.overlayShow({
+    required String id,
+    @Default(OverlaySpace.camera) OverlaySpace space,
+    @Default(OverlayContentKind.image) OverlayContentKind contentKind,
+    String? assetId,
+    String? text,
+    @Default('#FFFFFFFF') String color,
+    @Default(OverlayTextStyle()) OverlayTextStyle textStyle,
+    @Default(OverlayAnchor.center) OverlayAnchor anchor,
+    @Default(Transform2D(x: 0, y: 0, width: 160, height: 90))
+    Transform2D transform,
+    @Default(1) double opacity,
+    @Default(0) double rotation,
+    @Default(0) int zIndex,
+    String? boundObjectId,
+    @Default(0) double fadeIn,
+    @Default(0) double fadeOut,
+    @Default(2) double duration,
+    @Default(3) double videoFallbackDuration,
+    @Default(0) double scheduleStart,
+  }) = OverlayShowEvent;
+
   String get eventId => map(
     characterMove: (value) => value.id,
     characterWait: (value) => value.id,
@@ -474,6 +498,7 @@ sealed class StudioEvent with _$StudioEvent {
     audioPlayBgm: (value) => value.id,
     audioPlaySound: (value) => value.id,
     videoPlay: (value) => value.id,
+    overlayShow: (value) => value.id,
   );
 
   double get eventScheduleStart => map(
@@ -490,6 +515,7 @@ sealed class StudioEvent with _$StudioEvent {
     audioPlayBgm: (value) => value.scheduleStart,
     audioPlaySound: (value) => value.scheduleStart,
     videoPlay: (value) => value.scheduleStart,
+    overlayShow: (value) => value.scheduleStart,
   );
 
   StudioEvent withScheduleStart(double startTime) => map(
@@ -507,6 +533,7 @@ sealed class StudioEvent with _$StudioEvent {
     audioPlayBgm: (value) => value.copyWith(scheduleStart: startTime),
     audioPlaySound: (value) => value.copyWith(scheduleStart: startTime),
     videoPlay: (value) => value.copyWith(scheduleStart: startTime),
+    overlayShow: (value) => value.copyWith(scheduleStart: startTime),
   );
 
   factory StudioEvent.fromJson(Map<String, dynamic> json) =>

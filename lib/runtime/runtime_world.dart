@@ -18,6 +18,7 @@ final class RuntimeWorld {
     this.cameraFocusTarget,
     this.followStates = const {},
     this.teleportedFollowerIds = const {},
+    this.overlays = const {},
   });
 
   final StudioProject project;
@@ -36,6 +37,7 @@ final class RuntimeWorld {
   final FocusTarget? cameraFocusTarget;
   final Map<String, CharacterFollowState> followStates;
   final Set<String> teleportedFollowerIds;
+  final Map<String, RuntimeOverlay> overlays;
 
   RuntimeWorld copyWith({
     StudioProject? project,
@@ -60,6 +62,8 @@ final class RuntimeWorld {
     bool clearAudioEvents = false,
     bool clearActiveVideo = false,
     bool clearCameraFocus = false,
+    Map<String, RuntimeOverlay>? overlays,
+    bool clearOverlays = false,
   }) {
     return RuntimeWorld(
       project: project ?? this.project,
@@ -85,6 +89,7 @@ final class RuntimeWorld {
       followStates: followStates ?? this.followStates,
       teleportedFollowerIds:
           teleportedFollowerIds ?? this.teleportedFollowerIds,
+      overlays: clearOverlays ? const {} : overlays ?? this.overlays,
     );
   }
 
@@ -108,6 +113,22 @@ final class RuntimeWorld {
       },
     );
   }
+}
+
+final class RuntimeOverlay {
+  const RuntimeOverlay({
+    required this.event,
+    required this.localTime,
+    required this.duration,
+    required this.opacity,
+    required this.transform,
+  });
+
+  final OverlayShowEvent event;
+  final double localTime;
+  final double duration;
+  final double opacity;
+  final Transform2D transform;
 }
 
 final class CharacterFollowState {
@@ -141,12 +162,14 @@ final class DialogueBoxState {
     this.portraitAssetId,
     this.textSoundAssetId,
     this.visibleCharacters,
+    this.expiresAt,
   });
   final String text;
   final DialogueStyle style;
   final String? portraitAssetId;
   final String? textSoundAssetId;
   final int? visibleCharacters;
+  final double? expiresAt;
 }
 
 final class RuntimeObject {
@@ -155,14 +178,18 @@ final class RuntimeObject {
     required this.transform,
     required this.facing,
     this.expressionId,
+    this.expressionOverrideActive = false,
     this.isMoving = false,
+    this.movementPoseAssetId,
   });
 
   final SceneObject source;
   final Transform2D transform;
   final Direction facing;
   final String? expressionId;
+  final bool expressionOverrideActive;
   final bool isMoving;
+  final String? movementPoseAssetId;
 
   factory RuntimeObject.fromSceneObject(SceneObject source) {
     return RuntimeObject(
@@ -183,14 +210,22 @@ final class RuntimeObject {
     Transform2D? transform,
     Direction? facing,
     String? expressionId,
+    bool? expressionOverrideActive,
     bool? isMoving,
+    String? movementPoseAssetId,
+    bool clearMovementPose = false,
   }) {
     return RuntimeObject(
       source: source,
       transform: transform ?? this.transform,
       facing: facing ?? this.facing,
       expressionId: expressionId ?? this.expressionId,
+      expressionOverrideActive:
+          expressionOverrideActive ?? this.expressionOverrideActive,
       isMoving: isMoving ?? this.isMoving,
+      movementPoseAssetId: clearMovementPose
+          ? null
+          : movementPoseAssetId ?? this.movementPoseAssetId,
     );
   }
 }

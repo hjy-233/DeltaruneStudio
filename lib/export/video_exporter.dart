@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/domain/overlay_models.dart';
 import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
@@ -332,6 +333,8 @@ final class VideoExporter {
     }
     canvas.restore();
 
+    await _drawOverlays(canvas, ready, world, size);
+
     if (world.activeVideo != null) {
       canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
     }
@@ -351,6 +354,157 @@ final class VideoExporter {
     picture.dispose();
     image.dispose();
     return data!.buffer.asUint8List();
+  }
+
+  Future<void> _drawOverlays(
+    Canvas canvas,
+    StudioReady ready,
+    RuntimeWorld world,
+    Size size,
+  ) async {
+    final overlays = world.overlays.values.toList()
+      ..sort((a, b) => a.event.zIndex.compareTo(b.event.zIndex));
+    for (final overlay in overlays) {
+      if (overlay.event.contentKind == OverlayContentKind.video) {
+        continue;
+      }
+      final transform = overlay.transform;
+      final rect = _overlayRect(overlay, transform, size);
+      if (rect == null) {
+        continue;
+      }
+      final paint = Paint()
+        ..color = Colors.white.withValues(alpha: overlay.opacity);
+      switch (overlay.event.contentKind) {
+        case OverlayContentKind.color:
+          canvas.drawRect(
+            rect,
+            paint..color = _parseColor(overlay.event.color, overlay.opacity),
+          );
+        case OverlayContentKind.image:
+          final image = await _imageForOverlay(ready, overlay.event.assetId);
+          if (image != null) {
+            canvas.drawImageRect(
+              image,
+              Rect.fromLTWH(
+                0,
+                0,
+                image.width.toDouble(),
+                image.height.toDouble(),
+              ),
+              rect,
+              paint..filterQuality = FilterQuality.none,
+            );
+          }
+        case OverlayContentKind.text:
+          _drawOverlayText(canvas, overlay, rect);
+        case OverlayContentKind.video:
+          break;
+      }
+    }
+  }
+
+  Rect? _overlayRect(RuntimeOverlay overlay, Transform2D transform, Size size) {
+    if (overlay.event.space == OverlaySpace.fullscreen) {
+      return Offset.zero & size;
+    }
+    final width = transform.width * transform.scale;
+    final height = transform.height * transform.scale;
+    if (overlay.event.space == OverlaySpace.world) {
+      return Rect.fromLTWH(transform.x, transform.y, width, height);
+    }
+    final anchor = _anchorOffset(
+      overlay.event.anchor,
+      size,
+      Size(width, height),
+    );
+    return Rect.fromLTWH(
+      anchor.dx + transform.x,
+      anchor.dy + transform.y,
+      width,
+      height,
+    );
+  }
+
+  Offset _anchorOffset(OverlayAnchor anchor, Size canvasSize, Size itemSize) {
+    final x = switch (anchor) {
+      OverlayAnchor.topLeft ||
+      OverlayAnchor.centerLeft ||
+      OverlayAnchor.bottomLeft => 0.0,
+      OverlayAnchor.topCenter ||
+      OverlayAnchor.center ||
+      OverlayAnchor.bottomCenter => (canvasSize.width - itemSize.width) / 2,
+      OverlayAnchor.topRight ||
+      OverlayAnchor.centerRight ||
+      OverlayAnchor.bottomRight => canvasSize.width - itemSize.width,
+    };
+    final y = switch (anchor) {
+      OverlayAnchor.topLeft ||
+      OverlayAnchor.topCenter ||
+      OverlayAnchor.topRight => 0.0,
+      OverlayAnchor.centerLeft ||
+      OverlayAnchor.center ||
+      OverlayAnchor.centerRight => (canvasSize.height - itemSize.height) / 2,
+      OverlayAnchor.bottomLeft ||
+      OverlayAnchor.bottomCenter ||
+      OverlayAnchor.bottomRight => canvasSize.height - itemSize.height,
+    };
+    return Offset(x, y);
+  }
+
+  void _drawOverlayText(Canvas canvas, RuntimeOverlay overlay, Rect rect) {
+    final style = overlay.event.textStyle;
+    final paragraph =
+        ui.ParagraphBuilder(ui.ParagraphStyle(textDirection: TextDirection.ltr))
+          ..pushStyle(
+            ui.TextStyle(
+              color: _parseColor(style.color, overlay.opacity),
+              fontFamily: 'PhoenixPixel',
+              fontSize: style.fontSize,
+            ),
+          )
+          ..addText(overlay.event.text ?? '');
+    final built = paragraph.build();
+    built.layout(ui.ParagraphConstraints(width: rect.width));
+    canvas.drawParagraph(built, rect.topLeft);
+  }
+
+  Color _parseColor(String value, double opacity) {
+    final normalized = value.replaceFirst('#', '');
+    final hex = normalized.length == 6 ? 'FF$normalized' : normalized;
+    final parsed = int.tryParse(hex, radix: 16) ?? 0xFFFFFFFF;
+    final color = Color(parsed);
+    return color.withValues(alpha: color.a * opacity);
+  }
+
+  Future<ui.Image?> _imageForOverlay(StudioReady ready, String? assetId) async {
+    final asset = ready.assetById(assetId);
+    if (asset == null ||
+        asset.kind == AssetKind.audio ||
+        asset.kind == AssetKind.video) {
+      return null;
+    }
+    final cached = _imageCache[asset.id];
+    if (cached != null) {
+      return cached;
+    }
+    Uint8List? bytes;
+    if (asset.dataUri?.isNotEmpty == true) {
+      bytes = _bytesFromDataUri(asset.dataUri!);
+    } else if (ready.projectDirectory != null) {
+      final file = File(
+        p.join(ready.projectDirectory!.path, asset.relativePath),
+      );
+      if (await file.exists()) {
+        bytes = await file.readAsBytes();
+      }
+    }
+    if (bytes == null || bytes.isEmpty) {
+      return null;
+    }
+    final image = await _decodeImage(bytes);
+    _imageCache[asset.id] = image;
+    return image;
   }
 
   Offset _cameraOrigin(RuntimeWorld world, Size size) {

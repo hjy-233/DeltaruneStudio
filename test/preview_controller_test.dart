@@ -1,18 +1,226 @@
+import 'package:deltarune_studio/domain/overlay_models.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/project/studio_state.dart';
 import 'package:deltarune_studio/runtime/preview_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   _timelineTests();
   _dialogueTests();
   _followTests();
   _expressionTests();
+  _movementPoseTests();
+}
+
+void _movementPoseTests() {
+  test('character keeps the first movement frame after move ends', () {
+    const characterObjectId = 'object_ralsei';
+    final scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: const [
+        SceneObject.characterInstance(
+          id: characterObjectId,
+          name: 'Ralsei',
+          characterId: 'character_ralsei',
+          transform: Transform2D(x: 0, y: 0),
+          facing: Direction.right,
+          initialExpression: 'smile',
+        ),
+      ],
+      triggers: const [],
+      eventChains: const [
+        EventChain(
+          id: 'chain_move',
+          name: 'Move',
+          events: [
+            StudioEvent.characterMove(
+              id: 'event_move',
+              characterObjectId: characterObjectId,
+              path: MovementPath(
+                speed: 320,
+                nodes: [
+                  PathNode(id: 'node_start', x: 0, y: 0),
+                  PathNode(id: 'node_end', x: 320, y: 0),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+      interestPoints: const [],
+      cameraPolicy: CameraPolicy.focus(target: FocusTarget.point(x: 0, y: 0)),
+    );
+    final project = StudioProject(
+      schemaVersion: 4,
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [
+        Character(
+          id: 'character_ralsei',
+          name: 'Ralsei',
+          animations: [
+            AnimationClip(
+              id: 'walk_right_0',
+              name: 'Walk Right 0',
+              assetId: 'asset_walk_right_0',
+              direction: Direction.right,
+            ),
+            AnimationClip(
+              id: 'walk_right_1',
+              name: 'Walk Right 1',
+              assetId: 'asset_walk_right_1',
+              direction: Direction.right,
+            ),
+          ],
+          expressions: [
+            CharacterExpression(
+              id: 'smile',
+              name: 'Smile',
+              assetIds: ['asset_smile'],
+            ),
+          ],
+          movement: CharacterMovementProfile(),
+        ),
+      ],
+      assets: const [],
+    );
+
+    final plan = TimelinePlan(project: project, scene: scene, chain: null);
+    final world = plan.evaluate(plan.duration + 0.1);
+
+    expect(world.objects[characterObjectId]!.isMoving, isFalse);
+    expect(
+      world.objects[characterObjectId]!.movementPoseAssetId,
+      'asset_walk_right_0',
+    );
+  });
 }
 
 void _timelineTests() {
   _moveTriggerTimelineTests();
   _videoTimelineTests();
+  _overlayTimelineTests();
   _trackPositionTests();
+}
+
+void _overlayTimelineTests() {
+  test('scheduled fullscreen color overlay is visible during its interval', () {
+    const overlay = StudioEvent.overlayShow(
+      id: 'event_overlay',
+      space: OverlaySpace.fullscreen,
+      contentKind: OverlayContentKind.color,
+      color: '#CC000000',
+      opacity: 1,
+      duration: 2,
+      scheduleStart: 1.5,
+    );
+    const scene = Scene(
+      id: 'scene_main',
+      name: 'Main Canvas',
+      objects: [],
+      triggers: [],
+      eventChains: [
+        EventChain(
+          id: 'chain_overlay',
+          name: 'Overlay',
+          triggerMode: EventChainTriggerMode.scheduled,
+          events: [overlay],
+        ),
+      ],
+      interestPoints: [],
+      cameraPolicy: CameraPolicy.focus(target: FocusTarget.point(x: 0, y: 0)),
+    );
+    final project = StudioProject(
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: const [scene],
+      characters: const [],
+      assets: const [],
+    );
+    final plan = TimelinePlan(project: project, scene: scene, chain: null);
+
+    expect(plan.evaluate(1.4).overlays, isEmpty);
+    expect(plan.evaluate(1.6).overlays['event_overlay']?.opacity, 1);
+    expect(plan.evaluate(3.5).overlays, isEmpty);
+  });
+
+  test('seek rebuilds the timeline plan after overlay edits', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final controller = container.read(previewControllerProvider.notifier);
+    final grayReady = _readyWithFullscreenOverlay('#55555555');
+    final blackReady = _readyWithFullscreenOverlay('#FF000000');
+
+    controller.seek(grayReady, 1.6);
+    expect(
+      container
+          .read(previewControllerProvider)
+          .world
+          ?.overlays['event_overlay']
+          ?.event
+          .color,
+      '#55555555',
+    );
+
+    controller.seek(blackReady, 1.6);
+    expect(
+      container
+          .read(previewControllerProvider)
+          .world
+          ?.overlays['event_overlay']
+          ?.event
+          .color,
+      '#FF000000',
+    );
+  });
+}
+
+StudioReady _readyWithFullscreenOverlay(String color) {
+  final scene = Scene(
+    id: 'scene_main',
+    name: 'Main Canvas',
+    objects: const [],
+    triggers: const [],
+    eventChains: [
+      EventChain(
+        id: 'chain_overlay',
+        name: 'Overlay',
+        triggerMode: EventChainTriggerMode.scheduled,
+        events: [
+          StudioEvent.overlayShow(
+            id: 'event_overlay',
+            space: OverlaySpace.fullscreen,
+            contentKind: OverlayContentKind.color,
+            color: color,
+            opacity: 1,
+            duration: 2,
+            scheduleStart: 1.5,
+          ),
+        ],
+      ),
+    ],
+    interestPoints: const [],
+    cameraPolicy: const CameraPolicy.focus(
+      target: FocusTarget.point(x: 0, y: 0),
+    ),
+  );
+  return StudioReady(
+    project: StudioProject(
+      id: 'project_test',
+      name: 'Test',
+      currentSceneId: scene.id,
+      scenes: [scene],
+      characters: const [],
+      assets: const [],
+    ),
+    projectDirectory: null,
+  );
 }
 
 void _trackPositionTests() {
@@ -330,6 +538,18 @@ void _moveTriggerTimelineTests() {
             ],
           ),
           EventChain(
+            id: 'chain_long_tail',
+            name: 'Long Tail',
+            triggerMode: EventChainTriggerMode.scheduled,
+            events: [
+              StudioEvent.characterWait(
+                id: 'event_long_wait',
+                duration: 10,
+                scheduleStart: 0,
+              ),
+            ],
+          ),
+          EventChain(
             id: dialogueChainId,
             name: 'Dialogue',
             triggerMode: EventChainTriggerMode.triggerPoint,
@@ -402,6 +622,7 @@ void _moveTriggerTimelineTests() {
           EventChain(
             id: 'chain_walk',
             name: 'Walk',
+            triggerMode: EventChainTriggerMode.scheduled,
             events: [
               StudioEvent.characterMove(
                 id: 'event_walk',
@@ -570,8 +791,10 @@ void _videoTimelineTests() {
       expect(plan.dialogueTypeCues.first.assetId, 'asset_text_sound');
       expect(plan.dialogueTypeCues.first.time, closeTo(1 + 1 / 32, 0.001));
       expect(world.dialogue, isNotNull);
+      expect(world.dialogue!.expiresAt, closeTo(3, 0.001));
       expect(world.objects[characterObjectId]!.isMoving, isFalse);
       expect(plan.evaluate(3).dialogue, isNull);
+      expect(plan.evaluate(6).dialogue, isNull);
     },
   );
 }
@@ -975,7 +1198,11 @@ void _expressionTests() {
     );
 
     expect(plan.duration, closeTo(2, 0.001));
-    expect(plan.evaluate(0.5).objects[characterObjectId]!.expressionId, 'talk');
-    expect(plan.evaluate(1.2).objects[characterObjectId]!.expressionId, 'idle');
+    final active = plan.evaluate(0.5).objects[characterObjectId]!;
+    expect(active.expressionId, 'talk');
+    expect(active.expressionOverrideActive, isTrue);
+    final ended = plan.evaluate(1.2).objects[characterObjectId]!;
+    expect(ended.expressionId, 'idle');
+    expect(ended.expressionOverrideActive, isFalse);
   });
 }

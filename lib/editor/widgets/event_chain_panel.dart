@@ -1,5 +1,6 @@
 import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/domain/overlay_models.dart';
 import 'package:deltarune_studio/editor/editor_selection.dart';
 import 'package:deltarune_studio/editor/default_event_factories.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
@@ -71,6 +72,20 @@ class _EventChainPanelState extends ConsumerState<EventChainPanel> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.ready.project.id != widget.ready.project.id) {
       _readLayout(widget.ready.project.editorLayout);
+    }
+    if (oldWidget.ready.project != widget.ready.project) {
+      final preview = ref.read(previewControllerProvider);
+      final world = preview.world;
+      if (world != null && !preview.isPlaying) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          ref
+              .read(previewControllerProvider.notifier)
+              .seek(widget.ready, world.currentTime);
+        });
+      }
     }
   }
 

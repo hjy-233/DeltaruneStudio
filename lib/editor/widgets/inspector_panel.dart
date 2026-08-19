@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/domain/overlay_models.dart';
 import 'package:deltarune_studio/editor/default_event_factories.dart';
 import 'package:deltarune_studio/editor/editor_selection.dart';
+import 'package:deltarune_studio/editor/widgets/color_picker_field.dart';
 import 'package:deltarune_studio/editor/widgets/inspector_form_fields.dart';
 import 'package:deltarune_studio/l10n/event_labels.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
@@ -150,9 +152,7 @@ class _NoSelectionActions extends ConsumerWidget {
         return object.id;
       }
     }
-    return ready.currentScene.objects.isEmpty
-        ? null
-        : ready.currentScene.objects.first.objectId;
+    return null;
   }
 }
 
@@ -206,9 +206,7 @@ class _ObjectInspector extends ConsumerWidget {
                 ready: ready,
                 kind: AssetKind.background,
                 value: background.assetId,
-                onChanged: (assetId) => controller.updateObject(
-                  background.copyWith(assetId: assetId),
-                ),
+                onChanged: controller.applyExistingAsset,
               ),
             ],
           ),
@@ -218,8 +216,7 @@ class _ObjectInspector extends ConsumerWidget {
                 ready: ready,
                 kind: AssetKind.prop,
                 value: prop.assetId,
-                onChanged: (assetId) =>
-                    controller.updateObject(prop.copyWith(assetId: assetId)),
+                onChanged: controller.applyExistingAsset,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

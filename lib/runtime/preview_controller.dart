@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:deltarune_studio/domain/studio_models.dart';
+import 'package:deltarune_studio/domain/overlay_models.dart';
 import 'package:deltarune_studio/project/built_in_asset_library.dart';
 import 'package:deltarune_studio/project/project_controller.dart';
 import 'package:deltarune_studio/runtime/preview_audio_player.dart';
 import 'package:deltarune_studio/runtime/movement_path_geometry.dart';
 import 'package:deltarune_studio/runtime/runtime_world.dart';
+import 'package:deltarune_studio/shared_render/studio_rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'timeline_plan_builders.dart';
@@ -98,7 +100,7 @@ final class PreviewController extends StateNotifier<PreviewState> {
   }
 
   void seek(StudioReady editorState, double time) {
-    final plan = _plan ?? _planFor(editorState);
+    final plan = _planFor(editorState);
     _plan = plan;
     _timer?.cancel();
     unawaited(_audioPlayer.stopAll());
@@ -185,7 +187,10 @@ final class PreviewController extends StateNotifier<PreviewState> {
   ) {
     final dialogue = current.dialogue;
     final eventId = current.currentEventId;
-    if (dialogue == null || eventId == null) {
+    if (dialogue == null ||
+        eventId == null ||
+        (dialogue.expiresAt != null &&
+            current.currentTime >= dialogue.expiresAt!)) {
       _lastDialogueVisibleCharacters = 0;
       _lastDialogueEventId = null;
       return;
@@ -217,7 +222,10 @@ final class PreviewController extends StateNotifier<PreviewState> {
 
   void _primeDialogueTypeSound(RuntimeWorld world) {
     final dialogue = world.dialogue;
-    if (dialogue == null || world.currentEventId == null) {
+    if (dialogue == null ||
+        world.currentEventId == null ||
+        (dialogue.expiresAt != null &&
+            world.currentTime >= dialogue.expiresAt!)) {
       _lastDialogueVisibleCharacters = 0;
       _lastDialogueEventId = null;
       return;
@@ -332,6 +340,7 @@ final class TimelinePlan {
       clearActiveMove: true,
       clearAudioEvents: true,
       clearActiveVideo: true,
+      clearOverlays: true,
       teleportedFollowerIds: const {},
     );
     if (spans.isEmpty) {
@@ -367,8 +376,16 @@ final class TimelinePlan {
     if (event is VideoPlayEvent) {
       return world.copyWith(clearActiveVideo: true);
     }
+    if (event is OverlayShowEvent) {
+      final overlays = {...world.overlays}..remove(event.id);
+      return world.copyWith(overlays: overlays);
+    }
     if (event is CharacterMoveEvent && world.activeMoveEventId == event.id) {
-      return world.copyWith(clearActiveMove: true);
+      return _setMoving(
+        world.copyWith(clearActiveMove: true),
+        event.characterObjectId,
+        false,
+      );
     }
     return world;
   }
@@ -404,6 +421,7 @@ final class TimelinePlan {
         return _updateObject(world, value.characterObjectId, (object) {
           return object.copyWith(
             expressionId: value.expressionId,
+            expressionOverrideActive: true,
             isMoving: false,
           );
         }).copyWith(currentEventId: value.id);
@@ -434,6 +452,7 @@ final class TimelinePlan {
             value.text,
             localTime,
           ),
+          expiresAt: world.currentTime + math.max(0, eventDuration - localTime),
         ),
       ),
       videoPlay: (value) => world.copyWith(
@@ -445,6 +464,29 @@ final class TimelinePlan {
           duration: eventDuration,
         ),
       ),
+      overlayShow: (value) {
+        final fadeInProgress = value.fadeIn <= 0
+            ? 1.0
+            : (localTime / value.fadeIn).clamp(0.0, 1.0);
+        final remaining = eventDuration - localTime;
+        final fadeOutProgress = value.fadeOut <= 0
+            ? 1.0
+            : (remaining / value.fadeOut).clamp(0.0, 1.0);
+        final transform = _overlayTransform(world, value);
+        return world.copyWith(
+          currentEventId: value.id,
+          overlays: {
+            ...world.overlays,
+            value.id: RuntimeOverlay(
+              event: value,
+              localTime: localTime,
+              duration: eventDuration,
+              opacity: value.opacity * fadeInProgress * fadeOutProgress,
+              transform: transform,
+            ),
+          },
+        );
+      },
       cameraFollow: (value) => world.copyWith(
         currentEventId: value.id,
         cameraFollowObjectId: value.targetObjectId,
@@ -470,6 +512,20 @@ final class TimelinePlan {
         currentEventId: value.id,
         audioEventIds: [...world.audioEventIds, value.id],
       ),
+    );
+  }
+
+  Transform2D _overlayTransform(RuntimeWorld world, OverlayShowEvent event) {
+    if (event.boundObjectId == null || event.space != OverlaySpace.world) {
+      return event.transform;
+    }
+    final bound = world.objects[event.boundObjectId!];
+    if (bound == null) {
+      return event.transform;
+    }
+    return event.transform.copyWith(
+      x: bound.transform.x + event.transform.x,
+      y: bound.transform.y + event.transform.y,
     );
   }
 
@@ -751,6 +807,12 @@ final class TimelinePlan {
             facing: facing,
             transform: object.transform.copyWith(x: x, y: y),
             isMoving: isMoving,
+            movementPoseAssetId: _movementPoseAssetId(
+              object,
+              facing,
+              isMoving,
+              world.currentTime,
+            ),
           );
         }).copyWith(
           currentEventId: event.id,
@@ -768,7 +830,17 @@ final class TimelinePlan {
 
   RuntimeWorld _setMoving(RuntimeWorld world, String objectId, bool isMoving) {
     return _updateObject(world, objectId, (object) {
-      return object.copyWith(isMoving: isMoving);
+      return object.copyWith(
+        isMoving: isMoving,
+        movementPoseAssetId: isMoving
+            ? object.movementPoseAssetId
+            : _movementPoseAssetId(
+                object,
+                object.facing,
+                false,
+                world.currentTime,
+              ),
+      );
     });
   }
 
@@ -829,10 +901,58 @@ final class TimelinePlan {
           transform: object.transform.copyWith(x: position.x, y: position.y),
           facing: position.direction,
           isMoving: position.isMoving,
+          movementPoseAssetId: _movementPoseAssetId(
+            object,
+            position.direction,
+            position.isMoving,
+            world.currentTime,
+          ),
         );
       });
     }
     return current;
+  }
+
+  String? _movementPoseAssetId(
+    RuntimeObject object,
+    Direction facing,
+    bool isMoving,
+    double currentTime,
+  ) {
+    final character = _characterForRuntimeObject(object);
+    if (character == null) {
+      return object.movementPoseAssetId;
+    }
+    if (!isMoving) {
+      return standingMovementAssetIdForCharacter(
+            character: character,
+            facing: facing,
+          ) ??
+          object.movementPoseAssetId;
+    }
+    return movementAssetIdForCharacter(
+          character: character,
+          facing: facing,
+          isMoving: isMoving,
+          currentTime: currentTime,
+        ) ??
+        object.movementPoseAssetId;
+  }
+
+  Character? _characterForRuntimeObject(RuntimeObject object) {
+    final characterId = object.source.maybeMap(
+      characterInstance: (value) => value.characterId,
+      orElse: () => null,
+    );
+    if (characterId == null) {
+      return null;
+    }
+    for (final character in project.characters) {
+      if (character.id == characterId) {
+        return character;
+      }
+    }
+    return null;
   }
 
   FollowPosition? _followPositionForPath(

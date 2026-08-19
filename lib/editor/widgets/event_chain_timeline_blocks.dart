@@ -286,6 +286,9 @@ double _timelineEventDuration(
     audioPlayBgm: (_) => 0.1,
     audioPlaySound: (_) => 0.1,
     videoPlay: (value) => value.duration,
+    overlayShow: (value) => value.contentKind == OverlayContentKind.video
+        ? value.videoFallbackDuration
+        : value.duration,
   );
 }
 
@@ -317,6 +320,7 @@ String _eventTitle(
         '${l10n.playSound}: ${_assetName(project, value.assetId)}',
     videoPlay: (value) =>
         '${l10n.playVideo}: ${_assetName(project, value.assetId)}',
+    overlayShow: (value) => _overlayTitle(value),
   );
 }
 
@@ -346,6 +350,7 @@ String _eventDetails(
     audioPlayBgm: (value) => _assetName(project, value.assetId),
     audioPlaySound: (value) => _assetName(project, value.assetId),
     videoPlay: (value) => _assetName(project, value.assetId),
+    overlayShow: (value) => _overlayTitle(value),
   );
   return '$details  $interval';
 }
@@ -412,6 +417,7 @@ Color _eventColor(StudioEvent event) {
     audioPlayBgm: (_) => Colors.pink.shade600,
     audioPlaySound: (_) => Colors.pink.shade400,
     videoPlay: (_) => Colors.red.shade700,
+    overlayShow: (_) => Colors.cyan.shade700,
   );
 }
 
@@ -511,6 +517,10 @@ class _AddEventMenu extends StatelessWidget {
           value: StudioEvent.videoPlay(id: StudioIds.event(), assetId: ''),
           child: Text(l10n.playVideo),
         ),
+        PopupMenuItem(
+          value: StudioEvent.overlayShow(id: StudioIds.event()),
+          child: const Text('Overlay'),
+        ),
       ],
       child: compact
           ? const Icon(Icons.add, size: 24)
@@ -556,4 +566,14 @@ class _AddEventMenu extends StatelessWidget {
             ),
     );
   }
+}
+
+String _overlayTitle(OverlayShowEvent event) {
+  return switch (event.contentKind) {
+    OverlayContentKind.image => 'Image overlay',
+    OverlayContentKind.video => 'Video overlay',
+    OverlayContentKind.text =>
+      event.text?.isNotEmpty == true ? 'Text: ${event.text}' : 'Text overlay',
+    OverlayContentKind.color => 'Color overlay',
+  };
 }

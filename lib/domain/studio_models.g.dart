@@ -835,6 +835,89 @@ Map<String, dynamic> _$VideoPlayEventToJson(VideoPlayEvent instance) =>
 
 const _$VideoFitModeEnumMap = {VideoFitMode.contain: 'contain'};
 
+OverlayShowEvent _$OverlayShowEventFromJson(
+  Map<String, dynamic> json,
+) => OverlayShowEvent(
+  id: json['id'] as String,
+  space:
+      $enumDecodeNullable(_$OverlaySpaceEnumMap, json['space']) ??
+      OverlaySpace.camera,
+  contentKind:
+      $enumDecodeNullable(_$OverlayContentKindEnumMap, json['contentKind']) ??
+      OverlayContentKind.image,
+  assetId: json['assetId'] as String?,
+  text: json['text'] as String?,
+  color: json['color'] as String? ?? '#FFFFFFFF',
+  textStyle: json['textStyle'] == null
+      ? const OverlayTextStyle()
+      : OverlayTextStyle.fromJson(json['textStyle'] as Map<String, dynamic>),
+  anchor:
+      $enumDecodeNullable(_$OverlayAnchorEnumMap, json['anchor']) ??
+      OverlayAnchor.center,
+  transform: json['transform'] == null
+      ? const Transform2D(x: 0, y: 0, width: 160, height: 90)
+      : Transform2D.fromJson(json['transform'] as Map<String, dynamic>),
+  opacity: (json['opacity'] as num?)?.toDouble() ?? 1,
+  rotation: (json['rotation'] as num?)?.toDouble() ?? 0,
+  zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
+  boundObjectId: json['boundObjectId'] as String?,
+  fadeIn: (json['fadeIn'] as num?)?.toDouble() ?? 0,
+  fadeOut: (json['fadeOut'] as num?)?.toDouble() ?? 0,
+  duration: (json['duration'] as num?)?.toDouble() ?? 2,
+  videoFallbackDuration:
+      (json['videoFallbackDuration'] as num?)?.toDouble() ?? 3,
+  scheduleStart: (json['scheduleStart'] as num?)?.toDouble() ?? 0,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$OverlayShowEventToJson(OverlayShowEvent instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'space': _$OverlaySpaceEnumMap[instance.space]!,
+      'contentKind': _$OverlayContentKindEnumMap[instance.contentKind]!,
+      'assetId': instance.assetId,
+      'text': instance.text,
+      'color': instance.color,
+      'textStyle': instance.textStyle,
+      'anchor': _$OverlayAnchorEnumMap[instance.anchor]!,
+      'transform': instance.transform,
+      'opacity': instance.opacity,
+      'rotation': instance.rotation,
+      'zIndex': instance.zIndex,
+      'boundObjectId': instance.boundObjectId,
+      'fadeIn': instance.fadeIn,
+      'fadeOut': instance.fadeOut,
+      'duration': instance.duration,
+      'videoFallbackDuration': instance.videoFallbackDuration,
+      'scheduleStart': instance.scheduleStart,
+      'type': instance.$type,
+    };
+
+const _$OverlaySpaceEnumMap = {
+  OverlaySpace.camera: 'camera',
+  OverlaySpace.world: 'world',
+  OverlaySpace.fullscreen: 'fullscreen',
+};
+
+const _$OverlayContentKindEnumMap = {
+  OverlayContentKind.image: 'image',
+  OverlayContentKind.video: 'video',
+  OverlayContentKind.text: 'text',
+  OverlayContentKind.color: 'color',
+};
+
+const _$OverlayAnchorEnumMap = {
+  OverlayAnchor.topLeft: 'topLeft',
+  OverlayAnchor.topCenter: 'topCenter',
+  OverlayAnchor.topRight: 'topRight',
+  OverlayAnchor.centerLeft: 'centerLeft',
+  OverlayAnchor.center: 'center',
+  OverlayAnchor.centerRight: 'centerRight',
+  OverlayAnchor.bottomLeft: 'bottomLeft',
+  OverlayAnchor.bottomCenter: 'bottomCenter',
+  OverlayAnchor.bottomRight: 'bottomRight',
+};
+
 FollowPlayerCameraPolicy _$FollowPlayerCameraPolicyFromJson(
   Map<String, dynamic> json,
 ) => FollowPlayerCameraPolicy(

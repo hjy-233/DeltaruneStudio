@@ -50,7 +50,12 @@ extension StudioControllerEditingActions on StudioController {
       isDirty: true,
       statusMessage: 'Added ${character.name}.',
     );
-    unawaited(_saveGlobalCharactersIfNeeded(project));
+    unawaited(
+      _saveGlobalCharactersIfNeeded(
+        project,
+        projectDirectory: current.projectDirectory,
+      ),
+    );
   }
 
   void addTriggerArea() => addTriggerPoint();
@@ -395,7 +400,12 @@ extension StudioControllerEditingActions on StudioController {
           .toList(),
     );
     _controllerState = current.copyWith(project: project, isDirty: true);
-    unawaited(_saveGlobalCharactersIfNeeded(project));
+    unawaited(
+      _saveGlobalCharactersIfNeeded(
+        project,
+        projectDirectory: current.projectDirectory,
+      ),
+    );
   }
 
   void addCharacterAnimationFrame({

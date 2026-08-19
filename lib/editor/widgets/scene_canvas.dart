@@ -19,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path/path.dart' as p;
+import 'scene_canvas_overlay_layer.dart';
 part 'scene_canvas_layers.dart';
 
 final canvasCursorProvider = StateProvider<Offset?>((ref) => null);
@@ -408,12 +409,24 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
             ),
           ),
         ),
-        if (useRuntime && world?.dialogue != null)
+        if (useRuntime && world != null)
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: RuntimeOverlayLayer(
+                ready: widget.ready,
+                world: world,
+                pan: effectivePan,
+                scale: _scale,
+                fullscreenOnly: false,
+              ),
+            ),
+          ),
+        if (useRuntime && _visibleDialogue(world) != null)
           Positioned.fill(
             child: RepaintBoundary(
               child: _DialogueOverlay(
                 ready: widget.ready,
-                dialogue: world!.dialogue!,
+                dialogue: _visibleDialogue(world)!,
               ),
             ),
           ),
@@ -429,6 +442,18 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
                           .read(previewControllerProvider.notifier)
                           .completeActiveVideo(widget.ready)
                     : null,
+              ),
+            ),
+          ),
+        if (useRuntime && world != null)
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: RuntimeOverlayLayer(
+                ready: widget.ready,
+                world: world,
+                pan: effectivePan,
+                scale: _scale,
+                fullscreenOnly: true,
               ),
             ),
           ),
@@ -470,6 +495,18 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
         ),
       ),
     );
+  }
+
+  DialogueBoxState? _visibleDialogue(RuntimeWorld? world) {
+    final dialogue = world?.dialogue;
+    if (dialogue == null || world == null) {
+      return null;
+    }
+    final expiresAt = dialogue.expiresAt;
+    if (expiresAt != null && world.currentTime >= expiresAt) {
+      return null;
+    }
+    return dialogue;
   }
 
   Widget _zoomBadge(BuildContext context, String zoomLabel) {

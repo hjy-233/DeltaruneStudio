@@ -14,8 +14,10 @@ extension StudioControllerAssetActions on StudioController {
       id: StudioIds.object(),
       name: asset.originalName,
       assetId: asset.id,
-      transform: _atEditorCenter(
-        const Transform2D(x: 0, y: 0, width: 320, height: 180),
+      transform: await _assetTransformAtEditorCenter(
+        asset,
+        fallbackWidth: 320,
+        fallbackHeight: 180,
       ),
     );
     _appendObject(object, selection: EditorSelection.object(object.objectId));
@@ -46,8 +48,10 @@ extension StudioControllerAssetActions on StudioController {
       id: StudioIds.object(),
       name: asset.originalName,
       assetId: asset.id,
-      transform: _atEditorCenter(
-        const Transform2D(x: 0, y: 0, width: 64, height: 64),
+      transform: await _assetTransformAtEditorCenter(
+        asset,
+        fallbackWidth: 64,
+        fallbackHeight: 64,
       ),
     );
     _appendObject(object, selection: EditorSelection.object(object.objectId));
@@ -106,7 +110,11 @@ extension StudioControllerAssetActions on StudioController {
           id: StudioIds.object(),
           name: builtIn.name,
           assetId: asset.id,
-          transform: const Transform2D(x: 40, y: 40, width: 320, height: 180),
+          transform: await _assetTransformAtEditorCenter(
+            asset,
+            fallbackWidth: 320,
+            fallbackHeight: 180,
+          ),
         );
         _appendObject(
           object,
@@ -117,7 +125,11 @@ extension StudioControllerAssetActions on StudioController {
           id: StudioIds.object(),
           name: builtIn.name,
           assetId: asset.id,
-          transform: const Transform2D(x: 120, y: 120, width: 64, height: 64),
+          transform: await _assetTransformAtEditorCenter(
+            asset,
+            fallbackWidth: 64,
+            fallbackHeight: 64,
+          ),
         );
         _appendObject(
           object,
@@ -138,6 +150,56 @@ extension StudioControllerAssetActions on StudioController {
     }
   }
 
+  Future<Transform2D> _assetTransformAtEditorCenter(
+    AssetRef asset, {
+    required double fallbackWidth,
+    required double fallbackHeight,
+  }) async {
+    final size = await _assetPixelSize(asset);
+    return _atEditorCenter(
+      Transform2D(
+        x: 0,
+        y: 0,
+        width: size?.$1 ?? fallbackWidth,
+        height: size?.$2 ?? fallbackHeight,
+      ),
+    );
+  }
+
+  Future<(double, double)?> _assetPixelSize(AssetRef asset) async {
+    final dataUri = asset.dataUri;
+    Uint8List? bytes;
+    if (dataUri != null && dataUri.isNotEmpty) {
+      final comma = dataUri.indexOf(',');
+      if (comma >= 0) {
+        bytes = base64Decode(dataUri.substring(comma + 1));
+      }
+    } else {
+      final directory = _controllerState.asReady?.projectDirectory;
+      if (directory != null) {
+        final file = File(p.join(directory.path, asset.relativePath));
+        if (await file.exists()) {
+          bytes = await file.readAsBytes();
+        }
+      }
+    }
+    if (bytes == null || bytes.isEmpty) {
+      return null;
+    }
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final size = (
+        frame.image.width.toDouble(),
+        frame.image.height.toDouble(),
+      );
+      codec.dispose();
+      return size;
+    } on Object {
+      return null;
+    }
+  }
+
   Future<AssetRef?> _copyBuiltInAsset(BuiltInAsset builtIn) async {
     final current = _controllerState.asReady;
     if (current == null) {
@@ -145,10 +207,8 @@ extension StudioControllerAssetActions on StudioController {
     }
     try {
       final data = await _readBuiltInAssetBytes(builtIn);
-      final directory = kIsWeb
-          ? current.projectDirectory
-          : current.projectDirectory ?? await _defaultProjectDir();
-      final asset = kIsWeb
+      final directory = current.projectDirectory;
+      final asset = kIsWeb || directory == null
           ? AssetRef(
               id: StudioIds.asset(),
               kind: builtIn.kind,
@@ -158,7 +218,7 @@ extension StudioControllerAssetActions on StudioController {
                   'data:${_mimeForName(builtIn.sourcePath)};base64,${base64Encode(data)}',
             )
           : await _repository.importAssetBytes(
-              projectDirectory: directory!,
+              projectDirectory: directory,
               bytes: data,
               kind: builtIn.kind,
               originalName: p.basename(builtIn.sourcePath),
@@ -301,6 +361,7 @@ extension StudioControllerAssetActions on StudioController {
           : null;
       if (object is BackgroundObject) {
         updateObject(object.copyWith(assetId: asset.id));
+        unawaited(_resizeObjectToAsset(object.id, asset));
         selectObject(object.id);
         _controllerState =
             _controllerState.asReady?.copyWith(
@@ -312,6 +373,7 @@ extension StudioControllerAssetActions on StudioController {
       }
       if (object is PropSceneObject) {
         updateObject(object.copyWith(assetId: asset.id));
+        unawaited(_resizeObjectToAsset(object.id, asset));
         selectObject(object.id);
         _controllerState =
             _controllerState.asReady?.copyWith(
@@ -345,6 +407,7 @@ extension StudioControllerAssetActions on StudioController {
       audioPlayBgm: (_) => 'audio.playBgm',
       audioPlaySound: (_) => 'audio.playSound',
       videoPlay: (_) => 'video.play',
+      overlayShow: (_) => 'overlay.show',
     );
   }
 
@@ -383,6 +446,7 @@ extension StudioControllerAssetActions on StudioController {
       ),
     );
     if (selectedObject is CharacterInstanceObject) {
+      unawaited(_resizeObjectToAsset(selectedObject.id, asset));
       selectObject(selectedObject.id);
     } else {
       selectCharacter(selectedCharacter.id);
@@ -393,6 +457,32 @@ extension StudioControllerAssetActions on StudioController {
               'Replaced ${selectedCharacter.name} sprite with ${asset.originalName}.',
         ) ??
         _controllerState;
+  }
+
+  Future<void> _resizeObjectToAsset(String objectId, AssetRef asset) async {
+    final size = await _assetPixelSize(asset);
+    if (size == null) {
+      return;
+    }
+    final current = _controllerState.asReady;
+    final object = current?.objectById(objectId);
+    if (current == null || object == null) {
+      return;
+    }
+    final transform = object.transform;
+    final centerX = transform.x + transform.width * transform.scale / 2;
+    final centerY = transform.y + transform.height * transform.scale / 2;
+    updateObject(
+      object.copyWith(
+        transform: transform.copyWith(
+          x: centerX - size.$1 / 2,
+          y: centerY - size.$2 / 2,
+          width: size.$1,
+          height: size.$2,
+          scale: 1,
+        ),
+      ),
+    );
   }
 
   Future<AssetRef?> _importAsset(AssetKind kind) async {
@@ -409,10 +499,8 @@ extension StudioControllerAssetActions on StudioController {
         return null;
       }
       final bytes = await file.readAsBytes();
-      final directory = kIsWeb
-          ? current.projectDirectory
-          : current.projectDirectory ?? await _defaultProjectDir();
-      final asset = kIsWeb
+      final directory = current.projectDirectory;
+      final asset = kIsWeb || directory == null
           ? AssetRef(
               id: StudioIds.asset(),
               kind: kind,
@@ -422,14 +510,14 @@ extension StudioControllerAssetActions on StudioController {
                   'data:${_mimeForName(file.name)};base64,${base64Encode(bytes)}',
             )
           : await _repository.importAssetBytes(
-              projectDirectory: directory!,
+              projectDirectory: directory,
               bytes: bytes,
               kind: kind,
               originalName: file.name,
             );
       _recordHistory(current);
       _controllerState = current.copyWith(
-        projectDirectory: kIsWeb ? current.projectDirectory : directory,
+        projectDirectory: directory,
         project: current.project.copyWith(
           assets: [...current.project.assets, asset],
         ),

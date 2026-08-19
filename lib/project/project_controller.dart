@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:deltarune_studio/core/studio_id.dart';
 import 'package:deltarune_studio/domain/studio_models.dart';
@@ -78,7 +79,10 @@ final class StudioController extends StateNotifier<StudioState> {
       final directory = Directory(lastProjectPath);
       try {
         final project = await _repository.openProject(directory);
-        final resolvedProject = await _loadGlobalCharacters(project);
+        final resolvedProject = await _loadGlobalCharacters(
+          project,
+          projectDirectory: directory,
+        );
         _clearHistory();
         state = StudioState.ready(
           project: resolvedProject,
@@ -122,14 +126,20 @@ final class StudioController extends StateNotifier<StudioState> {
       );
       return;
     }
-    await _saveGlobalCharactersIfNeeded(current.project);
-    final directory = current.projectDirectory ?? await _defaultProjectDir();
-    await _repository.saveProject(
-      directory: directory,
-      project: current.project,
+    if (current.projectDirectory == null) {
+      await saveProjectAs();
+      return;
+    }
+    await _saveGlobalCharactersIfNeeded(
+      current.project,
+      projectDirectory: current.projectDirectory,
     );
-    final latest = state.asReady ?? current;
-    if (latest.project != current.project) {
+    final directory = current.projectDirectory!;
+    final project = await _materializeDataUriAssets(current.project, directory);
+    await _repository.saveProject(directory: directory, project: project);
+    final afterMaterialize = current.copyWith(project: project);
+    final latest = state.asReady ?? afterMaterialize;
+    if (latest.project != project) {
       await _repository.saveProject(
         directory: directory,
         project: latest.project,
@@ -161,17 +171,26 @@ final class StudioController extends StateNotifier<StudioState> {
     if (path == null) {
       return;
     }
-    await _saveGlobalCharactersIfNeeded(current.project);
+    await _saveGlobalCharactersIfNeeded(
+      current.project,
+      projectDirectory: current.projectDirectory,
+    );
     final directoryPath = path.path.endsWith('.drs')
         ? path.path
         : '${path.path}.drs';
     final directory = Directory(directoryPath);
-    await _repository.saveProject(
-      directory: directory,
-      project: current.project,
-    );
-    final latest = state.asReady ?? current;
-    if (latest.project != current.project) {
+    if (current.projectDirectory != null &&
+        current.projectDirectory!.path != directory.path) {
+      await _repository.copyProjectPayload(
+        sourceDirectory: current.projectDirectory!,
+        targetDirectory: directory,
+      );
+    }
+    final project = await _materializeDataUriAssets(current.project, directory);
+    await _repository.saveProject(directory: directory, project: project);
+    final afterMaterialize = current.copyWith(project: project);
+    final latest = state.asReady ?? afterMaterialize;
+    if (latest.project != project) {
       await _repository.saveProject(
         directory: directory,
         project: latest.project,
@@ -215,7 +234,10 @@ final class StudioController extends StateNotifier<StudioState> {
     );
     if (settings.characterLibraryScope == CharacterLibraryScope.global) {
       final latest = state.asReady ?? current;
-      final resolved = await _loadGlobalCharacters(latest.project);
+      final resolved = await _loadGlobalCharacters(
+        latest.project,
+        projectDirectory: latest.projectDirectory,
+      );
       final afterLoad = state.asReady;
       if (afterLoad != null && afterLoad.project.id == latest.project.id) {
         state = afterLoad.copyWith(project: resolved);
@@ -258,7 +280,10 @@ final class StudioController extends StateNotifier<StudioState> {
     final project = await _repository.openProject(directory);
     _clearHistory();
     state = StudioState.ready(
-      project: await _loadGlobalCharacters(project),
+      project: await _loadGlobalCharacters(
+        project,
+        projectDirectory: directory,
+      ),
       projectDirectory: directory,
     );
     await _writeLastProjectPath(directory);

@@ -58,6 +58,7 @@ class _EventInspector extends ConsumerWidget {
           audioPlayBgm: (audio) => _buildAudioEvent(controller, audio, true),
           audioPlaySound: (audio) => _buildAudioEvent(controller, audio, false),
           videoPlay: (video) => _buildVideoEvent(controller, video),
+          overlayShow: (overlay) => _buildOverlayEvent(controller, overlay),
         ),
         const SizedBox(height: 12),
         FilledButton.tonalIcon(
@@ -391,6 +392,7 @@ class _EventInspector extends ConsumerWidget {
           sceneFade: (_) => audio,
           sceneChange: (_) => audio,
           videoPlay: (_) => audio,
+          overlayShow: (_) => audio,
         ),
       ),
     );
@@ -409,6 +411,126 @@ class _EventInspector extends ConsumerWidget {
         InspectorInfo(label: 'Fit', value: video.fit.name),
       ],
     );
+  }
+
+  Widget _buildOverlayEvent(
+    StudioController controller,
+    OverlayShowEvent overlay,
+  ) {
+    final imageKinds = [
+      AssetKind.background,
+      AssetKind.character,
+      AssetKind.prop,
+    ];
+    final assetKind = switch (overlay.contentKind) {
+      OverlayContentKind.video => AssetKind.video,
+      OverlayContentKind.image => imageKinds.first,
+      OverlayContentKind.text || OverlayContentKind.color => null,
+    };
+    final content = Column(
+      children: [
+        _DropdownField<OverlaySpace>(
+          label: '显示模式',
+          value: overlay.space,
+          values: OverlaySpace.values,
+          labelFor: (value) => switch (value) {
+            OverlaySpace.camera => '摄像机',
+            OverlaySpace.world => '场景',
+            OverlaySpace.fullscreen => '全屏',
+          },
+          onChanged: (space) =>
+              controller.updateEvent(chainId, overlay.copyWith(space: space)),
+        ),
+        _DropdownField<OverlayContentKind>(
+          label: '内容类型',
+          value: overlay.contentKind,
+          values: OverlayContentKind.values,
+          labelFor: (value) => switch (value) {
+            OverlayContentKind.image => '图片',
+            OverlayContentKind.video => '视频',
+            OverlayContentKind.text => '文字',
+            OverlayContentKind.color => '颜色',
+          },
+          onChanged: (kind) => controller.updateEvent(
+            chainId,
+            overlay.copyWith(contentKind: kind),
+          ),
+        ),
+        if (assetKind != null)
+          _AssetPicker(
+            ready: ready,
+            kind: assetKind,
+            value: overlay.assetId ?? '',
+            onChanged: (assetId) => controller.updateEvent(
+              chainId,
+              overlay.copyWith(assetId: assetId),
+            ),
+          ),
+        if (overlay.contentKind == OverlayContentKind.text)
+          InspectorStringField(
+            label: '文字',
+            value: overlay.text ?? '',
+            maxLines: 4,
+            onChanged: (text) =>
+                controller.updateEvent(chainId, overlay.copyWith(text: text)),
+          ),
+        if (overlay.contentKind == OverlayContentKind.color)
+          ColorPickerField(
+            label: '颜色',
+            value: overlay.color,
+            onChanged: (color) => controller.updateEvent(
+              chainId,
+              overlay.copyWith(color: color, opacity: 1),
+            ),
+          ),
+        if (overlay.space != OverlaySpace.fullscreen) ...[
+          _DropdownField<OverlayAnchor>(
+            label: '锚点',
+            value: overlay.anchor,
+            values: OverlayAnchor.values,
+            labelFor: (value) => value.name,
+            onChanged: (anchor) => controller.updateEvent(
+              chainId,
+              overlay.copyWith(anchor: anchor),
+            ),
+          ),
+          _TransformEditor(
+            transform: overlay.transform,
+            onChanged: (transform) => controller.updateEvent(
+              chainId,
+              overlay.copyWith(transform: transform),
+            ),
+          ),
+        ],
+        InspectorNumberField(
+          label: '透明度',
+          value: overlay.opacity,
+          onChanged: (opacity) => controller.updateEvent(
+            chainId,
+            overlay.copyWith(opacity: opacity.clamp(0, 1)),
+          ),
+        ),
+        if (overlay.contentKind != OverlayContentKind.video)
+          InspectorNumberField(
+            label: '持续时间',
+            value: overlay.duration,
+            onChanged: (duration) => controller.updateEvent(
+              chainId,
+              overlay.copyWith(duration: duration),
+            ),
+          ),
+        if (overlay.contentKind == OverlayContentKind.video)
+          InspectorNumberField(
+            label: '视频时长读取失败时使用',
+            value: overlay.videoFallbackDuration,
+            onChanged: (duration) => controller.updateEvent(
+              chainId,
+              overlay.copyWith(videoFallbackDuration: duration),
+            ),
+          ),
+      ],
+    );
+    return content;
   }
 }
 

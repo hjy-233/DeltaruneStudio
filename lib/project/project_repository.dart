@@ -202,17 +202,107 @@ final class ProjectRepository {
     final triggeredChainIds = {
       for (final trigger in scene.triggers) _eventChainIdForTrigger(trigger),
     }..remove('');
+    final migratedObjects = [
+      for (final object in scene.objects) _migrateSceneObject(object),
+    ];
     return scene.copyWith(
-      objects: [
-        for (final object in scene.objects) _migrateSceneObject(object),
-      ],
+      objects: migratedObjects,
       eventChains: [
         for (final chain in scene.eventChains)
-          triggeredChainIds.contains(chain.id)
-              ? chain.copyWith(triggerMode: EventChainTriggerMode.triggerPoint)
-              : chain,
+          _migrateEventChain(
+            chain,
+            migratedObjects,
+            triggeredChainIds.contains(chain.id),
+          ),
       ],
     );
+  }
+
+  EventChain _migrateEventChain(
+    EventChain chain,
+    List<SceneObject> objects,
+    bool isTriggerPointChain,
+  ) {
+    final mode = isTriggerPointChain
+        ? EventChainTriggerMode.triggerPoint
+        : chain.triggerMode;
+    return chain.copyWith(
+      triggerMode: mode,
+      events: [for (final event in chain.events) _migrateEvent(event, objects)],
+    );
+  }
+
+  StudioEvent _migrateEvent(StudioEvent event, List<SceneObject> objects) {
+    final firstCharacterId = _characterObjectIdAt(objects, 0);
+    final secondCharacterId = _characterObjectIdAt(objects, 1);
+    String? validCharacterId(String id, {int fallbackIndex = 0}) {
+      if (_isCharacterObjectId(objects, id)) {
+        return id;
+      }
+      return _characterObjectIdAt(objects, fallbackIndex) ?? firstCharacterId;
+    }
+
+    return event.map(
+      characterMove: (value) {
+        final id = validCharacterId(value.characterObjectId);
+        return id == null ? value : value.copyWith(characterObjectId: id);
+      },
+      characterChangeExpression: (value) {
+        final id = validCharacterId(value.characterObjectId);
+        return id == null ? value : value.copyWith(characterObjectId: id);
+      },
+      characterStartFollow: (value) {
+        final followerId = validCharacterId(value.followerObjectId);
+        final leaderId = validCharacterId(
+          value.leaderObjectId,
+          fallbackIndex: secondCharacterId == null ? 0 : 1,
+        );
+        if (followerId == null || leaderId == null) {
+          return value;
+        }
+        return value.copyWith(
+          followerObjectId: followerId,
+          leaderObjectId: leaderId,
+        );
+      },
+      characterStopFollow: (value) {
+        final id = validCharacterId(value.followerObjectId);
+        return id == null ? value : value.copyWith(followerObjectId: id);
+      },
+      cameraFollow: (value) {
+        final id = validCharacterId(value.targetObjectId);
+        return id == null ? value : value.copyWith(targetObjectId: id);
+      },
+      characterWait: (value) => value,
+      dialogueSay: (value) => value,
+      cameraFocus: (value) => value,
+      sceneFade: (value) => value,
+      sceneChange: (value) => value,
+      audioPlayBgm: (value) => value,
+      audioPlaySound: (value) => value,
+      videoPlay: (value) => value,
+      overlayShow: (value) => value,
+    );
+  }
+
+  bool _isCharacterObjectId(List<SceneObject> objects, String id) {
+    return objects.any(
+      (object) => object.objectId == id && object is CharacterInstanceObject,
+    );
+  }
+
+  String? _characterObjectIdAt(List<SceneObject> objects, int index) {
+    var seen = 0;
+    for (final object in objects) {
+      if (object is! CharacterInstanceObject) {
+        continue;
+      }
+      if (seen == index) {
+        return object.id;
+      }
+      seen += 1;
+    }
+    return null;
   }
 
   String _eventChainIdForTrigger(Trigger trigger) {
@@ -280,18 +370,19 @@ final class ProjectRepository {
     required List<int> bytes,
     required AssetKind kind,
     required String originalName,
+    String? id,
   }) async {
     await _ensureProjectLayout(projectDirectory);
-    final id = StudioIds.asset();
+    final assetId = id ?? StudioIds.asset();
     final targetDirectory = Directory(
       p.join(projectDirectory.path, 'assets', _folderForKind(kind)),
     );
     await targetDirectory.create(recursive: true);
     final safeName = originalName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-    final targetPath = p.join(targetDirectory.path, '${id}_$safeName');
+    final targetPath = p.join(targetDirectory.path, '${assetId}_$safeName');
     await File(targetPath).writeAsBytes(bytes, flush: true);
     return AssetRef(
-      id: id,
+      id: assetId,
       kind: kind,
       originalName: originalName,
       relativePath: p.relative(targetPath, from: projectDirectory.path),
