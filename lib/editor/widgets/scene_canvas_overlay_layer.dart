@@ -32,11 +32,12 @@ class RuntimeOverlayLayer extends StatelessWidget {
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final ratio = ready.project.settings.cameraAspectRatio.value;
           final cameraWidth = math.min(
             constraints.maxWidth,
-            constraints.maxHeight * 4 / 3,
+            constraints.maxHeight * ratio,
           );
-          final cameraHeight = cameraWidth * 3 / 4;
+          final cameraHeight = cameraWidth / ratio;
           final cameraLeft = (constraints.maxWidth - cameraWidth) / 2;
           final cameraTop = (constraints.maxHeight - cameraHeight) / 2;
           final camera = <Widget>[];
@@ -196,7 +197,9 @@ class RuntimeOverlayLayer extends StatelessWidget {
       return Image.memory(
         _bytesFromDataUri(asset.dataUri!),
         fit: BoxFit.fill,
-        filterQuality: FilterQuality.none,
+        filterQuality: ready.project.settings.pixelRendering
+            ? FilterQuality.none
+            : FilterQuality.medium,
       );
     }
     final directory = ready.projectDirectory;
@@ -205,7 +208,13 @@ class RuntimeOverlayLayer extends StatelessWidget {
     }
     final file = File(p.join(directory.path, asset.relativePath));
     return file.existsSync()
-        ? Image.file(file, fit: BoxFit.fill, filterQuality: FilterQuality.none)
+        ? Image.file(
+            file,
+            fit: BoxFit.fill,
+            filterQuality: ready.project.settings.pixelRendering
+                ? FilterQuality.none
+                : FilterQuality.medium,
+          )
         : null;
   }
 

@@ -111,6 +111,73 @@ class AppLocalizationsZh extends AppLocalizations {
   String get languageChinese => '中文';
 
   @override
+  String get themeColor => '主题色';
+
+  @override
+  String get themeColorCoral => '珊瑚红';
+
+  @override
+  String get themeColorBlue => '蓝色';
+
+  @override
+  String get themeColorCyan => '青色';
+
+  @override
+  String get themeColorGreen => '绿色';
+
+  @override
+  String get themeColorPurple => '紫色';
+
+  @override
+  String get themeColorAmber => '琥珀色';
+
+  @override
+  String get autoSave => '自动保存';
+
+  @override
+  String get autoSaveHelp => '仅对已经保存过位置的项目自动写入修改。';
+
+  @override
+  String get autoSaveInterval => '自动保存间隔';
+
+  @override
+  String seconds(Object count) {
+    return '$count 秒';
+  }
+
+  @override
+  String get showCanvasGrid => '显示画布网格';
+
+  @override
+  String get snapToGrid => '对象吸附到网格';
+
+  @override
+  String get pixelRendering => '像素渲染';
+
+  @override
+  String get pixelRenderingHelp => '使用最近邻缩放，避免像素素材被平滑。';
+
+  @override
+  String get cameraAspectRatio => '摄像机比例';
+
+  @override
+  String get cameraAspectRatioFourThree => '4:3';
+
+  @override
+  String get cameraAspectRatioSixteenNine => '16:9';
+
+  @override
+  String get exportFrameRate => '导出帧率';
+
+  @override
+  String fps(Object count) {
+    return '$count FPS';
+  }
+
+  @override
+  String get restoreLastProject => '启动时恢复上次项目';
+
+  @override
   String get englishDialogueTypewriterByWord => '英文对话按词出现';
 
   @override

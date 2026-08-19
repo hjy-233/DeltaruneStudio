@@ -314,11 +314,12 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
     }
     final nextNode = _previewNode(selectedMove, node.nodeId);
     if (nextNode != null) {
+      final adjustedNode = _snapPathNode(nextNode);
       controller.updatePathNode(
         node.chainId,
         node.eventId,
         node.nodeId,
-        (_) => nextNode,
+        (_) => adjustedNode,
       );
     } else {
       controller.movePathNodeById(
@@ -333,6 +334,17 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
       node.chainId,
       node.eventId,
       node.nodeId,
+    );
+  }
+
+  PathNode _snapPathNode(PathNode node) {
+    if (!widget.ready.project.settings.snapToGrid) {
+      return node;
+    }
+    const grid = 16.0;
+    return node.copyWith(
+      x: (node.x / grid).round() * grid,
+      y: (node.y / grid).round() * grid,
     );
   }
 
@@ -405,6 +417,9 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
                 currentTime: useRuntime ? world?.currentTime ?? 0 : 0,
                 ready: widget.ready,
                 hideDebug: hideDebug,
+                showGrid: widget.ready.project.settings.showCanvasGrid,
+                cameraAspectRatio:
+                    widget.ready.project.settings.cameraAspectRatio,
               ),
             ),
           ),
@@ -492,6 +507,7 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
           pan: effectivePan,
           scale: _scale,
           foreground: foreground,
+          pixelRendering: widget.ready.project.settings.pixelRendering,
         ),
       ),
     );
@@ -569,8 +585,9 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
   }
 
   Size _cameraViewportSize(Size viewportSize) {
-    final width = math.min(viewportSize.width, viewportSize.height * 4 / 3);
-    return Size(width, width * 3 / 4);
+    final ratio = widget.ready.project.settings.cameraAspectRatio.value;
+    final width = math.min(viewportSize.width, viewportSize.height * ratio);
+    return Size(width, width / ratio);
   }
 
   Offset? _cameraTarget(RuntimeWorld world) {

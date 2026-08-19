@@ -77,15 +77,15 @@ class _DeltaruneStudioAppState extends ConsumerState<DeltaruneStudioApp>
 
   @override
   Widget build(BuildContext context) {
-    final language = ref.watch(
-      studioControllerProvider.select((state) {
-        return state.asReady?.project.settings.language ?? AppLanguage.system;
-      }),
+    final settings = ref.watch(
+      studioControllerProvider.select(
+        (state) => state.asReady?.project.settings ?? const EditorSettings(),
+      ),
     );
     return MaterialApp(
       title: 'Deltarune Studio',
       debugShowCheckedModeBanner: false,
-      locale: switch (language) {
+      locale: switch (settings.language) {
         AppLanguage.system => null,
         AppLanguage.english => const Locale('en'),
         AppLanguage.chinese => const Locale('zh'),
@@ -94,7 +94,7 @@ class _DeltaruneStudioAppState extends ConsumerState<DeltaruneStudioApp>
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xffe24d3d),
+          seedColor: _themeSeedColor(settings.themeColor),
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
@@ -103,6 +103,15 @@ class _DeltaruneStudioAppState extends ConsumerState<DeltaruneStudioApp>
       home: const StudioWorkspace(),
     );
   }
+
+  Color _themeSeedColor(AppThemeColor color) => switch (color) {
+    AppThemeColor.coral => const Color(0xffe24d3d),
+    AppThemeColor.blue => const Color(0xff4f82d9),
+    AppThemeColor.cyan => const Color(0xff36b8c4),
+    AppThemeColor.green => const Color(0xff69a85a),
+    AppThemeColor.purple => const Color(0xff9b6dcc),
+    AppThemeColor.amber => const Color(0xffd99432),
+  };
 }
 
 enum _ExitChoice { save, discard, cancel }

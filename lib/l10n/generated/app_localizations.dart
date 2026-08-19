@@ -302,6 +302,132 @@ abstract class AppLocalizations {
   /// **'Chinese'**
   String get languageChinese;
 
+  /// No description provided for @themeColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme color'**
+  String get themeColor;
+
+  /// No description provided for @themeColorCoral.
+  ///
+  /// In en, this message translates to:
+  /// **'Coral'**
+  String get themeColorCoral;
+
+  /// No description provided for @themeColorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get themeColorBlue;
+
+  /// No description provided for @themeColorCyan.
+  ///
+  /// In en, this message translates to:
+  /// **'Cyan'**
+  String get themeColorCyan;
+
+  /// No description provided for @themeColorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get themeColorGreen;
+
+  /// No description provided for @themeColorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get themeColorPurple;
+
+  /// No description provided for @themeColorAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get themeColorAmber;
+
+  /// No description provided for @autoSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-save'**
+  String get autoSave;
+
+  /// No description provided for @autoSaveHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Only saved project locations are written automatically.'**
+  String get autoSaveHelp;
+
+  /// No description provided for @autoSaveInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-save interval'**
+  String get autoSaveInterval;
+
+  /// No description provided for @seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} seconds'**
+  String seconds(Object count);
+
+  /// No description provided for @showCanvasGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Show canvas grid'**
+  String get showCanvasGrid;
+
+  /// No description provided for @snapToGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Snap objects to grid'**
+  String get snapToGrid;
+
+  /// No description provided for @pixelRendering.
+  ///
+  /// In en, this message translates to:
+  /// **'Pixel rendering'**
+  String get pixelRendering;
+
+  /// No description provided for @pixelRenderingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use nearest-neighbor scaling for pixel art.'**
+  String get pixelRenderingHelp;
+
+  /// No description provided for @cameraAspectRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera aspect ratio'**
+  String get cameraAspectRatio;
+
+  /// No description provided for @cameraAspectRatioFourThree.
+  ///
+  /// In en, this message translates to:
+  /// **'4:3'**
+  String get cameraAspectRatioFourThree;
+
+  /// No description provided for @cameraAspectRatioSixteenNine.
+  ///
+  /// In en, this message translates to:
+  /// **'16:9'**
+  String get cameraAspectRatioSixteenNine;
+
+  /// No description provided for @exportFrameRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Export frame rate'**
+  String get exportFrameRate;
+
+  /// No description provided for @fps.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} FPS'**
+  String fps(Object count);
+
+  /// No description provided for @restoreLastProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore last project on startup'**
+  String get restoreLastProject;
+
   /// No description provided for @englishDialogueTypewriterByWord.
   ///
   /// In en, this message translates to:

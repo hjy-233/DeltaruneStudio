@@ -400,7 +400,11 @@ class _WorkspaceBodyState extends ConsumerState<_WorkspaceBody> {
     setState(() => _isExportingVideo = true);
     try {
       final builtIns = ref.read(builtInAssetLibraryProvider).valueOrNull;
-      await VideoExporter(scale: scale).export(
+      await VideoExporter(
+        scale: scale,
+        fps: ready.project.settings.exportFrameRate,
+        aspectRatio: ready.project.settings.cameraAspectRatio.value,
+      ).export(
         ready: ready,
         outputPath: outputPath,
         builtIns: builtIns,

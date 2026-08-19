@@ -111,6 +111,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageChinese => 'Chinese';
 
   @override
+  String get themeColor => 'Theme color';
+
+  @override
+  String get themeColorCoral => 'Coral';
+
+  @override
+  String get themeColorBlue => 'Blue';
+
+  @override
+  String get themeColorCyan => 'Cyan';
+
+  @override
+  String get themeColorGreen => 'Green';
+
+  @override
+  String get themeColorPurple => 'Purple';
+
+  @override
+  String get themeColorAmber => 'Amber';
+
+  @override
+  String get autoSave => 'Auto-save';
+
+  @override
+  String get autoSaveHelp =>
+      'Only saved project locations are written automatically.';
+
+  @override
+  String get autoSaveInterval => 'Auto-save interval';
+
+  @override
+  String seconds(Object count) {
+    return '$count seconds';
+  }
+
+  @override
+  String get showCanvasGrid => 'Show canvas grid';
+
+  @override
+  String get snapToGrid => 'Snap objects to grid';
+
+  @override
+  String get pixelRendering => 'Pixel rendering';
+
+  @override
+  String get pixelRenderingHelp =>
+      'Use nearest-neighbor scaling for pixel art.';
+
+  @override
+  String get cameraAspectRatio => 'Camera aspect ratio';
+
+  @override
+  String get cameraAspectRatioFourThree => '4:3';
+
+  @override
+  String get cameraAspectRatioSixteenNine => '16:9';
+
+  @override
+  String get exportFrameRate => 'Export frame rate';
+
+  @override
+  String fps(Object count) {
+    return '$count FPS';
+  }
+
+  @override
+  String get restoreLastProject => 'Restore last project on startup';
+
+  @override
   String get englishDialogueTypewriterByWord =>
       'English dialogue appears by word';
 

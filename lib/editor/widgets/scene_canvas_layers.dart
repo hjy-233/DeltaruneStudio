@@ -33,6 +33,7 @@ class _AssetImageLayer extends StatelessWidget {
     required this.pan,
     required this.scale,
     required this.foreground,
+    required this.pixelRendering,
   });
 
   final StudioReady ready;
@@ -43,6 +44,7 @@ class _AssetImageLayer extends StatelessWidget {
   final Offset pan;
   final double scale;
   final bool foreground;
+  final bool pixelRendering;
 
   @override
   Widget build(BuildContext context) {
@@ -112,8 +114,10 @@ class _AssetImageLayer extends StatelessWidget {
       return Image.memory(
         _bytesFromDataUri(dataUri),
         fit: BoxFit.contain,
-        filterQuality: FilterQuality.none,
-        isAntiAlias: false,
+        filterQuality: pixelRendering
+            ? FilterQuality.none
+            : FilterQuality.medium,
+        isAntiAlias: pixelRendering ? false : true,
         gaplessPlayback: true,
       );
     }
@@ -127,8 +131,8 @@ class _AssetImageLayer extends StatelessWidget {
     return Image.file(
       file,
       fit: BoxFit.contain,
-      filterQuality: FilterQuality.none,
-      isAntiAlias: false,
+      filterQuality: pixelRendering ? FilterQuality.none : FilterQuality.medium,
+      isAntiAlias: pixelRendering ? false : true,
       gaplessPlayback: true,
     );
   }
@@ -149,11 +153,12 @@ class _DialogueOverlay extends StatelessWidget {
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final ratio = ready.project.settings.cameraAspectRatio.value;
           final cameraWidth = math.min(
             constraints.maxWidth,
-            constraints.maxHeight * 4 / 3,
+            constraints.maxHeight * ratio,
           );
-          final cameraHeight = cameraWidth * 3 / 4;
+          final cameraHeight = cameraWidth / ratio;
           final cameraLeft = (constraints.maxWidth - cameraWidth) / 2;
           final cameraTop = (constraints.maxHeight - cameraHeight) / 2;
           final boxWidth = math.max(
@@ -205,6 +210,8 @@ class _DialogueOverlay extends StatelessWidget {
                                 child: _PortraitImage(
                                   file: portraitFile,
                                   dataUri: portraitAsset?.dataUri,
+                                  pixelRendering:
+                                      ready.project.settings.pixelRendering,
                                 ),
                               ),
                             ),
@@ -326,11 +333,12 @@ class _VideoOverlayState extends State<_VideoOverlay> {
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final ratio = widget.ready.project.settings.cameraAspectRatio.value;
           final cameraWidth = math.min(
             constraints.maxWidth,
-            constraints.maxHeight * 4 / 3,
+            constraints.maxHeight * ratio,
           );
-          final cameraHeight = cameraWidth * 3 / 4;
+          final cameraHeight = cameraWidth / ratio;
           final cameraLeft = (constraints.maxWidth - cameraWidth) / 2;
           final cameraTop = (constraints.maxHeight - cameraHeight) / 2;
           final source = _videoSource();
@@ -413,10 +421,15 @@ class _VideoOverlayState extends State<_VideoOverlay> {
 }
 
 class _PortraitImage extends StatelessWidget {
-  const _PortraitImage({required this.file, required this.dataUri});
+  const _PortraitImage({
+    required this.file,
+    required this.dataUri,
+    required this.pixelRendering,
+  });
 
   final File? file;
   final String? dataUri;
+  final bool pixelRendering;
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +438,9 @@ class _PortraitImage extends StatelessWidget {
       return Image.memory(
         _bytesFromDataUri(uri),
         fit: BoxFit.contain,
-        filterQuality: FilterQuality.none,
+        filterQuality: pixelRendering
+            ? FilterQuality.none
+            : FilterQuality.medium,
         isAntiAlias: false,
         errorBuilder: (_, _, _) => const SizedBox.shrink(),
       );
@@ -437,7 +452,7 @@ class _PortraitImage extends StatelessWidget {
     return Image.file(
       localFile,
       fit: BoxFit.contain,
-      filterQuality: FilterQuality.none,
+      filterQuality: pixelRendering ? FilterQuality.none : FilterQuality.medium,
       isAntiAlias: false,
       errorBuilder: (_, _, _) => const SizedBox.shrink(),
     );
@@ -494,6 +509,8 @@ class _ScenePainter extends CustomPainter {
     required this.currentTime,
     required this.ready,
     required this.hideDebug,
+    required this.showGrid,
+    required this.cameraAspectRatio,
   });
 
   final Scene scene;
@@ -511,6 +528,8 @@ class _ScenePainter extends CustomPainter {
   final double currentTime;
   final StudioReady ready;
   final bool hideDebug;
+  final bool showGrid;
+  final CameraAspectRatio cameraAspectRatio;
 
   bool get isPreviewing => runtimeObjects != null;
 
@@ -519,6 +538,9 @@ class _ScenePainter extends CustomPainter {
     canvas.save();
     canvas.translate(pan.dx, pan.dy);
     canvas.scale(scale);
+    if (showGrid && !hideDebug) {
+      _drawGrid(canvas, size);
+    }
     for (final object in scene.objects) {
       if (object is! BackgroundObject) {
         continue;
@@ -549,8 +571,8 @@ class _ScenePainter extends CustomPainter {
   }
 
   void _drawCameraFrame(Canvas canvas, Size size) {
-    final width = math.min(size.width, size.height * 4 / 3);
-    final height = width * 3 / 4;
+    final width = math.min(size.width, size.height * cameraAspectRatio.value);
+    final height = width / cameraAspectRatio.value;
     final rect = Rect.fromLTWH(
       (size.width - width) / 2,
       (size.height - height) / 2,
@@ -585,6 +607,23 @@ class _ScenePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );
+  }
+
+  void _drawGrid(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0x221f2530)
+      ..strokeWidth = 1;
+    const step = 16.0;
+    final left = -pan.dx / scale;
+    final top = -pan.dy / scale;
+    final right = left + size.width / scale;
+    final bottom = top + size.height / scale;
+    for (var x = (left / step).floor() * step; x <= right; x += step) {
+      canvas.drawLine(Offset(x, top), Offset(x, bottom), paint);
+    }
+    for (var y = (top / step).floor() * step; y <= bottom; y += step) {
+      canvas.drawLine(Offset(left, y), Offset(right, y), paint);
+    }
   }
 
   void _drawWarningStripes(Canvas canvas, Path outside, Size size) {
@@ -938,6 +977,8 @@ class _ScenePainter extends CustomPainter {
         oldDelegate.fadeOpacity != fadeOpacity ||
         oldDelegate.currentTime != currentTime ||
         oldDelegate.hideDebug != hideDebug ||
+        oldDelegate.showGrid != showGrid ||
+        oldDelegate.cameraAspectRatio != cameraAspectRatio ||
         oldDelegate.triggerLinkLabel != triggerLinkLabel ||
         oldDelegate.ready != ready;
   }

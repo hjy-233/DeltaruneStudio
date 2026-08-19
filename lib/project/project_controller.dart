@@ -47,6 +47,7 @@ final class StudioController extends StateNotifier<StudioState> {
   final List<_HistoryEntry> _undoStack = [];
   final List<_HistoryEntry> _redoStack = [];
   bool _restoringHistory = false;
+  Timer? _autoSaveTimer;
   double _editorInsertionX = 240;
   double _editorInsertionY = 140;
 
@@ -74,6 +75,10 @@ final class StudioController extends StateNotifier<StudioState> {
       await createScratchProject();
       return;
     }
+    if (!await _readRestoreLastProject()) {
+      await createScratchProject();
+      return;
+    }
     final lastProjectPath = await _readLastProjectPath();
     if (lastProjectPath != null) {
       final directory = Directory(lastProjectPath);
@@ -89,6 +94,7 @@ final class StudioController extends StateNotifier<StudioState> {
           projectDirectory: directory,
           statusMessage: 'Opened last project ${directory.path}.',
         );
+        _configureAutoSave(resolvedProject.settings);
         return;
       } on Object {
         await _clearLastProjectPath();
@@ -105,6 +111,7 @@ final class StudioController extends StateNotifier<StudioState> {
     );
     _clearHistory();
     state = StudioState.ready(project: resolvedProject);
+    _configureAutoSave(resolvedProject.settings);
   }
 
   Future<void> newProject() => createScratchProject();
@@ -232,6 +239,8 @@ final class StudioController extends StateNotifier<StudioState> {
       isDirty: true,
       statusMessage: 'Updated editor settings.',
     );
+    _configureAutoSave(settings);
+    await _writeRestoreLastProject(settings.restoreLastProject);
     if (settings.characterLibraryScope == CharacterLibraryScope.global) {
       final latest = state.asReady ?? current;
       final resolved = await _loadGlobalCharacters(
@@ -243,6 +252,29 @@ final class StudioController extends StateNotifier<StudioState> {
         state = afterLoad.copyWith(project: resolved);
       }
     }
+  }
+
+  void _configureAutoSave(EditorSettings settings) {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+    if (!settings.autoSaveEnabled || settings.autoSaveIntervalSeconds <= 0) {
+      return;
+    }
+    _autoSaveTimer = Timer.periodic(
+      Duration(seconds: settings.autoSaveIntervalSeconds),
+      (_) {
+        final current = state.asReady;
+        if (current?.isDirty == true && current?.projectDirectory != null) {
+          unawaited(saveProject());
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> openProject() async {

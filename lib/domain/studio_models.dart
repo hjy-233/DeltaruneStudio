@@ -20,6 +20,14 @@ enum AppLanguage { system, english, chinese }
 
 enum CharacterLibraryScope { global, project }
 
+enum AppThemeColor { coral, blue, cyan, green, purple, amber }
+
+enum CameraAspectRatio { fourThree, sixteenNine }
+
+extension CameraAspectRatioValues on CameraAspectRatio {
+  double get value => this == CameraAspectRatio.fourThree ? 4 / 3 : 16 / 9;
+}
+
 enum EventChainTriggerMode { triggerPoint, always, scheduled }
 
 @freezed
@@ -61,6 +69,15 @@ abstract class EditorSettings with _$EditorSettings {
     @Default(true) bool englishDialogueTypewriterByWord,
     @Default(CharacterLibraryScope.global)
     CharacterLibraryScope characterLibraryScope,
+    @Default(AppThemeColor.coral) AppThemeColor themeColor,
+    @Default(false) bool autoSaveEnabled,
+    @Default(60) int autoSaveIntervalSeconds,
+    @Default(true) bool showCanvasGrid,
+    @Default(true) bool snapToGrid,
+    @Default(true) bool pixelRendering,
+    @Default(CameraAspectRatio.fourThree) CameraAspectRatio cameraAspectRatio,
+    @Default(30) int exportFrameRate,
+    @Default(true) bool restoreLastProject,
   }) = _EditorSettings;
 
   factory EditorSettings.fromJson(Map<String, dynamic> json) =>

@@ -75,6 +75,23 @@ _EditorSettings _$EditorSettingsFromJson(Map<String, dynamic> json) =>
             json['characterLibraryScope'],
           ) ??
           CharacterLibraryScope.global,
+      themeColor:
+          $enumDecodeNullable(_$AppThemeColorEnumMap, json['themeColor']) ??
+          AppThemeColor.coral,
+      autoSaveEnabled: json['autoSaveEnabled'] as bool? ?? false,
+      autoSaveIntervalSeconds:
+          (json['autoSaveIntervalSeconds'] as num?)?.toInt() ?? 60,
+      showCanvasGrid: json['showCanvasGrid'] as bool? ?? true,
+      snapToGrid: json['snapToGrid'] as bool? ?? true,
+      pixelRendering: json['pixelRendering'] as bool? ?? true,
+      cameraAspectRatio:
+          $enumDecodeNullable(
+            _$CameraAspectRatioEnumMap,
+            json['cameraAspectRatio'],
+          ) ??
+          CameraAspectRatio.fourThree,
+      exportFrameRate: (json['exportFrameRate'] as num?)?.toInt() ?? 30,
+      restoreLastProject: json['restoreLastProject'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$EditorSettingsToJson(
@@ -84,6 +101,15 @@ Map<String, dynamic> _$EditorSettingsToJson(
   'englishDialogueTypewriterByWord': instance.englishDialogueTypewriterByWord,
   'characterLibraryScope':
       _$CharacterLibraryScopeEnumMap[instance.characterLibraryScope]!,
+  'themeColor': _$AppThemeColorEnumMap[instance.themeColor]!,
+  'autoSaveEnabled': instance.autoSaveEnabled,
+  'autoSaveIntervalSeconds': instance.autoSaveIntervalSeconds,
+  'showCanvasGrid': instance.showCanvasGrid,
+  'snapToGrid': instance.snapToGrid,
+  'pixelRendering': instance.pixelRendering,
+  'cameraAspectRatio': _$CameraAspectRatioEnumMap[instance.cameraAspectRatio]!,
+  'exportFrameRate': instance.exportFrameRate,
+  'restoreLastProject': instance.restoreLastProject,
 };
 
 const _$AppLanguageEnumMap = {
@@ -95,6 +121,20 @@ const _$AppLanguageEnumMap = {
 const _$CharacterLibraryScopeEnumMap = {
   CharacterLibraryScope.global: 'global',
   CharacterLibraryScope.project: 'project',
+};
+
+const _$AppThemeColorEnumMap = {
+  AppThemeColor.coral: 'coral',
+  AppThemeColor.blue: 'blue',
+  AppThemeColor.cyan: 'cyan',
+  AppThemeColor.green: 'green',
+  AppThemeColor.purple: 'purple',
+  AppThemeColor.amber: 'amber',
+};
+
+const _$CameraAspectRatioEnumMap = {
+  CameraAspectRatio.fourThree: 'fourThree',
+  CameraAspectRatio.sixteenNine: 'sixteenNine',
 };
 
 _AssetRef _$AssetRefFromJson(Map<String, dynamic> json) => _AssetRef(

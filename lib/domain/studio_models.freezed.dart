@@ -632,7 +632,7 @@ as double,
 /// @nodoc
 mixin _$EditorSettings {
 
- AppLanguage get language; bool get englishDialogueTypewriterByWord; CharacterLibraryScope get characterLibraryScope;
+ AppLanguage get language; bool get englishDialogueTypewriterByWord; CharacterLibraryScope get characterLibraryScope; AppThemeColor get themeColor; bool get autoSaveEnabled; int get autoSaveIntervalSeconds; bool get showCanvasGrid; bool get snapToGrid; bool get pixelRendering; CameraAspectRatio get cameraAspectRatio; int get exportFrameRate; bool get restoreLastProject;
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -645,16 +645,16 @@ $EditorSettingsCopyWith<EditorSettings> get copyWith => _$EditorSettingsCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord)&&(identical(other.characterLibraryScope, characterLibraryScope) || other.characterLibraryScope == characterLibraryScope));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord)&&(identical(other.characterLibraryScope, characterLibraryScope) || other.characterLibraryScope == characterLibraryScope)&&(identical(other.themeColor, themeColor) || other.themeColor == themeColor)&&(identical(other.autoSaveEnabled, autoSaveEnabled) || other.autoSaveEnabled == autoSaveEnabled)&&(identical(other.autoSaveIntervalSeconds, autoSaveIntervalSeconds) || other.autoSaveIntervalSeconds == autoSaveIntervalSeconds)&&(identical(other.showCanvasGrid, showCanvasGrid) || other.showCanvasGrid == showCanvasGrid)&&(identical(other.snapToGrid, snapToGrid) || other.snapToGrid == snapToGrid)&&(identical(other.pixelRendering, pixelRendering) || other.pixelRendering == pixelRendering)&&(identical(other.cameraAspectRatio, cameraAspectRatio) || other.cameraAspectRatio == cameraAspectRatio)&&(identical(other.exportFrameRate, exportFrameRate) || other.exportFrameRate == exportFrameRate)&&(identical(other.restoreLastProject, restoreLastProject) || other.restoreLastProject == restoreLastProject));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord,characterLibraryScope);
+int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord,characterLibraryScope,themeColor,autoSaveEnabled,autoSaveIntervalSeconds,showCanvasGrid,snapToGrid,pixelRendering,cameraAspectRatio,exportFrameRate,restoreLastProject);
 
 @override
 String toString() {
-  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord, characterLibraryScope: $characterLibraryScope)';
+  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord, characterLibraryScope: $characterLibraryScope, themeColor: $themeColor, autoSaveEnabled: $autoSaveEnabled, autoSaveIntervalSeconds: $autoSaveIntervalSeconds, showCanvasGrid: $showCanvasGrid, snapToGrid: $snapToGrid, pixelRendering: $pixelRendering, cameraAspectRatio: $cameraAspectRatio, exportFrameRate: $exportFrameRate, restoreLastProject: $restoreLastProject)';
 }
 
 
@@ -665,7 +665,7 @@ abstract mixin class $EditorSettingsCopyWith<$Res>  {
   factory $EditorSettingsCopyWith(EditorSettings value, $Res Function(EditorSettings) _then) = _$EditorSettingsCopyWithImpl;
 @useResult
 $Res call({
- AppLanguage language, bool englishDialogueTypewriterByWord, CharacterLibraryScope characterLibraryScope
+ AppLanguage language, bool englishDialogueTypewriterByWord, CharacterLibraryScope characterLibraryScope, AppThemeColor themeColor, bool autoSaveEnabled, int autoSaveIntervalSeconds, bool showCanvasGrid, bool snapToGrid, bool pixelRendering, CameraAspectRatio cameraAspectRatio, int exportFrameRate, bool restoreLastProject
 });
 
 
@@ -682,12 +682,21 @@ class _$EditorSettingsCopyWithImpl<$Res>
 
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,Object? characterLibraryScope = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,Object? characterLibraryScope = null,Object? themeColor = null,Object? autoSaveEnabled = null,Object? autoSaveIntervalSeconds = null,Object? showCanvasGrid = null,Object? snapToGrid = null,Object? pixelRendering = null,Object? cameraAspectRatio = null,Object? exportFrameRate = null,Object? restoreLastProject = null,}) {
   return _then(EditorSettings(
 language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
 as AppLanguage,englishDialogueTypewriterByWord: null == englishDialogueTypewriterByWord ? _self.englishDialogueTypewriterByWord : englishDialogueTypewriterByWord // ignore: cast_nullable_to_non_nullable
 as bool,characterLibraryScope: null == characterLibraryScope ? _self.characterLibraryScope : characterLibraryScope // ignore: cast_nullable_to_non_nullable
-as CharacterLibraryScope,
+as CharacterLibraryScope,themeColor: null == themeColor ? _self.themeColor : themeColor // ignore: cast_nullable_to_non_nullable
+as AppThemeColor,autoSaveEnabled: null == autoSaveEnabled ? _self.autoSaveEnabled : autoSaveEnabled // ignore: cast_nullable_to_non_nullable
+as bool,autoSaveIntervalSeconds: null == autoSaveIntervalSeconds ? _self.autoSaveIntervalSeconds : autoSaveIntervalSeconds // ignore: cast_nullable_to_non_nullable
+as int,showCanvasGrid: null == showCanvasGrid ? _self.showCanvasGrid : showCanvasGrid // ignore: cast_nullable_to_non_nullable
+as bool,snapToGrid: null == snapToGrid ? _self.snapToGrid : snapToGrid // ignore: cast_nullable_to_non_nullable
+as bool,pixelRendering: null == pixelRendering ? _self.pixelRendering : pixelRendering // ignore: cast_nullable_to_non_nullable
+as bool,cameraAspectRatio: null == cameraAspectRatio ? _self.cameraAspectRatio : cameraAspectRatio // ignore: cast_nullable_to_non_nullable
+as CameraAspectRatio,exportFrameRate: null == exportFrameRate ? _self.exportFrameRate : exportFrameRate // ignore: cast_nullable_to_non_nullable
+as int,restoreLastProject: null == restoreLastProject ? _self.restoreLastProject : restoreLastProject // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -772,10 +781,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope,  AppThemeColor themeColor,  bool autoSaveEnabled,  int autoSaveIntervalSeconds,  bool showCanvasGrid,  bool snapToGrid,  bool pixelRendering,  CameraAspectRatio cameraAspectRatio,  int exportFrameRate,  bool restoreLastProject)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EditorSettings() when $default != null:
-return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope);case _:
+return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope,_that.themeColor,_that.autoSaveEnabled,_that.autoSaveIntervalSeconds,_that.showCanvasGrid,_that.snapToGrid,_that.pixelRendering,_that.cameraAspectRatio,_that.exportFrameRate,_that.restoreLastProject);case _:
   return orElse();
 
 }
@@ -793,10 +802,10 @@ return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.chara
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope,  AppThemeColor themeColor,  bool autoSaveEnabled,  int autoSaveIntervalSeconds,  bool showCanvasGrid,  bool snapToGrid,  bool pixelRendering,  CameraAspectRatio cameraAspectRatio,  int exportFrameRate,  bool restoreLastProject)  $default,) {final _that = this;
 switch (_that) {
 case _EditorSettings():
-return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope);case _:
+return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope,_that.themeColor,_that.autoSaveEnabled,_that.autoSaveIntervalSeconds,_that.showCanvasGrid,_that.snapToGrid,_that.pixelRendering,_that.cameraAspectRatio,_that.exportFrameRate,_that.restoreLastProject);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -813,10 +822,10 @@ return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.chara
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AppLanguage language,  bool englishDialogueTypewriterByWord,  CharacterLibraryScope characterLibraryScope,  AppThemeColor themeColor,  bool autoSaveEnabled,  int autoSaveIntervalSeconds,  bool showCanvasGrid,  bool snapToGrid,  bool pixelRendering,  CameraAspectRatio cameraAspectRatio,  int exportFrameRate,  bool restoreLastProject)?  $default,) {final _that = this;
 switch (_that) {
 case _EditorSettings() when $default != null:
-return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope);case _:
+return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.characterLibraryScope,_that.themeColor,_that.autoSaveEnabled,_that.autoSaveIntervalSeconds,_that.showCanvasGrid,_that.snapToGrid,_that.pixelRendering,_that.cameraAspectRatio,_that.exportFrameRate,_that.restoreLastProject);case _:
   return null;
 
 }
@@ -828,12 +837,21 @@ return $default(_that.language,_that.englishDialogueTypewriterByWord,_that.chara
 @JsonSerializable()
 
 class _EditorSettings implements EditorSettings {
-  const _EditorSettings({this.language = AppLanguage.system, this.englishDialogueTypewriterByWord = true, this.characterLibraryScope = CharacterLibraryScope.global});
+  const _EditorSettings({this.language = AppLanguage.system, this.englishDialogueTypewriterByWord = true, this.characterLibraryScope = CharacterLibraryScope.global, this.themeColor = AppThemeColor.coral, this.autoSaveEnabled = false, this.autoSaveIntervalSeconds = 60, this.showCanvasGrid = true, this.snapToGrid = true, this.pixelRendering = true, this.cameraAspectRatio = CameraAspectRatio.fourThree, this.exportFrameRate = 30, this.restoreLastProject = true});
   factory _EditorSettings.fromJson(Map<String, dynamic> json) => _$EditorSettingsFromJson(json);
 
 @override@JsonKey() final  AppLanguage language;
 @override@JsonKey() final  bool englishDialogueTypewriterByWord;
 @override@JsonKey() final  CharacterLibraryScope characterLibraryScope;
+@override@JsonKey() final  AppThemeColor themeColor;
+@override@JsonKey() final  bool autoSaveEnabled;
+@override@JsonKey() final  int autoSaveIntervalSeconds;
+@override@JsonKey() final  bool showCanvasGrid;
+@override@JsonKey() final  bool snapToGrid;
+@override@JsonKey() final  bool pixelRendering;
+@override@JsonKey() final  CameraAspectRatio cameraAspectRatio;
+@override@JsonKey() final  int exportFrameRate;
+@override@JsonKey() final  bool restoreLastProject;
 
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
@@ -848,16 +866,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord)&&(identical(other.characterLibraryScope, characterLibraryScope) || other.characterLibraryScope == characterLibraryScope));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EditorSettings&&(identical(other.language, language) || other.language == language)&&(identical(other.englishDialogueTypewriterByWord, englishDialogueTypewriterByWord) || other.englishDialogueTypewriterByWord == englishDialogueTypewriterByWord)&&(identical(other.characterLibraryScope, characterLibraryScope) || other.characterLibraryScope == characterLibraryScope)&&(identical(other.themeColor, themeColor) || other.themeColor == themeColor)&&(identical(other.autoSaveEnabled, autoSaveEnabled) || other.autoSaveEnabled == autoSaveEnabled)&&(identical(other.autoSaveIntervalSeconds, autoSaveIntervalSeconds) || other.autoSaveIntervalSeconds == autoSaveIntervalSeconds)&&(identical(other.showCanvasGrid, showCanvasGrid) || other.showCanvasGrid == showCanvasGrid)&&(identical(other.snapToGrid, snapToGrid) || other.snapToGrid == snapToGrid)&&(identical(other.pixelRendering, pixelRendering) || other.pixelRendering == pixelRendering)&&(identical(other.cameraAspectRatio, cameraAspectRatio) || other.cameraAspectRatio == cameraAspectRatio)&&(identical(other.exportFrameRate, exportFrameRate) || other.exportFrameRate == exportFrameRate)&&(identical(other.restoreLastProject, restoreLastProject) || other.restoreLastProject == restoreLastProject));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord,characterLibraryScope);
+int get hashCode => Object.hash(runtimeType,language,englishDialogueTypewriterByWord,characterLibraryScope,themeColor,autoSaveEnabled,autoSaveIntervalSeconds,showCanvasGrid,snapToGrid,pixelRendering,cameraAspectRatio,exportFrameRate,restoreLastProject);
 
 @override
 String toString() {
-  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord, characterLibraryScope: $characterLibraryScope)';
+  return 'EditorSettings(language: $language, englishDialogueTypewriterByWord: $englishDialogueTypewriterByWord, characterLibraryScope: $characterLibraryScope, themeColor: $themeColor, autoSaveEnabled: $autoSaveEnabled, autoSaveIntervalSeconds: $autoSaveIntervalSeconds, showCanvasGrid: $showCanvasGrid, snapToGrid: $snapToGrid, pixelRendering: $pixelRendering, cameraAspectRatio: $cameraAspectRatio, exportFrameRate: $exportFrameRate, restoreLastProject: $restoreLastProject)';
 }
 
 
@@ -868,7 +886,7 @@ abstract mixin class _$EditorSettingsCopyWith<$Res> implements $EditorSettingsCo
   factory _$EditorSettingsCopyWith(_EditorSettings value, $Res Function(_EditorSettings) _then) = __$EditorSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- AppLanguage language, bool englishDialogueTypewriterByWord, CharacterLibraryScope characterLibraryScope
+ AppLanguage language, bool englishDialogueTypewriterByWord, CharacterLibraryScope characterLibraryScope, AppThemeColor themeColor, bool autoSaveEnabled, int autoSaveIntervalSeconds, bool showCanvasGrid, bool snapToGrid, bool pixelRendering, CameraAspectRatio cameraAspectRatio, int exportFrameRate, bool restoreLastProject
 });
 
 
@@ -885,12 +903,21 @@ class __$EditorSettingsCopyWithImpl<$Res>
 
 /// Create a copy of EditorSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,Object? characterLibraryScope = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? language = null,Object? englishDialogueTypewriterByWord = null,Object? characterLibraryScope = null,Object? themeColor = null,Object? autoSaveEnabled = null,Object? autoSaveIntervalSeconds = null,Object? showCanvasGrid = null,Object? snapToGrid = null,Object? pixelRendering = null,Object? cameraAspectRatio = null,Object? exportFrameRate = null,Object? restoreLastProject = null,}) {
   return _then(_EditorSettings(
 language: null == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
 as AppLanguage,englishDialogueTypewriterByWord: null == englishDialogueTypewriterByWord ? _self.englishDialogueTypewriterByWord : englishDialogueTypewriterByWord // ignore: cast_nullable_to_non_nullable
 as bool,characterLibraryScope: null == characterLibraryScope ? _self.characterLibraryScope : characterLibraryScope // ignore: cast_nullable_to_non_nullable
-as CharacterLibraryScope,
+as CharacterLibraryScope,themeColor: null == themeColor ? _self.themeColor : themeColor // ignore: cast_nullable_to_non_nullable
+as AppThemeColor,autoSaveEnabled: null == autoSaveEnabled ? _self.autoSaveEnabled : autoSaveEnabled // ignore: cast_nullable_to_non_nullable
+as bool,autoSaveIntervalSeconds: null == autoSaveIntervalSeconds ? _self.autoSaveIntervalSeconds : autoSaveIntervalSeconds // ignore: cast_nullable_to_non_nullable
+as int,showCanvasGrid: null == showCanvasGrid ? _self.showCanvasGrid : showCanvasGrid // ignore: cast_nullable_to_non_nullable
+as bool,snapToGrid: null == snapToGrid ? _self.snapToGrid : snapToGrid // ignore: cast_nullable_to_non_nullable
+as bool,pixelRendering: null == pixelRendering ? _self.pixelRendering : pixelRendering // ignore: cast_nullable_to_non_nullable
+as bool,cameraAspectRatio: null == cameraAspectRatio ? _self.cameraAspectRatio : cameraAspectRatio // ignore: cast_nullable_to_non_nullable
+as CameraAspectRatio,exportFrameRate: null == exportFrameRate ? _self.exportFrameRate : exportFrameRate // ignore: cast_nullable_to_non_nullable
+as int,restoreLastProject: null == restoreLastProject ? _self.restoreLastProject : restoreLastProject // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

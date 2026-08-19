@@ -321,10 +321,39 @@ extension StudioControllerPreferenceActions on StudioController {
   Future<void> _writeLastProjectPath(Directory directory) async {
     final file = await _settingsFile();
     const encoder = JsonEncoder.withIndent('  ');
-    await file.writeAsString(
-      encoder.convert({StudioController._lastProjectPathKey: directory.path}),
-      flush: true,
-    );
+    final preferences = await _readAppPreferences();
+    preferences[StudioController._lastProjectPathKey] = directory.path;
+    await file.writeAsString(encoder.convert(preferences), flush: true);
+  }
+
+  Future<bool> _readRestoreLastProject() async {
+    final preferences = await _readAppPreferences();
+    final value = preferences['restoreLastProject'];
+    return value is bool ? value : true;
+  }
+
+  Future<void> _writeRestoreLastProject(bool value) async {
+    final file = await _settingsFile();
+    const encoder = JsonEncoder.withIndent('  ');
+    final preferences = await _readAppPreferences();
+    preferences['restoreLastProject'] = value;
+    await file.writeAsString(encoder.convert(preferences), flush: true);
+  }
+
+  Future<Map<String, dynamic>> _readAppPreferences() async {
+    try {
+      final file = await _settingsFile();
+      if (!await file.exists()) {
+        return <String, dynamic>{};
+      }
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } on Object {
+      // A corrupt preference file should fall back to defaults.
+    }
+    return <String, dynamic>{};
   }
 
   Future<void> _clearLastProjectPath() async {
