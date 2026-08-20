@@ -512,6 +512,12 @@ abstract class AppLocalizations {
   /// **'Search built-ins'**
   String get searchBuiltIns;
 
+  /// No description provided for @searchProjectAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Search project assets'**
+  String get searchProjectAssets;
+
   /// No description provided for @builtInAssetsCount.
   ///
   /// In en, this message translates to:

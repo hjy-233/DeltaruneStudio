@@ -32,7 +32,6 @@ class _AssetImageLayer extends StatelessWidget {
     required this.currentTime,
     required this.pan,
     required this.scale,
-    required this.foreground,
     required this.pixelRendering,
   });
 
@@ -43,7 +42,6 @@ class _AssetImageLayer extends StatelessWidget {
   final double currentTime;
   final Offset pan;
   final double scale;
-  final bool foreground;
   final bool pixelRendering;
 
   @override
@@ -51,11 +49,6 @@ class _AssetImageLayer extends StatelessWidget {
     final projectDirectory = ready.projectDirectory;
     final children = <Widget>[];
     for (final object in scene.objects) {
-      final isForeground =
-          object is CharacterInstanceObject || object is PropSceneObject;
-      if (foreground != isForeground) {
-        continue;
-      }
       final runtimeObject = runtimeObjects?[object.objectId];
       final assetId = imageAssetIdForObject(
         ready: ready,

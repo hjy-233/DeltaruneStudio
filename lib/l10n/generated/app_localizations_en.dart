@@ -226,6 +226,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchBuiltIns => 'Search built-ins';
 
   @override
+  String get searchProjectAssets => 'Search project assets';
+
+  @override
   String builtInAssetsCount(int shown, int total) {
     return '$shown / $total shown';
   }

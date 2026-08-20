@@ -69,6 +69,7 @@
   "assets": "Assets",
   "builtInAssets": "Built-in Assets",
   "searchBuiltIns": "Search built-ins",
+  "searchProjectAssets": "Search project assets",
   "builtInAssetsCount": "{shown} / {total} shown",
   "@builtInAssetsCount": {
     "placeholders": {

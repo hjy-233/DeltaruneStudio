@@ -23,6 +23,7 @@ class SceneSidebar extends ConsumerStatefulWidget {
 
 class _SceneSidebarState extends ConsumerState<SceneSidebar> {
   String _builtInQuery = '';
+  String _projectAssetQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +49,11 @@ class _SceneSidebarState extends ConsumerState<SceneSidebar> {
                   _ResourceTab(
                     ready: ready,
                     builtInQuery: _builtInQuery,
+                    projectAssetQuery: _projectAssetQuery,
                     onBuiltInQueryChanged: (value) =>
                         setState(() => _builtInQuery = value),
+                    onProjectAssetQueryChanged: (value) =>
+                        setState(() => _projectAssetQuery = value),
                   ),
                   _CharacterTab(ready: ready),
                 ],
@@ -126,17 +130,22 @@ class _ResourceTab extends ConsumerWidget {
   const _ResourceTab({
     required this.ready,
     required this.builtInQuery,
+    required this.projectAssetQuery,
     required this.onBuiltInQueryChanged,
+    required this.onProjectAssetQueryChanged,
   });
 
   final StudioReady ready;
   final String builtInQuery;
+  final String projectAssetQuery;
   final ValueChanged<String> onBuiltInQueryChanged;
+  final ValueChanged<String> onProjectAssetQueryChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(studioControllerProvider.notifier);
     final l10n = AppLocalizations.of(context)!;
+    final projectAssets = _filteredProjectAssets(ready.project.assets);
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -184,9 +193,19 @@ class _ResourceTab extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
+          TextField(
+            decoration: InputDecoration(
+              isDense: true,
+              prefixIcon: const Icon(Icons.search, size: 18),
+              labelText: l10n.searchProjectAssets,
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: onProjectAssetQueryChanged,
+          ),
+          const SizedBox(height: 8),
           Expanded(
             flex: 2,
-            child: ready.project.assets.isEmpty
+            child: projectAssets.isEmpty
                 ? Align(
                     alignment: Alignment.topLeft,
                     child: Text(
@@ -196,9 +215,9 @@ class _ResourceTab extends ConsumerWidget {
                   )
                 : ListView.builder(
                     key: const PageStorageKey('imported_asset_list'),
-                    itemCount: ready.project.assets.length,
+                    itemCount: projectAssets.length,
                     itemBuilder: (context, index) {
-                      final asset = ready.project.assets[index];
+                      final asset = projectAssets[index];
                       final selected =
                           ready.selection is AssetSelection &&
                           (ready.selection as AssetSelection).assetId ==
@@ -241,6 +260,21 @@ class _ResourceTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  List<AssetRef> _filteredProjectAssets(List<AssetRef> assets) {
+    final query = projectAssetQuery.trim().toLowerCase();
+    if (query.isEmpty) {
+      return assets;
+    }
+    return assets
+        .where(
+          (asset) =>
+              asset.originalName.toLowerCase().contains(query) ||
+              asset.relativePath.toLowerCase().contains(query) ||
+              asset.kind.name.toLowerCase().contains(query),
+        )
+        .toList(growable: false);
   }
 }
 

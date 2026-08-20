@@ -221,6 +221,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchBuiltIns => '搜索内置资源';
 
   @override
+  String get searchProjectAssets => '搜索项目资源';
+
+  @override
   String builtInAssetsCount(int shown, int total) {
     return '显示 $shown / $total';
   }

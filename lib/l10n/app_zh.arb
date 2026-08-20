@@ -69,6 +69,7 @@
   "assets": "资源",
   "builtInAssets": "内置资源",
   "searchBuiltIns": "搜索内置资源",
+  "searchProjectAssets": "搜索项目资源",
   "builtInAssetsCount": "显示 {shown} / {total}",
   "addBuiltInAsset": "添加内置资源",
   "importAsset": "导入资源",

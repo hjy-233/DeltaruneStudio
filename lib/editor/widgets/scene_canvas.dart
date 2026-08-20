@@ -386,15 +386,6 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
           previewTransforms,
           world,
           effectivePan,
-          false,
-        ),
-        _assetLayer(
-          scene,
-          runtimeObjects,
-          previewTransforms,
-          world,
-          effectivePan,
-          true,
         ),
         Positioned.fill(
           child: RepaintBoundary(
@@ -494,7 +485,6 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
     Map<String, Transform2D> previewTransforms,
     RuntimeWorld? world,
     Offset effectivePan,
-    bool foreground,
   ) {
     return Positioned.fill(
       child: RepaintBoundary(
@@ -506,7 +496,6 @@ class _SceneCanvasState extends ConsumerState<SceneCanvas> {
           currentTime: world?.currentTime ?? 0,
           pan: effectivePan,
           scale: _scale,
-          foreground: foreground,
           pixelRendering: widget.ready.project.settings.pixelRendering,
         ),
       ),
