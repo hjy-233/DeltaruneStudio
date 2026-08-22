@@ -1,15 +1,23 @@
-import 'package:deltarune_studio/app/deltarune_studio_app.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:window_manager/window_manager.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
-  if (!kIsWeb) {
-    await windowManager.ensureInitialized();
+void main() {
+  runApp(const DeltaruneStudioShell());
+}
+
+class DeltaruneStudioShell extends StatelessWidget {
+  const DeltaruneStudioShell({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Deltarune Studio',
+      theme: ThemeData.dark(useMaterial3: true),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Deltarune Studio')),
+        body: const Center(
+          child: Text('Editor runtime is ready for the new architecture.'),
+        ),
+      ),
+    );
   }
-  runApp(const ProviderScope(child: DeltaruneStudioApp()));
 }

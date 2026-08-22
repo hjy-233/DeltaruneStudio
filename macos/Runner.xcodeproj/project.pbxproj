@@ -244,7 +244,6 @@
 				33CC10EB2044A3C60003C045 /* Resources */,
 				33CC110E2044A8840003C045 /* Bundle Framework */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
-				D05B8E8A2CC8000000A00001 /* Copy Built-In Assets */,
 				30096B6A82486D279EF3278F /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
@@ -433,29 +432,6 @@
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
-		};
-		D05B8E8A2CC8000000A00001 /* Copy Built-In Assets */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(PROJECT_DIR)/../assets/builtin",
-				"$(PROJECT_DIR)/../assets/dialogue/portraits",
-				"$(PROJECT_DIR)/../assets/dialogue/sound",
-			);
-			name = "Copy Built-In Assets";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(TARGET_BUILD_DIR)/drs_builtin",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\ncd \"$PROJECT_DIR/..\"\n\"$FLUTTER_ROOT/bin/cache/dart-sdk/bin/dart\" run tool/sync_builtin_assets.dart \"$TARGET_BUILD_DIR/drs_builtin\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
