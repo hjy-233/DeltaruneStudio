@@ -31,17 +31,27 @@ class ProjectManifest {
 }
 
 class ProjectScene {
-  const ProjectScene({required this.id, required this.name, this.background});
+  const ProjectScene({
+    required this.id,
+    required this.name,
+    this.background,
+    this.objects = const [],
+  });
 
   final String id;
   final String name;
   final String? background;
+  final List<ProjectSceneObject> objects;
 
   factory ProjectScene.fromJson(Map<String, dynamic> json) {
     return ProjectScene(
       id: json['id'] as String? ?? 'main',
       name: json['name'] as String? ?? 'Main',
       background: json['background'] as String?,
+      objects: (json['objects'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(ProjectSceneObject.fromJson)
+          .toList(growable: false),
     );
   }
 
@@ -51,9 +61,53 @@ class ProjectScene {
       'id': id,
       'name': name,
       'background': background,
-      'objects': <Object?>[],
+      'objects': objects.map((object) => object.toJson()).toList(),
       'triggers': <Object?>[],
       'eventChains': <Object?>[],
+    };
+  }
+}
+
+class ProjectSceneObject {
+  const ProjectSceneObject({
+    required this.id,
+    required this.type,
+    required this.name,
+    required this.asset,
+    required this.x,
+    required this.y,
+    required this.zIndex,
+  });
+
+  final String id;
+  final String type;
+  final String name;
+  final String asset;
+  final double x;
+  final double y;
+  final int zIndex;
+
+  factory ProjectSceneObject.fromJson(Map<String, dynamic> json) {
+    return ProjectSceneObject(
+      id: json['id'] as String? ?? 'object',
+      type: json['type'] as String? ?? 'prop',
+      name: json['name'] as String? ?? 'Object',
+      asset: json['asset'] as String? ?? json['resource'] as String? ?? '',
+      x: (json['x'] as num?)?.toDouble() ?? 320,
+      y: (json['y'] as num?)?.toDouble() ?? 240,
+      zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type,
+      'name': name,
+      'asset': asset,
+      'x': x,
+      'y': y,
+      'zIndex': zIndex,
     };
   }
 }

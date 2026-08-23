@@ -11,7 +11,7 @@ func _ready() -> void:
 	var scene_path: String = project_data.get("mainScene", "scenes/main/scene.json")
 	scene_data = _read_json(PROJECT_ROOT.path_join(scene_path))
 	RenderingServer.set_default_clear_color(Color.BLACK)
-	_add_background()
+	_add_scene_visuals()
 	_add_runtime_label()
 
 func _read_json(path: String) -> Dictionary:
@@ -25,19 +25,88 @@ func _read_json(path: String) -> Dictionary:
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	return parsed if parsed is Dictionary else {}
 
-func _add_background() -> void:
+func _add_scene_visuals() -> void:
 	var background: Variant = scene_data.get("background")
-	if typeof(background) != TYPE_STRING or String(background).is_empty():
-		return
-	var texture := load(PROJECT_ROOT.path_join(String(background))) as Texture2D
+	if typeof(background) == TYPE_STRING and not String(background).is_empty():
+		_add_sprite(String(background), {
+			"type": "background",
+			"x": VIEW_SIZE.x / 2.0,
+			"y": VIEW_SIZE.y / 2.0,
+			"zIndex": -1000
+		})
+
+	var objects: Array = scene_data.get("objects", [])
+	var sorted_objects := _sort_objects(objects)
+	for object_variant in sorted_objects:
+		if object_variant is Dictionary:
+			var object: Dictionary = object_variant
+			var asset := _string_value(object, "asset")
+			if asset.is_empty():
+				asset = _string_value(object, "resource")
+			if not asset.is_empty():
+				_add_sprite(asset, object)
+
+func _sort_objects(objects: Array) -> Array:
+	var result: Array = []
+	for object in objects:
+		result.append(object)
+	for index in range(1, result.size()):
+		var current = result[index]
+		var current_z := _z_index(current)
+		var position := index - 1
+		while position >= 0 and _z_index(result[position]) > current_z:
+			result[position + 1] = result[position]
+			position -= 1
+		result[position + 1] = current
+	return result
+
+func _z_index(value: Variant) -> int:
+	if value is Dictionary:
+		return int(value.get("zIndex", 0))
+	return 0
+
+func _add_sprite(asset: String, object: Dictionary) -> void:
+	var texture := _load_texture(asset)
 	if texture == null:
-		push_error("DRS background could not be loaded: " + background)
+		push_error("DRS asset could not be loaded: " + asset)
 		return
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
-	sprite.position = VIEW_SIZE / 2.0
+	sprite.position = Vector2(
+		_number_value(object, "x", VIEW_SIZE.x / 2.0),
+		_number_value(object, "y", VIEW_SIZE.y / 2.0)
+	)
+	sprite.z_index = _z_index(object)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_apply_sprite_size(sprite, texture, object)
 	add_child(sprite)
+
+func _load_texture(asset: String) -> Texture2D:
+	var resource_path := PROJECT_ROOT.path_join(asset)
+	var absolute_path := ProjectSettings.globalize_path(resource_path)
+	var image := Image.load_from_file(absolute_path)
+	if image != null and not image.is_empty():
+		return ImageTexture.create_from_image(image)
+	return load(resource_path) as Texture2D
+
+func _apply_sprite_size(sprite: Sprite2D, texture: Texture2D, object: Dictionary) -> void:
+	var scale_x := _number_value(object, "scaleX", 1.0)
+	var scale_y := _number_value(object, "scaleY", 1.0)
+	var width := _number_value(object, "width", -1.0)
+	var height := _number_value(object, "height", -1.0)
+	if width > 0.0:
+		scale_x = width / texture.get_width()
+	if height > 0.0:
+		scale_y = height / texture.get_height()
+	sprite.scale = Vector2(scale_x, scale_y)
+
+func _string_value(object: Dictionary, key: String) -> String:
+	var value: Variant = object.get(key, "")
+	return value if value is String else ""
+
+func _number_value(object: Dictionary, key: String, fallback: float) -> float:
+	var value: Variant = object.get(key, fallback)
+	return float(value) if value is float or value is int else fallback
 
 func _add_runtime_label() -> void:
 	var label := Label.new()

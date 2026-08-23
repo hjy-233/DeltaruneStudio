@@ -2,6 +2,7 @@ import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_manifest.dart';
 import 'package:deltarune_studio/project/godot_build_service.dart';
 import 'package:deltarune_studio/project/project_repository.dart';
+import 'package:deltarune_studio/project/project_scene_preview.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
@@ -265,6 +266,8 @@ class _ProjectOverview extends StatelessWidget {
         const SizedBox(height: 8),
         Text(document.path),
         const SizedBox(height: 32),
+        ProjectScenePreview(document: document),
+        const SizedBox(height: 24),
         Text(
           l10n.projectStructure,
           style: Theme.of(context).textTheme.titleLarge,
