@@ -53,4 +53,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get godotStarted => 'Godot runtime started.';
+
+  @override
+  String get newRoom => 'New Room';
+
+  @override
+  String roomCreated(Object name) {
+    return 'Created room $name.';
+  }
+
+  @override
+  String get projectTab => 'Project';
+
+  @override
+  String get resourcesTab => 'Resources';
+
+  @override
+  String get charactersTab => 'Characters';
+
+  @override
+  String get roomsTab => 'Rooms';
+
+  @override
+  String get projectPath => 'Project path';
+
+  @override
+  String get sceneFolder => 'Main room';
+
+  @override
+  String get resourceBrowserNextStep =>
+      'Resource browser will be connected here.';
+
+  @override
+  String get selectObject => 'Select an object to edit its properties.';
 }

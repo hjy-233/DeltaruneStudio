@@ -23,12 +23,14 @@ class ProjectRepository {
       id: folderName,
       name: name.trim(),
       mainScene: 'scenes/main/scene.json',
+      rooms: const ['scenes/main/scene.json'],
     );
     final scene = const ProjectScene(id: 'main', name: 'Main');
     final document = ProjectDocument(
       manifest: manifest,
       mainScene: scene,
       path: projectDirectory.path,
+      rooms: [ProjectRoom(path: manifest.mainScene, scene: scene)],
     );
     await _writeProjectFiles(document);
     return document;
@@ -43,21 +45,60 @@ class ProjectRepository {
     final manifest = ProjectManifest.fromJson(
       jsonDecode(await manifestFile.readAsString()) as Map<String, dynamic>,
     );
-    final sceneFile = File(p.join(projectDirectory.path, manifest.mainScene));
-    final scene = sceneFile.existsSync()
-        ? ProjectScene.fromJson(
-            jsonDecode(await sceneFile.readAsString()) as Map<String, dynamic>,
-          )
-        : const ProjectScene(id: 'main', name: 'Main');
+    final roomPaths = manifest.rooms.isEmpty
+        ? [manifest.mainScene]
+        : manifest.rooms;
+    final rooms = <ProjectRoom>[];
+    for (final roomPath in roomPaths) {
+      rooms.add(
+        ProjectRoom(
+          path: roomPath,
+          scene: await _readScene(projectDirectory, roomPath),
+        ),
+      );
+    }
+    final scene = rooms
+        .firstWhere(
+          (room) => room.path == manifest.mainScene,
+          orElse: () => rooms.first,
+        )
+        .scene;
     return ProjectDocument(
       manifest: manifest,
       mainScene: scene,
       path: projectDirectory.path,
+      rooms: rooms,
     );
   }
 
   Future<void> save(ProjectDocument document) {
     return _writeProjectFiles(document);
+  }
+
+  Future<ProjectDocument> addRoom(ProjectDocument document, String name) async {
+    final roomId = _slugify(name).toLowerCase();
+    final roomPath = 'scenes/$roomId/room.json';
+    if (document.rooms.any((room) => room.path == roomPath)) {
+      throw StateError('Room already exists: $roomId');
+    }
+    final room = ProjectRoom(
+      path: roomPath,
+      scene: ProjectScene(id: roomId, name: name.trim()),
+    );
+    await Directory(
+      p.join(document.path, 'scenes', roomId),
+    ).create(recursive: true);
+    final existingRoomPaths = document.manifest.rooms.isEmpty
+        ? [document.manifest.mainScene]
+        : document.manifest.rooms;
+    final updated = document.copyWith(
+      manifest: document.manifest.copyWith(
+        rooms: [...existingRoomPaths, roomPath],
+      ),
+      rooms: [...document.rooms, room],
+    );
+    await _writeProjectFiles(updated);
+    return updated;
   }
 
   Future<void> _createProjectDirectories(Directory root) async {
@@ -89,6 +130,21 @@ class ProjectRepository {
       File(p.join(root.path, document.manifest.mainScene)),
       document.mainScene.toJson(),
     );
+    for (final room in document.rooms) {
+      if (room.path == document.manifest.mainScene) {
+        continue;
+      }
+      await _writeJson(File(p.join(root.path, room.path)), room.scene.toJson());
+    }
+  }
+
+  Future<ProjectScene> _readScene(Directory root, String roomPath) async {
+    final file = File(p.join(root.path, roomPath));
+    if (!await file.exists()) {
+      return const ProjectScene(id: 'room', name: 'Room');
+    }
+    final json = jsonDecode(await file.readAsString());
+    return ProjectScene.fromJson(json as Map<String, dynamic>);
   }
 
   Future<void> _writeJson(File file, Map<String, dynamic> json) async {

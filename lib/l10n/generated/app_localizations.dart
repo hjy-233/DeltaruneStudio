@@ -181,6 +181,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Godot runtime started.'**
   String get godotStarted;
+
+  /// No description provided for @newRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'New Room'**
+  String get newRoom;
+
+  /// No description provided for @roomCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created room {name}.'**
+  String roomCreated(Object name);
+
+  /// No description provided for @projectTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get projectTab;
+
+  /// No description provided for @resourcesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Resources'**
+  String get resourcesTab;
+
+  /// No description provided for @charactersTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Characters'**
+  String get charactersTab;
+
+  /// No description provided for @roomsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get roomsTab;
+
+  /// No description provided for @projectPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Project path'**
+  String get projectPath;
+
+  /// No description provided for @sceneFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Main room'**
+  String get sceneFolder;
+
+  /// No description provided for @resourceBrowserNextStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource browser will be connected here.'**
+  String get resourceBrowserNextStep;
+
+  /// No description provided for @selectObject.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an object to edit its properties.'**
+  String get selectObject;
 }
 
 class _AppLocalizationsDelegate

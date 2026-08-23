@@ -13,5 +13,15 @@
   "projectSaved": "项目已保存。",
   "projectStructure": "项目结构",
   "buildAndRun": "构建并在 Godot 中运行",
-  "godotStarted": "Godot 运行时已启动。"
+  "godotStarted": "Godot 运行时已启动。",
+  "newRoom": "新建房间",
+  "roomCreated": "已创建房间：{name}。",
+  "projectTab": "项目",
+  "resourcesTab": "资源",
+  "charactersTab": "角色",
+  "roomsTab": "房间",
+  "projectPath": "项目路径",
+  "sceneFolder": "主房间",
+  "resourceBrowserNextStep": "资源浏览器将在这里接入。",
+  "selectObject": "选择对象以编辑属性。"
 }

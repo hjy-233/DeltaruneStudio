@@ -21,4 +21,10 @@ class ProjectRepository {
       UnsupportedError('Project folders are not available on the web yet.'),
     );
   }
+
+  Future<ProjectDocument> addRoom(ProjectDocument document, String name) {
+    return Future.error(
+      UnsupportedError('Room creation is not available on the web yet.'),
+    );
+  }
 }

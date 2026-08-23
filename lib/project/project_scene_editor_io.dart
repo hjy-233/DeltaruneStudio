@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,41 +22,65 @@ class ProjectSceneEditor extends StatefulWidget {
 
 class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   String? _selectedId;
+  double _inspectorWidth = 300;
 
   ProjectScene get _scene => widget.document.mainScene;
 
   @override
   Widget build(BuildContext context) {
     final selected = _selectedObject;
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _EditorToolbar(onAdd: _addObject),
         const SizedBox(height: 8),
-        AspectRatio(
-          aspectRatio: 4 / 3,
-          child: ColoredBox(
-            color: Colors.black,
-            child: LayoutBuilder(
-              builder: (context, constraints) => _SceneCanvas(
-                document: widget.document,
-                selectedId: _selectedId,
-                scale: constraints.maxWidth / 640,
-                onSelect: _select,
-                onMove: _moveObject,
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 4 / 3,
+                    child: ColoredBox(
+                      color: Colors.black,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => _SceneCanvas(
+                          document: widget.document,
+                          selectedId: _selectedId,
+                          scale: constraints.maxWidth / 640,
+                          onSelect: _select,
+                          onMove: _moveObject,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
+              _EditorPanelDivider(
+                onDrag: (delta) => setState(
+                  () => _inspectorWidth = (_inspectorWidth - delta).clamp(
+                    240,
+                    420,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: _inspectorWidth,
+                child: selected == null
+                    ? Center(child: Text(l10n.selectObject))
+                    : SingleChildScrollView(
+                        child: _ObjectInspector(
+                          object: selected,
+                          onChanged: _updateObject,
+                          onDelete: () => _deleteObject(selected.id),
+                        ),
+                      ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        if (selected == null)
-          const Text('Select an object to edit its properties.')
-        else
-          _ObjectInspector(
-            object: selected,
-            onChanged: _updateObject,
-            onDelete: () => _deleteObject(selected.id),
-          ),
       ],
     );
   }
@@ -125,6 +150,27 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   void _emit(ProjectScene scene) {
     widget.onChanged(scene);
     setState(() {});
+  }
+}
+
+class _EditorPanelDivider extends StatelessWidget {
+  const _EditorPanelDivider({required this.onDrag});
+
+  final ValueChanged<double> onDrag;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeColumn,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragUpdate: (details) => onDrag(details.delta.dx),
+        child: const SizedBox(
+          width: 12,
+          child: Center(child: VerticalDivider(width: 1, thickness: 1)),
+        ),
+      ),
+    );
   }
 }
 
@@ -273,61 +319,59 @@ class _ObjectInspector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 180,
-              child: _textField(
-                'Name',
-                object.name,
-                (value) => onChanged(object.copyWith(name: value)),
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 180,
+            child: _textField(
+              'Name',
+              object.name,
+              (value) => onChanged(object.copyWith(name: value)),
             ),
-            SizedBox(
-              width: 300,
-              child: _textField(
-                'Asset path',
-                object.asset,
-                (value) => onChanged(object.copyWith(asset: value)),
-              ),
+          ),
+          SizedBox(
+            width: 300,
+            child: _textField(
+              'Asset path',
+              object.asset,
+              (value) => onChanged(object.copyWith(asset: value)),
             ),
-            SizedBox(
-              width: 100,
-              child: _numberField(
-                'X',
-                object.x,
-                (value) => onChanged(object.copyWith(x: value)),
-              ),
+          ),
+          SizedBox(
+            width: 100,
+            child: _numberField(
+              'X',
+              object.x,
+              (value) => onChanged(object.copyWith(x: value)),
             ),
-            SizedBox(
-              width: 100,
-              child: _numberField(
-                'Y',
-                object.y,
-                (value) => onChanged(object.copyWith(y: value)),
-              ),
+          ),
+          SizedBox(
+            width: 100,
+            child: _numberField(
+              'Y',
+              object.y,
+              (value) => onChanged(object.copyWith(y: value)),
             ),
-            SizedBox(
-              width: 100,
-              child: _numberField(
-                'Layer',
-                object.zIndex.toDouble(),
-                (value) => onChanged(object.copyWith(zIndex: value.toInt())),
-              ),
+          ),
+          SizedBox(
+            width: 100,
+            child: _numberField(
+              'Layer',
+              object.zIndex.toDouble(),
+              (value) => onChanged(object.copyWith(zIndex: value.toInt())),
             ),
-            FilledButton.tonalIcon(
-              onPressed: onDelete,
-              icon: const Icon(Icons.delete),
-              label: const Text('Delete'),
-            ),
-          ],
-        ),
+          ),
+          FilledButton.tonalIcon(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

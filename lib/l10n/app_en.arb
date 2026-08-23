@@ -13,5 +13,15 @@
   "projectSaved": "Project saved.",
   "projectStructure": "Project structure",
   "buildAndRun": "Build and run in Godot",
-  "godotStarted": "Godot runtime started."
+  "godotStarted": "Godot runtime started.",
+  "newRoom": "New Room",
+  "roomCreated": "Created room {name}.",
+  "projectTab": "Project",
+  "resourcesTab": "Resources",
+  "charactersTab": "Characters",
+  "roomsTab": "Rooms",
+  "projectPath": "Project path",
+  "sceneFolder": "Main room",
+  "resourceBrowserNextStep": "Resource browser will be connected here.",
+  "selectObject": "Select an object to edit its properties."
 }

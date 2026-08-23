@@ -4,12 +4,14 @@ class ProjectManifest {
     required this.id,
     required this.name,
     required this.mainScene,
+    this.rooms = const [],
   });
 
   final int formatVersion;
   final String id;
   final String name;
   final String mainScene;
+  final List<String> rooms;
 
   factory ProjectManifest.fromJson(Map<String, dynamic> json) {
     return ProjectManifest(
@@ -17,6 +19,9 @@ class ProjectManifest {
       id: json['id'] as String? ?? 'project',
       name: json['name'] as String? ?? 'Untitled Project',
       mainScene: json['mainScene'] as String? ?? 'scenes/main/scene.json',
+      rooms: (json['rooms'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .toList(growable: false),
     );
   }
 
@@ -26,7 +31,18 @@ class ProjectManifest {
       'id': id,
       'name': name,
       'mainScene': mainScene,
+      'rooms': rooms.isEmpty ? [mainScene] : rooms,
     };
+  }
+
+  ProjectManifest copyWith({List<String>? rooms}) {
+    return ProjectManifest(
+      formatVersion: formatVersion,
+      id: id,
+      name: name,
+      mainScene: mainScene,
+      rooms: rooms ?? this.rooms,
+    );
   }
 }
 
@@ -148,9 +164,35 @@ class ProjectDocument {
     required this.manifest,
     required this.mainScene,
     required this.path,
+    this.rooms = const [],
   });
 
   final ProjectManifest manifest;
   final ProjectScene mainScene;
   final String path;
+  final List<ProjectRoom> rooms;
+
+  ProjectDocument copyWith({
+    ProjectManifest? manifest,
+    ProjectScene? mainScene,
+    List<ProjectRoom>? rooms,
+  }) {
+    return ProjectDocument(
+      manifest: manifest ?? this.manifest,
+      mainScene: mainScene ?? this.mainScene,
+      path: path,
+      rooms: rooms ?? this.rooms,
+    );
+  }
+}
+
+class ProjectRoom {
+  const ProjectRoom({required this.path, required this.scene});
+
+  final String path;
+  final ProjectScene scene;
+
+  ProjectRoom copyWith({ProjectScene? scene}) {
+    return ProjectRoom(path: path, scene: scene ?? this.scene);
+  }
 }

@@ -53,4 +53,36 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get godotStarted => 'Godot 运行时已启动。';
+
+  @override
+  String get newRoom => '新建房间';
+
+  @override
+  String roomCreated(Object name) {
+    return '已创建房间：$name。';
+  }
+
+  @override
+  String get projectTab => '项目';
+
+  @override
+  String get resourcesTab => '资源';
+
+  @override
+  String get charactersTab => '角色';
+
+  @override
+  String get roomsTab => '房间';
+
+  @override
+  String get projectPath => '项目路径';
+
+  @override
+  String get sceneFolder => '主房间';
+
+  @override
+  String get resourceBrowserNextStep => '资源浏览器将在这里接入。';
+
+  @override
+  String get selectObject => '选择对象以编辑属性。';
 }
