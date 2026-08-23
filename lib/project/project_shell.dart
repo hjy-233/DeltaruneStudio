@@ -2,7 +2,7 @@ import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_manifest.dart';
 import 'package:deltarune_studio/project/godot_build_service.dart';
 import 'package:deltarune_studio/project/project_repository.dart';
-import 'package:deltarune_studio/project/project_scene_preview.dart';
+import 'package:deltarune_studio/project/project_scene_editor.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
@@ -61,7 +61,10 @@ class _ProjectShellState extends State<ProjectShell> {
                     onCreate: _createProject,
                     onOpen: _openProject,
                   )
-                : _ProjectOverview(document: document),
+                : _ProjectOverview(
+                    document: document,
+                    onSceneChanged: _updateScene,
+                  ),
           ),
         ),
       ),
@@ -141,6 +144,21 @@ class _ProjectShellState extends State<ProjectShell> {
         setState(() => _busy = false);
       }
     }
+  }
+
+  void _updateScene(ProjectScene scene) {
+    final document = _document;
+    if (document == null) {
+      return;
+    }
+    setState(() {
+      _document = ProjectDocument(
+        manifest: document.manifest,
+        mainScene: scene,
+        path: document.path,
+      );
+      _message = 'Scene changed. Save to write it to disk.';
+    });
   }
 
   Future<void> _run(
@@ -249,9 +267,13 @@ class _EmptyProjectView extends StatelessWidget {
 }
 
 class _ProjectOverview extends StatelessWidget {
-  const _ProjectOverview({required this.document});
+  const _ProjectOverview({
+    required this.document,
+    required this.onSceneChanged,
+  });
 
   final ProjectDocument document;
+  final ValueChanged<ProjectScene> onSceneChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -266,7 +288,7 @@ class _ProjectOverview extends StatelessWidget {
         const SizedBox(height: 8),
         Text(document.path),
         const SizedBox(height: 32),
-        ProjectScenePreview(document: document),
+        ProjectSceneEditor(document: document, onChanged: onSceneChanged),
         const SizedBox(height: 24),
         Text(
           l10n.projectStructure,

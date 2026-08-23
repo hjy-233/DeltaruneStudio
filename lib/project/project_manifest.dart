@@ -43,6 +43,18 @@ class ProjectScene {
   final String? background;
   final List<ProjectSceneObject> objects;
 
+  ProjectScene copyWith({
+    String? background,
+    List<ProjectSceneObject>? objects,
+  }) {
+    return ProjectScene(
+      id: id,
+      name: name,
+      background: background ?? this.background,
+      objects: objects ?? this.objects,
+    );
+  }
+
   factory ProjectScene.fromJson(Map<String, dynamic> json) {
     return ProjectScene(
       id: json['id'] as String? ?? 'main',
@@ -86,6 +98,25 @@ class ProjectSceneObject {
   final double x;
   final double y;
   final int zIndex;
+
+  ProjectSceneObject copyWith({
+    String? type,
+    String? name,
+    String? asset,
+    double? x,
+    double? y,
+    int? zIndex,
+  }) {
+    return ProjectSceneObject(
+      id: id,
+      type: type ?? this.type,
+      name: name ?? this.name,
+      asset: asset ?? this.asset,
+      x: x ?? this.x,
+      y: y ?? this.y,
+      zIndex: zIndex ?? this.zIndex,
+    );
+  }
 
   factory ProjectSceneObject.fromJson(Map<String, dynamic> json) {
     return ProjectSceneObject(
