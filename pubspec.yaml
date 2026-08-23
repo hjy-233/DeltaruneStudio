@@ -1,5 +1,5 @@
 name: deltarune_studio
-description: "A tool for creating Undertale / Deltarune style animations."
+description: "A tool for creating Undertale / Deltarune style games/animations."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
