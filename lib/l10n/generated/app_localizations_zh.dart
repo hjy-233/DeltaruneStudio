@@ -47,4 +47,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get projectStructure => '项目结构';
+
+  @override
+  String get buildAndRun => '构建并在 Godot 中运行';
+
+  @override
+  String get godotStarted => 'Godot 运行时已启动。';
 }

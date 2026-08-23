@@ -31,15 +31,17 @@ class ProjectManifest {
 }
 
 class ProjectScene {
-  const ProjectScene({required this.id, required this.name});
+  const ProjectScene({required this.id, required this.name, this.background});
 
   final String id;
   final String name;
+  final String? background;
 
   factory ProjectScene.fromJson(Map<String, dynamic> json) {
     return ProjectScene(
       id: json['id'] as String? ?? 'main',
       name: json['name'] as String? ?? 'Main',
+      background: json['background'] as String?,
     );
   }
 
@@ -48,6 +50,7 @@ class ProjectScene {
       'formatVersion': 1,
       'id': id,
       'name': name,
+      'background': background,
       'objects': <Object?>[],
       'triggers': <Object?>[],
       'eventChains': <Object?>[],

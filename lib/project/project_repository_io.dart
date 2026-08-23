@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'project_manifest.dart';
 import 'package:path/path.dart' as p;
+
+import 'project_manifest.dart';
 
 class ProjectRepository {
   Future<ProjectDocument> create({
@@ -73,7 +74,6 @@ class ProjectRepository {
       'scripts/generated',
       'visual_scripts',
       'settings',
-      '.build/godot',
     ]) {
       await Directory(p.join(root.path, path)).create(recursive: true);
     }

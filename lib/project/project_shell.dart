@@ -1,5 +1,6 @@
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_manifest.dart';
+import 'package:deltarune_studio/project/godot_build_service.dart';
 import 'package:deltarune_studio/project/project_repository.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class ProjectShell extends StatefulWidget {
 
 class _ProjectShellState extends State<ProjectShell> {
   final ProjectRepository _repository = ProjectRepository();
+  final GodotBuildService _godotBuildService = GodotBuildService();
   ProjectDocument? _document;
   String? _message;
   bool _busy = false;
@@ -26,6 +28,11 @@ class _ProjectShellState extends State<ProjectShell> {
         title: Text(l10n.appTitle),
         actions: [
           IconButton(
+            tooltip: l10n.newProject,
+            onPressed: _busy ? null : _createProject,
+            icon: const Icon(Icons.create_new_folder),
+          ),
+          IconButton(
             tooltip: l10n.openProject,
             onPressed: _busy ? null : _openProject,
             icon: const Icon(Icons.folder_open),
@@ -34,6 +41,11 @@ class _ProjectShellState extends State<ProjectShell> {
             tooltip: l10n.saveProject,
             onPressed: document == null || _busy ? null : _saveProject,
             icon: const Icon(Icons.save),
+          ),
+          IconButton(
+            tooltip: l10n.buildAndRun,
+            onPressed: document == null || _busy ? null : _buildAndRun,
+            icon: const Icon(Icons.play_arrow),
           ),
         ],
       ),
@@ -101,6 +113,33 @@ class _ProjectShellState extends State<ProjectShell> {
       await _repository.save(document);
       return document;
     }, success: (_) => l10n.projectSaved);
+  }
+
+  Future<void> _buildAndRun() async {
+    final document = _document;
+    if (document == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      await _godotBuildService.buildAndRun(document);
+      if (mounted) {
+        setState(() => _message = l10n.godotStarted);
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        final message = error is StateError ? error.message : error.toString();
+        setState(() => _message = message);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
   }
 
   Future<void> _run(

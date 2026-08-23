@@ -11,5 +11,7 @@
   "projectCreated": "Created project at {path}",
   "projectOpened": "Opened project {name}",
   "projectSaved": "Project saved.",
-  "projectStructure": "Project structure"
+  "projectStructure": "Project structure",
+  "buildAndRun": "Build and run in Godot",
+  "godotStarted": "Godot runtime started."
 }

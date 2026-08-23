@@ -169,6 +169,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Project structure'**
   String get projectStructure;
+
+  /// No description provided for @buildAndRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Build and run in Godot'**
+  String get buildAndRun;
+
+  /// No description provided for @godotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Godot runtime started.'**
+  String get godotStarted;
 }
 
 class _AppLocalizationsDelegate

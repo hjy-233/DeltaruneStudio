@@ -11,5 +11,7 @@
   "projectCreated": "项目已创建：{path}",
   "projectOpened": "已打开项目：{name}",
   "projectSaved": "项目已保存。",
-  "projectStructure": "项目结构"
+  "projectStructure": "项目结构",
+  "buildAndRun": "构建并在 Godot 中运行",
+  "godotStarted": "Godot 运行时已启动。"
 }

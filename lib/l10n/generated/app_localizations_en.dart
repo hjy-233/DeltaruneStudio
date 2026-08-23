@@ -47,4 +47,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectStructure => 'Project structure';
+
+  @override
+  String get buildAndRun => 'Build and run in Godot';
+
+  @override
+  String get godotStarted => 'Godot runtime started.';
 }
