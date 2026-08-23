@@ -1,4 +1,15 @@
 {
   "@@locale": "en",
-  "appTitle": "Deltarune Studio"
+  "appTitle": "Deltarune Studio",
+  "newProject": "New Project",
+  "openProject": "Open Project",
+  "saveProject": "Save Project",
+  "projectName": "Project name",
+  "create": "Create",
+  "cancel": "Cancel",
+  "noProject": "No project is open.",
+  "projectCreated": "Created project at {path}",
+  "projectOpened": "Opened project {name}",
+  "projectSaved": "Project saved.",
+  "projectStructure": "Project structure"
 }

@@ -1,4 +1,15 @@
 {
   "@@locale": "zh",
-  "appTitle": "Deltarune Studio"
+  "appTitle": "Deltarune Studio",
+  "newProject": "新建项目",
+  "openProject": "打开项目",
+  "saveProject": "保存项目",
+  "projectName": "项目名称",
+  "create": "创建",
+  "cancel": "取消",
+  "noProject": "当前没有打开项目。",
+  "projectCreated": "项目已创建：{path}",
+  "projectOpened": "已打开项目：{name}",
+  "projectSaved": "项目已保存。",
+  "projectStructure": "项目结构"
 }

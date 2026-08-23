@@ -10,4 +10,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appTitle => 'Deltarune Studio';
+
+  @override
+  String get newProject => 'New Project';
+
+  @override
+  String get openProject => 'Open Project';
+
+  @override
+  String get saveProject => 'Save Project';
+
+  @override
+  String get projectName => 'Project name';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get noProject => 'No project is open.';
+
+  @override
+  String projectCreated(Object path) {
+    return 'Created project at $path';
+  }
+
+  @override
+  String projectOpened(Object name) {
+    return 'Opened project $name';
+  }
+
+  @override
+  String get projectSaved => 'Project saved.';
+
+  @override
+  String get projectStructure => 'Project structure';
 }

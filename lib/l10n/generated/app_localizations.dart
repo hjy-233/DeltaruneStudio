@@ -103,6 +103,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deltarune Studio'**
   String get appTitle;
+
+  /// No description provided for @newProject.
+  ///
+  /// In en, this message translates to:
+  /// **'New Project'**
+  String get newProject;
+
+  /// No description provided for @openProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Project'**
+  String get openProject;
+
+  /// No description provided for @saveProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Project'**
+  String get saveProject;
+
+  /// No description provided for @projectName.
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get projectName;
+
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @noProject.
+  ///
+  /// In en, this message translates to:
+  /// **'No project is open.'**
+  String get noProject;
+
+  /// No description provided for @projectCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created project at {path}'**
+  String projectCreated(Object path);
+
+  /// No description provided for @projectOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened project {name}'**
+  String projectOpened(Object name);
+
+  /// No description provided for @projectSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Project saved.'**
+  String get projectSaved;
+
+  /// No description provided for @projectStructure.
+  ///
+  /// In en, this message translates to:
+  /// **'Project structure'**
+  String get projectStructure;
 }
 
 class _AppLocalizationsDelegate
