@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:deltarune_studio/project/project_manifest.dart';
 import 'package:deltarune_studio/project/godot_build_service.dart';
+import 'package:deltarune_studio/project/project_asset_thumbnail.dart';
 import 'package:deltarune_studio/project/project_repository.dart';
 import 'package:deltarune_studio/project/project_scene_editor.dart';
 import 'package:deltarune_studio/project/recent_projects.dart';
@@ -22,6 +23,7 @@ class _ProjectShellState extends State<ProjectShell> {
   final RecentProjectsStore _recentProjectsStore = RecentProjectsStore();
   ProjectDocument? _document;
   String? _activeRoomPath;
+  String? _selectedObjectId;
   final List<String> _recentProjects = [];
   String? _message;
   bool _busy = false;
@@ -95,26 +97,26 @@ class _ProjectShellState extends State<ProjectShell> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1400),
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: document == null
-                ? _EmptyProjectView(
-                    busy: _busy,
-                    onCreate: _createProject,
-                    onOpen: _openProject,
-                  )
-                : _ProjectOverview(
-                    document: document,
-                    activeRoomPath: _activeRoomPath,
-                    onRoomSelected: _selectRoom,
-                    onNewRoom: _newRoom,
-                    onSceneChanged: _updateScene,
-                  ),
-          ),
-        ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: document == null
+            ? Center(
+                child: _EmptyProjectView(
+                  busy: _busy,
+                  onCreate: _createProject,
+                  onOpen: _openProject,
+                ),
+              )
+            : _ProjectOverview(
+                document: document,
+                activeRoomPath: _activeRoomPath,
+                onRoomSelected: _selectRoom,
+                onNewRoom: _newRoom,
+                onSceneChanged: _updateScene,
+                onSelectionChanged: (id) => _selectedObjectId = id,
+                onAssetSelected: _replaceSelectedAsset,
+                onLayoutChanged: _updateLayout,
+              ),
       ),
       bottomNavigationBar: _message == null
           ? null
@@ -265,6 +267,68 @@ class _ProjectShellState extends State<ProjectShell> {
     });
   }
 
+  void _replaceSelectedAsset(ProjectAsset asset) {
+    final document = _document;
+    final selectedId = _selectedObjectId;
+    if (document == null) {
+      return;
+    }
+    final roomPath = _activeRoomPath ?? document.manifest.mainScene;
+    final current = _sceneFor(document, roomPath);
+    if (selectedId == null && asset.type == 'backgrounds') {
+      _updateScene(current.copyWith(background: asset.path));
+      return;
+    }
+    if (selectedId == null) {
+      return;
+    }
+    ProjectSceneObject? selected;
+    for (final object in current.objects) {
+      if (object.id == selectedId) {
+        selected = object;
+        break;
+      }
+    }
+    if (selected == null) {
+      return;
+    }
+    _updateScene(
+      current.copyWith(
+        objects: current.objects
+            .map(
+              (object) => object.id == selectedId
+                  ? object.copyWith(asset: asset.path, width: -1, height: -1)
+                  : object,
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
+
+  void _updateLayout(ProjectLayout layout) {
+    final document = _document;
+    if (document == null) {
+      return;
+    }
+    setState(() {
+      _document = document.copyWith(
+        manifest: document.manifest.copyWith(layout: layout),
+      );
+    });
+  }
+
+  ProjectScene _sceneFor(ProjectDocument document, String roomPath) {
+    if (roomPath == document.manifest.mainScene || document.rooms.isEmpty) {
+      return document.mainScene;
+    }
+    for (final room in document.rooms) {
+      if (room.path == roomPath) {
+        return room.scene;
+      }
+    }
+    return document.mainScene;
+  }
+
   void _selectRoom(String path) {
     setState(() => _activeRoomPath = path);
   }
@@ -409,6 +473,9 @@ class _ProjectOverview extends StatefulWidget {
     required this.onRoomSelected,
     required this.onNewRoom,
     required this.onSceneChanged,
+    required this.onSelectionChanged,
+    required this.onAssetSelected,
+    required this.onLayoutChanged,
   });
 
   final ProjectDocument document;
@@ -416,13 +483,25 @@ class _ProjectOverview extends StatefulWidget {
   final ValueChanged<String> onRoomSelected;
   final VoidCallback onNewRoom;
   final ValueChanged<ProjectScene> onSceneChanged;
+  final ValueChanged<String?> onSelectionChanged;
+  final ValueChanged<ProjectAsset> onAssetSelected;
+  final ValueChanged<ProjectLayout> onLayoutChanged;
 
   @override
   State<_ProjectOverview> createState() => _ProjectOverviewState();
 }
 
 class _ProjectOverviewState extends State<_ProjectOverview> {
-  double _sidebarWidth = 230;
+  late double _sidebarWidth = widget.document.manifest.layout.sidebarWidth;
+
+  @override
+  void didUpdateWidget(covariant _ProjectOverview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.document.manifest.layout.sidebarWidth !=
+        widget.document.manifest.layout.sidebarWidth) {
+      _sidebarWidth = widget.document.manifest.layout.sidebarWidth;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -437,8 +516,7 @@ class _ProjectOverviewState extends State<_ProjectOverview> {
         const SizedBox(height: 8),
         Text(document.path),
         const SizedBox(height: 24),
-        SizedBox(
-          height: 620,
+        Expanded(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -449,17 +527,29 @@ class _ProjectOverviewState extends State<_ProjectOverview> {
                   activePath: widget.activeRoomPath,
                   onRoomSelected: widget.onRoomSelected,
                   onNewRoom: widget.onNewRoom,
+                  onAssetSelected: widget.onAssetSelected,
                 ),
               ),
               _PanelDivider(
-                onDrag: (delta) => setState(
-                  () => _sidebarWidth = (_sidebarWidth + delta).clamp(180, 360),
-                ),
+                onDrag: (delta) => setState(() {
+                  final width = (_sidebarWidth + delta)
+                      .clamp(180.0, 360.0)
+                      .toDouble();
+                  _sidebarWidth = width;
+                  widget.onLayoutChanged(
+                    document.manifest.layout.copyWith(sidebarWidth: width),
+                  );
+                }),
               ),
               Expanded(
                 child: ProjectSceneEditor(
                   document: _roomDocument(document, widget.activeRoomPath),
                   onChanged: widget.onSceneChanged,
+                  onSelectionChanged: widget.onSelectionChanged,
+                  inspectorWidth: document.manifest.layout.inspectorWidth,
+                  onInspectorWidthChanged: (width) => widget.onLayoutChanged(
+                    document.manifest.layout.copyWith(inspectorWidth: width),
+                  ),
                 ),
               ),
             ],
@@ -508,12 +598,14 @@ class _WorkspaceSidebar extends StatelessWidget {
     required this.activePath,
     required this.onRoomSelected,
     required this.onNewRoom,
+    required this.onAssetSelected,
   });
 
   final ProjectDocument document;
   final String? activePath;
   final ValueChanged<String> onRoomSelected;
   final VoidCallback onNewRoom;
+  final ValueChanged<ProjectAsset> onAssetSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -523,7 +615,9 @@ class _WorkspaceSidebar extends StatelessWidget {
       child: Column(
         children: [
           TabBar(
-            isScrollable: true,
+            isScrollable: false,
+            labelPadding: EdgeInsets.zero,
+            indicatorSize: TabBarIndicatorSize.tab,
             tabs: [
               Tab(
                 icon: const Icon(Icons.folder_copy_outlined),
@@ -547,8 +641,17 @@ class _WorkspaceSidebar extends StatelessWidget {
             child: TabBarView(
               children: [
                 _ProjectTab(document: document),
-                _ResourceTab(title: l10n.resourcesTab, folder: 'resources/'),
-                _ResourceTab(title: l10n.charactersTab, folder: 'characters/'),
+                _ResourceTab(
+                  document: document,
+                  title: l10n.resourcesTab,
+                  onAssetSelected: onAssetSelected,
+                ),
+                _ResourceTab(
+                  document: document,
+                  title: l10n.charactersTab,
+                  typeFilter: 'characters',
+                  onAssetSelected: onAssetSelected,
+                ),
                 _RoomTab(
                   document: document,
                   activePath: activePath,
@@ -597,30 +700,84 @@ class _ProjectTab extends StatelessWidget {
   }
 }
 
-class _ResourceTab extends StatelessWidget {
-  const _ResourceTab({required this.title, required this.folder});
+class _ResourceTab extends StatefulWidget {
+  const _ResourceTab({
+    required this.document,
+    required this.title,
+    required this.onAssetSelected,
+    this.typeFilter,
+  });
 
+  final ProjectDocument document;
   final String title;
-  final String folder;
+  final String? typeFilter;
+  final ValueChanged<ProjectAsset> onAssetSelected;
+
+  @override
+  State<_ResourceTab> createState() => _ResourceTabState();
+}
+
+class _ResourceTabState extends State<_ResourceTab> {
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return ListView(
-      padding: const EdgeInsets.all(12),
+    final query = _query.trim().toLowerCase();
+    final assets = widget.document.assets
+        .where(
+          (asset) =>
+              widget.typeFilter == null || asset.type == widget.typeFilter,
+        )
+        .where(
+          (asset) =>
+              query.isEmpty ||
+              asset.name.toLowerCase().contains(query) ||
+              asset.path.toLowerCase().contains(query),
+        )
+        .toList(growable: false);
+    return Column(
       children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.folder_outlined),
-          title: Text(title),
-          subtitle: Text(l10n.projectStructure),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: TextField(
+            decoration: InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: l10n.searchResources,
+              isDense: true,
+            ),
+            onChanged: (value) => setState(() => _query = value),
+          ),
         ),
-        const Divider(),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.folder_open_outlined),
-          title: Text(folder),
-          subtitle: Text(l10n.resourceBrowserNextStep),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: assets.isEmpty ? 1 : assets.length,
+            itemBuilder: (context, index) {
+              if (assets.isEmpty) {
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.folder_open_outlined),
+                  title: Text(widget.title),
+                  subtitle: Text(l10n.noResources),
+                );
+              }
+              final asset = assets[index];
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: ProjectAssetThumbnail(
+                  path: '${widget.document.path}/${asset.path}',
+                ),
+                title: Text(
+                  asset.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(asset.type),
+                onTap: () => widget.onAssetSelected(asset),
+              );
+            },
+          ),
         ),
       ],
     );

@@ -23,5 +23,7 @@
   "projectPath": "Project path",
   "sceneFolder": "Main room",
   "resourceBrowserNextStep": "Resource browser will be connected here.",
+  "noResources": "No resources in this category.",
+  "searchResources": "Search resources",
   "selectObject": "Select an object to edit its properties."
 }

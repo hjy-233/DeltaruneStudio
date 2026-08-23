@@ -7,10 +7,16 @@ class ProjectSceneEditor extends StatelessWidget {
     super.key,
     required this.document,
     required this.onChanged,
+    required this.onSelectionChanged,
+    required this.inspectorWidth,
+    required this.onInspectorWidthChanged,
   });
 
   final ProjectDocument document;
   final ValueChanged<ProjectScene> onChanged;
+  final ValueChanged<String?> onSelectionChanged;
+  final double inspectorWidth;
+  final ValueChanged<double> onInspectorWidthChanged;
 
   @override
   Widget build(BuildContext context) {

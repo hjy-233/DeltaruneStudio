@@ -31,6 +31,7 @@ class ProjectRepository {
       mainScene: scene,
       path: projectDirectory.path,
       rooms: [ProjectRoom(path: manifest.mainScene, scene: scene)],
+      assets: const [],
     );
     await _writeProjectFiles(document);
     return document;
@@ -68,6 +69,7 @@ class ProjectRepository {
       mainScene: scene,
       path: projectDirectory.path,
       rooms: rooms,
+      assets: await _readAssets(projectDirectory),
     );
   }
 
@@ -145,6 +147,30 @@ class ProjectRepository {
     }
     final json = jsonDecode(await file.readAsString());
     return ProjectScene.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<List<ProjectAsset>> _readAssets(Directory root) async {
+    final resources = Directory(p.join(root.path, 'resources'));
+    if (!await resources.exists()) {
+      return const [];
+    }
+    final assets = <ProjectAsset>[];
+    await for (final entity in resources.list(
+      recursive: true,
+      followLinks: false,
+    )) {
+      if (entity is! File) {
+        continue;
+      }
+      final relative = p.relative(entity.path, from: root.path);
+      final parts = p.split(relative);
+      final type = parts.length > 1 ? parts[1] : 'other';
+      assets.add(
+        ProjectAsset(path: relative, name: p.basename(entity.path), type: type),
+      );
+    }
+    assets.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return assets;
   }
 
   Future<void> _writeJson(File file, Map<String, dynamic> json) async {

@@ -236,6 +236,18 @@ abstract class AppLocalizations {
   /// **'Resource browser will be connected here.'**
   String get resourceBrowserNextStep;
 
+  /// No description provided for @noResources.
+  ///
+  /// In en, this message translates to:
+  /// **'No resources in this category.'**
+  String get noResources;
+
+  /// No description provided for @searchResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Search resources'**
+  String get searchResources;
+
   /// No description provided for @selectObject.
   ///
   /// In en, this message translates to:

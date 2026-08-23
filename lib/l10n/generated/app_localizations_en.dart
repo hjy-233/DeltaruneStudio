@@ -85,5 +85,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Resource browser will be connected here.';
 
   @override
+  String get noResources => 'No resources in this category.';
+
+  @override
+  String get searchResources => 'Search resources';
+
+  @override
   String get selectObject => 'Select an object to edit its properties.';
 }

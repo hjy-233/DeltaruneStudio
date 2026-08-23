@@ -11,10 +11,16 @@ class ProjectSceneEditor extends StatefulWidget {
     super.key,
     required this.document,
     required this.onChanged,
+    required this.onSelectionChanged,
+    required this.inspectorWidth,
+    required this.onInspectorWidthChanged,
   });
 
   final ProjectDocument document;
   final ValueChanged<ProjectScene> onChanged;
+  final ValueChanged<String?> onSelectionChanged;
+  final double inspectorWidth;
+  final ValueChanged<double> onInspectorWidthChanged;
 
   @override
   State<ProjectSceneEditor> createState() => _ProjectSceneEditorState();
@@ -22,8 +28,6 @@ class ProjectSceneEditor extends StatefulWidget {
 
 class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   String? _selectedId;
-  double _inspectorWidth = 300;
-
   ProjectScene get _scene => widget.document.mainScene;
 
   @override
@@ -59,20 +63,20 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
                 ),
               ),
               _EditorPanelDivider(
-                onDrag: (delta) => setState(
-                  () => _inspectorWidth = (_inspectorWidth - delta).clamp(
-                    240,
-                    420,
-                  ),
+                onDrag: (delta) => widget.onInspectorWidthChanged(
+                  (widget.inspectorWidth - delta)
+                      .clamp(240.0, 420.0)
+                      .toDouble(),
                 ),
               ),
               SizedBox(
-                width: _inspectorWidth,
+                width: widget.inspectorWidth,
                 child: selected == null
                     ? Center(child: Text(l10n.selectObject))
                     : SingleChildScrollView(
                         child: _ObjectInspector(
                           object: selected,
+                          assets: widget.document.assets,
                           onChanged: _updateObject,
                           onDelete: () => _deleteObject(selected.id),
                         ),
@@ -96,6 +100,7 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
 
   void _select(String? id) {
     setState(() => _selectedId = id);
+    widget.onSelectionChanged(id);
   }
 
   void _addObject(String type) {
@@ -282,10 +287,16 @@ class _DraggableObject extends StatelessWidget {
   Widget build(BuildContext context) {
     final file = File('$rootPath/${object.asset}');
     final child = file.existsSync()
-        ? Transform.scale(
-            scale: scale,
-            alignment: Alignment.topLeft,
-            child: Image.file(file, filterQuality: FilterQuality.none),
+        ? SizedBox(
+            width: object.width > 0 ? object.width * scale : null,
+            height: object.height > 0 ? object.height * scale : null,
+            child: Image.file(
+              file,
+              fit: object.width > 0 || object.height > 0
+                  ? BoxFit.fill
+                  : BoxFit.none,
+              filterQuality: FilterQuality.none,
+            ),
           )
         : Container(
             padding: const EdgeInsets.all(6),
@@ -295,7 +306,7 @@ class _DraggableObject extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       onPanStart: (_) => onTap(),
-      onPanUpdate: (details) => onMove(details.delta),
+      onPanUpdate: object.locked ? null : (details) => onMove(details.delta),
       child: DecoratedBox(
         decoration: selected
             ? BoxDecoration(border: Border.all(color: Colors.amber, width: 2))
@@ -309,11 +320,13 @@ class _DraggableObject extends StatelessWidget {
 class _ObjectInspector extends StatelessWidget {
   const _ObjectInspector({
     required this.object,
+    required this.assets,
     required this.onChanged,
     required this.onDelete,
   });
 
   final ProjectSceneObject object;
+  final List<ProjectAsset> assets;
   final ValueChanged<ProjectSceneObject> onChanged;
   final VoidCallback onDelete;
 
@@ -326,6 +339,23 @@ class _ObjectInspector extends StatelessWidget {
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          DropdownButtonFormField<String>(
+            initialValue: object.asset.isEmpty ? null : object.asset,
+            decoration: const InputDecoration(labelText: 'Resource'),
+            items: assets
+                .map(
+                  (asset) => DropdownMenuItem<String>(
+                    value: asset.path,
+                    child: Text(asset.name, overflow: TextOverflow.ellipsis),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (value) {
+              if (value != null) {
+                onChanged(object.copyWith(asset: value, width: -1, height: -1));
+              }
+            },
+          ),
           SizedBox(
             width: 180,
             child: _textField(
@@ -365,6 +395,28 @@ class _ObjectInspector extends StatelessWidget {
               object.zIndex.toDouble(),
               (value) => onChanged(object.copyWith(zIndex: value.toInt())),
             ),
+          ),
+          SizedBox(
+            width: 100,
+            child: _numberField(
+              'Width',
+              object.width,
+              (value) => onChanged(object.copyWith(width: value)),
+            ),
+          ),
+          SizedBox(
+            width: 100,
+            child: _numberField(
+              'Height',
+              object.height,
+              (value) => onChanged(object.copyWith(height: value)),
+            ),
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Locked'),
+            value: object.locked,
+            onChanged: (value) => onChanged(object.copyWith(locked: value)),
           ),
           FilledButton.tonalIcon(
             onPressed: onDelete,

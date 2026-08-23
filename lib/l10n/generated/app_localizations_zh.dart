@@ -84,5 +84,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get resourceBrowserNextStep => '资源浏览器将在这里接入。';
 
   @override
+  String get noResources => '此分类暂无资源。';
+
+  @override
+  String get searchResources => '搜索资源';
+
+  @override
   String get selectObject => '选择对象以编辑属性。';
 }
