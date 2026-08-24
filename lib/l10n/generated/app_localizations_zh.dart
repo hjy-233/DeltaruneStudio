@@ -90,5 +90,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchResources => '搜索资源';
 
   @override
+  String get importResource => '导入资源';
+
+  @override
+  String get selectResourceType => '选择资源类型';
+
+  @override
+  String resourceImported(Object name) {
+    return '已导入：$name。';
+  }
+
+  @override
+  String get backgroundResources => '背景';
+
+  @override
+  String get characterResources => '角色';
+
+  @override
+  String get propResources => '物品';
+
+  @override
+  String get audioResources => '音频';
+
+  @override
+  String get videoResources => '视频';
+
+  @override
   String get selectObject => '选择对象以编辑属性。';
 }

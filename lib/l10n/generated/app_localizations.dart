@@ -248,6 +248,54 @@ abstract class AppLocalizations {
   /// **'Search resources'**
   String get searchResources;
 
+  /// No description provided for @importResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Import resource'**
+  String get importResource;
+
+  /// No description provided for @selectResourceType.
+  ///
+  /// In en, this message translates to:
+  /// **'Select resource type'**
+  String get selectResourceType;
+
+  /// No description provided for @resourceImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {name}.'**
+  String resourceImported(Object name);
+
+  /// No description provided for @backgroundResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get backgroundResources;
+
+  /// No description provided for @characterResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Character'**
+  String get characterResources;
+
+  /// No description provided for @propResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Prop'**
+  String get propResources;
+
+  /// No description provided for @audioResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get audioResources;
+
+  /// No description provided for @videoResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get videoResources;
+
   /// No description provided for @selectObject.
   ///
   /// In en, this message translates to:

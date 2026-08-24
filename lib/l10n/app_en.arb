@@ -25,5 +25,13 @@
   "resourceBrowserNextStep": "Resource browser will be connected here.",
   "noResources": "No resources in this category.",
   "searchResources": "Search resources",
+  "importResource": "Import resource",
+  "selectResourceType": "Select resource type",
+  "resourceImported": "Imported {name}.",
+  "backgroundResources": "Background",
+  "characterResources": "Character",
+  "propResources": "Prop",
+  "audioResources": "Audio",
+  "videoResources": "Video",
   "selectObject": "Select an object to edit its properties."
 }

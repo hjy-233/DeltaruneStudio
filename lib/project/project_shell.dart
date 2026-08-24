@@ -115,6 +115,7 @@ class _ProjectShellState extends State<ProjectShell> {
                 onSceneChanged: _updateScene,
                 onSelectionChanged: (id) => _selectedObjectId = id,
                 onAssetSelected: _replaceSelectedAsset,
+                onImportAsset: _importAsset,
                 onLayoutChanged: _updateLayout,
               ),
       ),
@@ -180,6 +181,23 @@ class _ProjectShellState extends State<ProjectShell> {
       await _repository.save(document);
       return document;
     }, success: (_) => l10n.projectSaved);
+  }
+
+  Future<void> _importAsset(String type) async {
+    final document = _document;
+    if (document == null) {
+      return;
+    }
+    final file = await openFile();
+    if (!mounted || file == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    await _run(
+      () =>
+          _repository.importAsset(document, sourcePath: file.path, type: type),
+      success: (_) => l10n.resourceImported(file.name),
+    );
   }
 
   Future<void> _newRoom() async {
@@ -475,6 +493,7 @@ class _ProjectOverview extends StatefulWidget {
     required this.onSceneChanged,
     required this.onSelectionChanged,
     required this.onAssetSelected,
+    required this.onImportAsset,
     required this.onLayoutChanged,
   });
 
@@ -485,6 +504,7 @@ class _ProjectOverview extends StatefulWidget {
   final ValueChanged<ProjectScene> onSceneChanged;
   final ValueChanged<String?> onSelectionChanged;
   final ValueChanged<ProjectAsset> onAssetSelected;
+  final ValueChanged<String> onImportAsset;
   final ValueChanged<ProjectLayout> onLayoutChanged;
 
   @override
@@ -528,6 +548,7 @@ class _ProjectOverviewState extends State<_ProjectOverview> {
                   onRoomSelected: widget.onRoomSelected,
                   onNewRoom: widget.onNewRoom,
                   onAssetSelected: widget.onAssetSelected,
+                  onImportAsset: widget.onImportAsset,
                 ),
               ),
               _PanelDivider(
@@ -599,6 +620,7 @@ class _WorkspaceSidebar extends StatelessWidget {
     required this.onRoomSelected,
     required this.onNewRoom,
     required this.onAssetSelected,
+    required this.onImportAsset,
   });
 
   final ProjectDocument document;
@@ -606,6 +628,7 @@ class _WorkspaceSidebar extends StatelessWidget {
   final ValueChanged<String> onRoomSelected;
   final VoidCallback onNewRoom;
   final ValueChanged<ProjectAsset> onAssetSelected;
+  final ValueChanged<String> onImportAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -645,12 +668,14 @@ class _WorkspaceSidebar extends StatelessWidget {
                   document: document,
                   title: l10n.resourcesTab,
                   onAssetSelected: onAssetSelected,
+                  onImportAsset: onImportAsset,
                 ),
                 _ResourceTab(
                   document: document,
                   title: l10n.charactersTab,
                   typeFilter: 'characters',
                   onAssetSelected: onAssetSelected,
+                  onImportAsset: onImportAsset,
                 ),
                 _RoomTab(
                   document: document,
@@ -705,6 +730,7 @@ class _ResourceTab extends StatefulWidget {
     required this.document,
     required this.title,
     required this.onAssetSelected,
+    required this.onImportAsset,
     this.typeFilter,
   });
 
@@ -712,6 +738,7 @@ class _ResourceTab extends StatefulWidget {
   final String title;
   final String? typeFilter;
   final ValueChanged<ProjectAsset> onAssetSelected;
+  final ValueChanged<String> onImportAsset;
 
   @override
   State<_ResourceTab> createState() => _ResourceTabState();
@@ -736,25 +763,41 @@ class _ResourceTabState extends State<_ResourceTab> {
               asset.path.toLowerCase().contains(query),
         )
         .toList(growable: false);
+    final groupedAssets = <String, List<ProjectAsset>>{};
+    for (final asset in assets) {
+      groupedAssets.putIfAbsent(asset.type, () => []).add(asset);
+    }
+    final groups = groupedAssets.keys.toList()..sort();
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: TextField(
-            decoration: InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              hintText: l10n.searchResources,
-              isDense: true,
-            ),
-            onChanged: (value) => setState(() => _query = value),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: l10n.searchResources,
+                    isDense: true,
+                  ),
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.importResource,
+                icon: const Icon(Icons.add),
+                onPressed: () => _chooseImportType(context),
+              ),
+            ],
           ),
         ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: assets.isEmpty ? 1 : assets.length,
+            itemCount: groups.isEmpty ? 1 : groups.length,
             itemBuilder: (context, index) {
-              if (assets.isEmpty) {
+              if (groups.isEmpty) {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.folder_open_outlined),
@@ -762,25 +805,82 @@ class _ResourceTabState extends State<_ResourceTab> {
                   subtitle: Text(l10n.noResources),
                 );
               }
-              final asset = assets[index];
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: ProjectAssetThumbnail(
-                  path: '${widget.document.path}/${asset.path}',
-                ),
-                title: Text(
-                  asset.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(asset.type),
-                onTap: () => widget.onAssetSelected(asset),
+              final group = groups[index];
+              final groupAssets = groupedAssets[group]!;
+              return ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(left: 12),
+                leading: const Icon(Icons.folder_outlined),
+                title: Text(group),
+                subtitle: Text('${groupAssets.length}'),
+                children: [
+                  for (final asset in groupAssets)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: ProjectAssetThumbnail(
+                        path: '${widget.document.path}/${asset.path}',
+                      ),
+                      title: Text(
+                        asset.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(_assetSubpath(asset)),
+                      onTap: () => widget.onAssetSelected(asset),
+                    ),
+                ],
               );
             },
           ),
         ),
       ],
     );
+  }
+
+  String _assetSubpath(ProjectAsset asset) {
+    final prefix = 'resources/${asset.type}/';
+    return asset.path.startsWith(prefix)
+        ? asset.path.substring(prefix.length)
+        : asset.path;
+  }
+
+  Future<void> _chooseImportType(BuildContext context) async {
+    final type =
+        widget.typeFilter ??
+        await showDialog<String>(
+          context: context,
+          builder: (context) {
+            final l10n = AppLocalizations.of(context)!;
+            return SimpleDialog(
+              title: Text(l10n.selectResourceType),
+              children: [
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, 'backgrounds'),
+                  child: Text(l10n.backgroundResources),
+                ),
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, 'characters'),
+                  child: Text(l10n.characterResources),
+                ),
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, 'props'),
+                  child: Text(l10n.propResources),
+                ),
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, 'audio'),
+                  child: Text(l10n.audioResources),
+                ),
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, 'video'),
+                  child: Text(l10n.videoResources),
+                ),
+              ],
+            );
+          },
+        );
+    if (type != null && mounted) {
+      widget.onImportAsset(type);
+    }
   }
 }
 

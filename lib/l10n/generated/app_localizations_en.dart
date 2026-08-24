@@ -91,5 +91,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchResources => 'Search resources';
 
   @override
+  String get importResource => 'Import resource';
+
+  @override
+  String get selectResourceType => 'Select resource type';
+
+  @override
+  String resourceImported(Object name) {
+    return 'Imported $name.';
+  }
+
+  @override
+  String get backgroundResources => 'Background';
+
+  @override
+  String get characterResources => 'Character';
+
+  @override
+  String get propResources => 'Prop';
+
+  @override
+  String get audioResources => 'Audio';
+
+  @override
+  String get videoResources => 'Video';
+
+  @override
   String get selectObject => 'Select an object to edit its properties.';
 }

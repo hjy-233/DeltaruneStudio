@@ -77,6 +77,40 @@ class ProjectRepository {
     return _writeProjectFiles(document);
   }
 
+  Future<ProjectDocument> importAsset(
+    ProjectDocument document, {
+    required String sourcePath,
+    required String type,
+  }) async {
+    const supportedTypes = {
+      'backgrounds',
+      'characters',
+      'props',
+      'audio',
+      'video',
+    };
+    if (!supportedTypes.contains(type)) {
+      throw ArgumentError.value(type, 'type', 'Unsupported resource folder');
+    }
+    final source = File(sourcePath);
+    if (!await source.exists()) {
+      throw StateError('Resource file was not found: $sourcePath');
+    }
+    final targetDirectory = Directory(p.join(document.path, 'resources', type));
+    await targetDirectory.create(recursive: true);
+    final fileName = await _availableFileName(
+      targetDirectory,
+      p.basename(source.path),
+    );
+    final target = File(p.join(targetDirectory.path, fileName));
+    if (p.normalize(source.path) != p.normalize(target.path)) {
+      await source.copy(target.path);
+    }
+    return document.copyWith(
+      assets: await _readAssets(Directory(document.path)),
+    );
+  }
+
   Future<ProjectDocument> addRoom(ProjectDocument document, String name) async {
     final roomId = _slugify(name).toLowerCase();
     final roomPath = 'scenes/$roomId/room.json';
@@ -164,6 +198,9 @@ class ProjectRepository {
       }
       final relative = p.relative(entity.path, from: root.path);
       final parts = p.split(relative);
+      if (parts.any((part) => part.startsWith('.') || part == '__MACOSX')) {
+        continue;
+      }
       final type = parts.length > 1 ? parts[1] : 'other';
       assets.add(
         ProjectAsset(path: relative, name: p.basename(entity.path), type: type),
@@ -182,6 +219,18 @@ class ProjectRepository {
       await file.delete();
     }
     await temporary.rename(file.path);
+  }
+
+  Future<String> _availableFileName(Directory directory, String name) async {
+    final extension = p.extension(name);
+    final stem = p.basenameWithoutExtension(name);
+    var candidate = name;
+    var index = 2;
+    while (await File(p.join(directory.path, candidate)).exists()) {
+      candidate = '$stem ($index)$extension';
+      index += 1;
+    }
+    return candidate;
   }
 
   String _slugify(String value) {
