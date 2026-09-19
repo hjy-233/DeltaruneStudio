@@ -7,6 +7,14 @@ var project_data: Dictionary = {}
 var scene_data: Dictionary = {}
 var room_root: Node2D
 var _room_changing := false
+var _runtime_camera: Camera2D
+var _camera_position := VIEW_SIZE / 2.0
+var _camera_follow_id := ""
+var _camera_shake_strength := 0.0
+var _camera_shake_remaining := 0.0
+var _camera_shake_elapsed := 0.0
+var _follow_rules: Dictionary = {}
+var _follow_paths: Dictionary = {}
 
 func _ready() -> void:
 	project_data = _read_json(PROJECT_ROOT.path_join("project.json"))
@@ -16,10 +24,22 @@ func _ready() -> void:
 	room_root = Node2D.new()
 	room_root.name = "Room"
 	add_child(room_root)
+	_runtime_camera = Camera2D.new()
+	_runtime_camera.name = "RuntimeCamera"
+	_runtime_camera.position = _camera_position
+	_runtime_camera.enabled = true
+	add_child(_runtime_camera)
 	_add_scene_visuals()
 	_add_runtime_label()
 	DRS.register_runtime(self)
 	_run_entry_script.call_deferred()
+
+func _process(delta: float) -> void:
+	_update_forced_animations(delta)
+	_update_runtime_camera(delta)
+
+func _physics_process(delta: float) -> void:
+	_update_followers(delta)
 
 func _run_entry_script() -> void:
 	var entry_script := String(project_data.get("entryScript", ""))
@@ -203,6 +223,7 @@ func _add_sprite(asset: String, object: Dictionary) -> void:
 		_add_character(sprite, position, object)
 	else:
 		sprite.position = position
+		_register_runtime_object(sprite, object)
 		room_root.add_child(sprite)
 
 func _add_character(sprite: Sprite2D, position: Vector2, object: Dictionary) -> void:
@@ -215,6 +236,7 @@ func _add_character(sprite: Sprite2D, position: Vector2, object: Dictionary) -> 
 	body.set_meta("move_speed", _number_value(object, "moveSpeed", 160.0))
 	body.set_meta("definition", object.get("definition", {}))
 	body.set_meta("facing", _string_value(object, "facing") if object.has("facing") else "down")
+	body.set_meta("source_visible", true)
 	room_root.add_child(body)
 	sprite.z_index = 0
 	body.add_child(sprite)
@@ -235,9 +257,18 @@ func _add_door(object: Dictionary) -> void:
 	area.position = _rect_center(object)
 	area.set_meta("target_room", _string_value(object, "targetRoom"))
 	area.set_meta("target_spawn", _string_value(object, "targetSpawn"))
+	_register_runtime_object(area, object)
+	area.add_to_group("drs_door")
 	room_root.add_child(area)
 	_add_rect_shape(area, object)
 	area.body_entered.connect(_on_door_body_entered.bind(area))
+
+func _register_runtime_object(node: Node2D, object: Dictionary) -> void:
+	var object_id := _string_value(object, "id")
+	if object_id.is_empty():
+		return
+	node.set_meta("object_id", object_id)
+	node.add_to_group("drs_object")
 
 func _add_collision_shape(parent: Node2D, collision: Dictionary) -> void:
 	var shape_node := CollisionShape2D.new()
@@ -313,7 +344,19 @@ func _change_room(
 		traveler.queue_free()
 	if target != null:
 		_apply_spawn(spawn_id, target)
+	_reset_follow_paths()
 	_room_changing = false
+
+func _reset_follow_paths() -> void:
+	_follow_paths.clear()
+	for follower_variant in _follow_rules.keys():
+		var follower_id := String(follower_variant)
+		var rule: Dictionary = _follow_rules[follower_id]
+		var target_id := String(rule.get("target", ""))
+		var follower := _find_runtime_character(follower_id)
+		var target := _find_runtime_character(target_id)
+		if follower != null and target != null:
+			_follow_paths[target_id] = [follower.position, target.position]
 
 func _apply_spawn(spawn_id: String, character: CharacterBody2D) -> void:
 	var spawn := _find_spawn(spawn_id)
@@ -334,6 +377,88 @@ func _find_runtime_character(object_id: String) -> CharacterBody2D:
 
 func drs_find_character(object_id: String) -> CharacterBody2D:
 	return _find_runtime_character(object_id)
+
+func drs_find_object(object_id: String) -> Node2D:
+	var character := _find_runtime_character(object_id)
+	if character != null:
+		return character
+	for child in room_root.get_children():
+		if child is Node2D and String(child.get_meta("object_id", "")) == object_id:
+			return child
+	return null
+
+func drs_object_position(object_id: String) -> Vector2:
+	var object := drs_find_object(object_id)
+	if object == null:
+		return Vector2.INF
+	return object.position
+
+func drs_character_facing(object_id: String) -> String:
+	var body := _find_runtime_character(object_id)
+	return String(body.get_meta("facing", "down")) if body != null else ""
+
+func drs_teleport_character(object_id: String, position: Vector2) -> void:
+	var body := _find_runtime_character(object_id)
+	if body == null:
+		push_error("DRS character was not found: " + object_id)
+		return
+	body.position = position
+	body.velocity = Vector2.ZERO
+
+func drs_set_character_visible(object_id: String, visible: bool) -> void:
+	var body := _find_runtime_character(object_id)
+	if body == null:
+		push_error("DRS character was not found: " + object_id)
+		return
+	body.visible = visible
+
+func drs_set_character_animation(
+	object_id: String,
+	animation_name: String,
+	direction: String = ""
+) -> void:
+	var body := _find_runtime_character(object_id)
+	if body == null:
+		push_error("DRS character was not found: " + object_id)
+		return
+	body.set_meta("forced_animation", animation_name)
+	body.set_meta("forced_animation_direction", direction)
+	body.set_meta("forced_animation_elapsed", 0.0)
+
+func drs_clear_character_animation(object_id: String) -> void:
+	var body := _find_runtime_character(object_id)
+	if body == null:
+		return
+	body.remove_meta("forced_animation")
+	body.remove_meta("forced_animation_direction")
+	body.remove_meta("forced_animation_elapsed")
+	_update_character_animation(
+		body,
+		"idle",
+		String(body.get_meta("facing", "down")),
+		0.0
+	)
+
+func drs_follow(follower_id: String, target_id: String, distance: float) -> void:
+	var follower := _find_runtime_character(follower_id)
+	if follower == null:
+		push_error("DRS follower was not found: " + follower_id)
+		return
+	var target := _find_runtime_character(target_id)
+	if target == null:
+		push_error("DRS follow target was not found: " + target_id)
+		return
+	_follow_rules[follower_id] = {
+		"target": target_id,
+		"distance": maxf(distance, 0.0),
+	}
+	_follow_paths[target_id] = [follower.position, target.position]
+
+func drs_stop_follow(follower_id: String) -> void:
+	_follow_rules.erase(follower_id)
+	var body := _find_runtime_character(follower_id)
+	if body != null:
+		_stop_controlled_character(body)
 
 func drs_move_character(
 	object_id: String,
@@ -363,7 +488,8 @@ func drs_move_character(
 		var previous := body.position
 		body.move_and_slide()
 		animation_elapsed += delta
-		_update_character_animation(body, "walk", facing, animation_elapsed)
+		if not body.has_meta("forced_animation"):
+			_update_character_animation(body, "walk", facing, animation_elapsed)
 		if body.position.distance_to(previous) < 0.01:
 			stalled += delta
 			if stalled >= 0.35:
@@ -375,12 +501,13 @@ func drs_move_character(
 	body.velocity = Vector2.ZERO
 	if body.position.distance_to(target) <= 2.0:
 		body.position = target
-	_update_character_animation(
-		body,
-		"idle",
-		String(body.get_meta("facing", "down")),
-		0.0
-	)
+	if not body.has_meta("forced_animation"):
+		_update_character_animation(
+			body,
+			"idle",
+			String(body.get_meta("facing", "down")),
+			0.0
+		)
 
 func drs_control_character(
 	object_id: String,
@@ -405,7 +532,8 @@ func drs_control_character(
 	body.move_and_slide()
 	var elapsed := float(body.get_meta("player_animation_elapsed", 0.0)) + delta
 	body.set_meta("player_animation_elapsed", elapsed)
-	_update_character_animation(body, "walk", facing, elapsed)
+	if not body.has_meta("forced_animation"):
+		_update_character_animation(body, "walk", facing, elapsed)
 
 func _stop_controlled_character(body: CharacterBody2D) -> void:
 	body.velocity = Vector2.ZERO
@@ -413,12 +541,13 @@ func _stop_controlled_character(body: CharacterBody2D) -> void:
 		return
 	body.set_meta("player_moving", false)
 	body.set_meta("player_animation_elapsed", 0.0)
-	_update_character_animation(
-		body,
-		"idle",
-		String(body.get_meta("facing", "down")),
-		0.0
-	)
+	if not body.has_meta("forced_animation"):
+		_update_character_animation(
+			body,
+			"idle",
+			String(body.get_meta("facing", "down")),
+			0.0
+		)
 
 func drs_face_character(object_id: String, direction: String) -> void:
 	var body := _find_runtime_character(object_id)
@@ -427,7 +556,8 @@ func drs_face_character(object_id: String, direction: String) -> void:
 		return
 	var facing := direction if direction in ["up", "down", "left", "right"] else "down"
 	body.set_meta("facing", facing)
-	_update_character_animation(body, "idle", facing, 0.0)
+	if not body.has_meta("forced_animation"):
+		_update_character_animation(body, "idle", facing, 0.0)
 
 func drs_change_room(
 	room_path: String,
@@ -441,6 +571,77 @@ func drs_change_room(
 				traveler = child
 				break
 	await _change_room(room_path, spawn_id, traveler)
+
+func _update_forced_animations(delta: float) -> void:
+	for child in room_root.get_children():
+		if child is not CharacterBody2D or not child.has_meta("forced_animation"):
+			continue
+		var animation_name := String(child.get_meta("forced_animation", ""))
+		var direction := String(child.get_meta("forced_animation_direction", ""))
+		if direction.is_empty():
+			direction = String(child.get_meta("facing", "down"))
+		var elapsed := float(child.get_meta("forced_animation_elapsed", 0.0)) + delta
+		child.set_meta("forced_animation_elapsed", elapsed)
+		_update_character_animation(child, animation_name, direction, elapsed)
+
+func _update_followers(delta: float) -> void:
+	for follower_variant in _follow_rules.keys():
+		var follower_id := String(follower_variant)
+		var rule: Dictionary = _follow_rules[follower_id]
+		var target_id := String(rule.get("target", ""))
+		var follower := _find_runtime_character(follower_id)
+		var target := _find_runtime_character(target_id)
+		if follower == null or target == null:
+			continue
+		var path := _record_follow_path(target_id, target.position)
+		var follow_position := _position_behind(path, float(rule.get("distance", 48.0)))
+		_move_follower_step(follower, target, follow_position, delta)
+
+func _record_follow_path(target_id: String, position: Vector2) -> Array:
+	var path: Array = _follow_paths.get(target_id, [])
+	if path.is_empty() or Vector2(path[-1]).distance_to(position) >= 2.0:
+		path.append(position)
+	while path.size() > 600:
+		path.pop_front()
+	_follow_paths[target_id] = path
+	return path
+
+func _position_behind(path: Array, distance: float) -> Vector2:
+	if path.is_empty():
+		return Vector2.ZERO
+	var remaining := distance
+	for index in range(path.size() - 1, 0, -1):
+		var end := Vector2(path[index])
+		var start := Vector2(path[index - 1])
+		var segment_length := start.distance_to(end)
+		if segment_length >= remaining and segment_length > 0.0:
+			return end.lerp(start, remaining / segment_length)
+		remaining -= segment_length
+	return Vector2(path[0])
+
+func _move_follower_step(
+	follower: CharacterBody2D,
+	target: CharacterBody2D,
+	follow_position: Vector2,
+	delta: float
+) -> void:
+	var offset := follow_position - follower.position
+	if offset.length() <= 2.0:
+		_stop_controlled_character(follower)
+		return
+	var follower_speed := float(follower.get_meta("move_speed", 160.0))
+	var target_speed := float(target.get_meta("move_speed", follower_speed))
+	var speed := minf(follower_speed, target_speed)
+	var direction := offset.normalized()
+	var facing := _movement_facing(direction)
+	follower.set_meta("facing", facing)
+	follower.set_meta("player_moving", true)
+	follower.velocity = direction * speed
+	follower.move_and_slide()
+	var elapsed := float(follower.get_meta("player_animation_elapsed", 0.0)) + delta
+	follower.set_meta("player_animation_elapsed", elapsed)
+	if not follower.has_meta("forced_animation"):
+		_update_character_animation(follower, "walk", facing, elapsed)
 
 func _movement_facing(direction: Vector2) -> String:
 	if absf(direction.x) > absf(direction.y):
@@ -474,15 +675,18 @@ func _find_animation(
 	direction: String
 ) -> Dictionary:
 	var animations: Array = definition.get("animations", [])
+	var direction_fallback: Dictionary = {}
 	for animation_variant in animations:
 		if animation_variant is Dictionary:
 			var animation: Dictionary = animation_variant
+			if _string_value(animation, "name") == animation_name:
+				direction_fallback = animation
 			if (
 				_string_value(animation, "name") == animation_name
 				and _string_value(animation, "direction") == direction
 			):
 				return animation
-	return {}
+	return direction_fallback
 
 func _set_character_frame(body: CharacterBody2D, asset: String) -> void:
 	if String(body.get_meta("frame_asset", "")) == asset:
@@ -495,6 +699,115 @@ func _set_character_frame(body: CharacterBody2D, asset: String) -> void:
 			child.texture = texture
 			body.set_meta("frame_asset", asset)
 			return
+
+func drs_set_object_visible(object_id: String, visible: bool) -> void:
+	var object := drs_find_object(object_id)
+	if object == null:
+		push_error("DRS object was not found: " + object_id)
+		return
+	object.visible = visible
+
+func drs_remove_object(object_id: String) -> void:
+	var object := drs_find_object(object_id)
+	if object == null:
+		return
+	object.queue_free()
+
+func drs_set_object_texture(object_id: String, asset: String) -> void:
+	var object := drs_find_object(object_id)
+	if object == null:
+		push_error("DRS object was not found: " + object_id)
+		return
+	var sprite := object as Sprite2D
+	if sprite == null:
+		for child in object.get_children():
+			if child is Sprite2D:
+				sprite = child
+				break
+	if sprite == null:
+		push_error("DRS object has no sprite: " + object_id)
+		return
+	var texture := _load_texture(asset)
+	if texture != null:
+		sprite.texture = texture
+
+func drs_move_object(
+	object_id: String,
+	target: Vector2,
+	speed: float
+) -> void:
+	var object := drs_find_object(object_id)
+	if object == null:
+		push_error("DRS object was not found: " + object_id)
+		return
+	var duration := object.position.distance_to(target) / maxf(speed, 1.0)
+	if duration <= 0.0:
+		object.position = target
+		return
+	var tween := create_tween()
+	tween.tween_property(object, "position", target, duration)
+	await tween.finished
+
+func drs_set_door_enabled(object_id: String, enabled: bool) -> void:
+	var object := drs_find_object(object_id)
+	if object is Area2D and object.is_in_group("drs_door"):
+		object.set_deferred("monitoring", enabled)
+		object.visible = enabled
+
+func drs_set_trigger_enabled(object_id: String, enabled: bool) -> void:
+	var object := drs_find_object(object_id)
+	if object is Area2D:
+		object.set_deferred("monitoring", enabled)
+
+func drs_camera_follow(object_id: String) -> void:
+	_camera_follow_id = object_id
+
+func drs_camera_focus(target: Vector2, duration: float) -> void:
+	_camera_follow_id = ""
+	if duration <= 0.0:
+		_camera_position = target
+		return
+	var tween := create_tween()
+	tween.tween_property(self, "_camera_position", target, duration)
+	await tween.finished
+
+func drs_camera_zoom(scale: float, duration: float) -> void:
+	var target := Vector2.ONE * maxf(scale, 0.05)
+	if duration <= 0.0:
+		_runtime_camera.zoom = target
+		return
+	var tween := create_tween()
+	tween.tween_property(_runtime_camera, "zoom", target, duration)
+	await tween.finished
+
+func drs_camera_shake(strength: float, duration: float) -> void:
+	_camera_shake_strength = maxf(strength, 0.0)
+	_camera_shake_remaining = maxf(duration, 0.0)
+	_camera_shake_elapsed = 0.0
+	if duration > 0.0:
+		await get_tree().create_timer(duration).timeout
+
+func drs_camera_reset() -> void:
+	_camera_follow_id = ""
+	_camera_position = VIEW_SIZE / 2.0
+	_runtime_camera.position = _camera_position
+	_runtime_camera.zoom = Vector2.ONE
+	_camera_shake_remaining = 0.0
+
+func _update_runtime_camera(delta: float) -> void:
+	if not _camera_follow_id.is_empty():
+		var target := drs_find_object(_camera_follow_id)
+		if target != null:
+			_camera_position = target.position
+	var offset := Vector2.ZERO
+	if _camera_shake_remaining > 0.0:
+		_camera_shake_remaining = maxf(_camera_shake_remaining - delta, 0.0)
+		_camera_shake_elapsed += delta
+		offset = Vector2(
+			sin(_camera_shake_elapsed * 71.0),
+			cos(_camera_shake_elapsed * 53.0)
+		) * _camera_shake_strength
+	_runtime_camera.position = _camera_position + offset
 
 func _find_spawn(spawn_id: String) -> Dictionary:
 	var fallback: Dictionary = {}

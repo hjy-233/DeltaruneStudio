@@ -41,8 +41,26 @@ void main() {
       final runtimeApi = await File(
         '${result.directory}/runtime/drs.gd',
       ).readAsString();
-      expect(runtimeApi, contains('func enable_player_control'));
-      expect(runtimeApi, contains('func say_dark'));
+      for (final method in [
+        'enable_player_control',
+        'set_expression',
+        'follow',
+        'camera_follow',
+        'camera_shake',
+        'register_interactable',
+        'set_door_enabled',
+        'say_dark',
+        'say_portrait',
+        'choice',
+        'set_flag',
+        'set_value',
+        'show_image',
+        'flash',
+        'crossfade_bgm',
+        'play_sound_at',
+      ]) {
+        expect(runtimeApi, contains('func $method'));
+      }
       expect(
         File('${result.directory}/drs_project/project.json').existsSync(),
         isTrue,
