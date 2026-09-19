@@ -171,6 +171,8 @@ class GodotBuildService {
       'runtime/main.tscn',
       'runtime/main.gd',
       'runtime/drs.gd',
+      'runtime/dialogue/light_world.png',
+      'runtime/dialogue/dark_world.png',
     ];
     try {
       for (final relativePath in files) {

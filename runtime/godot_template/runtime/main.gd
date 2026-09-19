@@ -6,6 +6,7 @@ const PROJECT_ROOT := "res://drs_project"
 var project_data: Dictionary = {}
 var scene_data: Dictionary = {}
 var room_root: Node2D
+var _room_changing := false
 
 func _ready() -> void:
 	project_data = _read_json(PROJECT_ROOT.path_join("project.json"))
@@ -269,7 +270,7 @@ func _rect_center(object: Dictionary) -> Vector2:
 	)
 
 func _on_door_body_entered(body: Node2D, door: Area2D) -> void:
-	if not body.is_in_group("drs_character"):
+	if _room_changing or not body.is_in_group("drs_character"):
 		return
 	var target_room := String(door.get_meta("target_room", ""))
 	if target_room.is_empty():
@@ -285,9 +286,16 @@ func _change_room(
 	spawn_id: String,
 	traveler: CharacterBody2D
 ) -> void:
+	if _room_changing:
+		return
+	_room_changing = true
+	await get_tree().process_frame
 	var next_scene := _read_json(PROJECT_ROOT.path_join(room_path))
 	if next_scene.is_empty():
+		_room_changing = false
 		return
+	if traveler != null and not is_instance_valid(traveler):
+		traveler = null
 	var traveler_id := ""
 	if traveler != null:
 		traveler_id = String(traveler.get_meta("object_id", ""))
@@ -305,6 +313,7 @@ func _change_room(
 		traveler.queue_free()
 	if target != null:
 		_apply_spawn(spawn_id, target)
+	_room_changing = false
 
 func _apply_spawn(spawn_id: String, character: CharacterBody2D) -> void:
 	var spawn := _find_spawn(spawn_id)
@@ -342,6 +351,8 @@ func drs_move_character(
 	var stalled := 0.0
 	while body.position.distance_to(target) > 1.0:
 		await get_tree().physics_frame
+		if not is_instance_valid(body):
+			return
 		var delta := get_physics_process_delta_time()
 		var offset := target - body.position
 		var direction := offset.normalized()
@@ -359,9 +370,49 @@ func drs_move_character(
 				break
 		else:
 			stalled = 0.0
+	if not is_instance_valid(body):
+		return
 	body.velocity = Vector2.ZERO
 	if body.position.distance_to(target) <= 2.0:
 		body.position = target
+	_update_character_animation(
+		body,
+		"idle",
+		String(body.get_meta("facing", "down")),
+		0.0
+	)
+
+func drs_control_character(
+	object_id: String,
+	direction: Vector2,
+	speed: float,
+	delta: float
+) -> void:
+	var body := _find_runtime_character(object_id)
+	if body == null:
+		return
+	if direction.is_zero_approx():
+		_stop_controlled_character(body)
+		return
+	var move_speed := speed
+	if move_speed <= 0.0:
+		move_speed = float(body.get_meta("move_speed", 160.0))
+	var normalized_direction := direction.normalized()
+	var facing := _movement_facing(normalized_direction)
+	body.set_meta("facing", facing)
+	body.set_meta("player_moving", true)
+	body.velocity = normalized_direction * move_speed
+	body.move_and_slide()
+	var elapsed := float(body.get_meta("player_animation_elapsed", 0.0)) + delta
+	body.set_meta("player_animation_elapsed", elapsed)
+	_update_character_animation(body, "walk", facing, elapsed)
+
+func _stop_controlled_character(body: CharacterBody2D) -> void:
+	body.velocity = Vector2.ZERO
+	if not bool(body.get_meta("player_moving", false)):
+		return
+	body.set_meta("player_moving", false)
+	body.set_meta("player_animation_elapsed", 0.0)
 	_update_character_animation(
 		body,
 		"idle",
@@ -389,8 +440,7 @@ func drs_change_room(
 			if child is CharacterBody2D:
 				traveler = child
 				break
-	_change_room(room_path, spawn_id, traveler)
-	await get_tree().process_frame
+	await _change_room(room_path, spawn_id, traveler)
 
 func _movement_facing(direction: Vector2) -> String:
 	if absf(direction.x) > absf(direction.y):

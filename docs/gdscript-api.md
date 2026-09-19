@@ -35,14 +35,41 @@ await DRS.move("kris", Vector2(500, 240), 220.0)
 
 角色移动会使用 Godot 碰撞，并按移动方向播放角色定义中的 `walk` 动画。停止后优先显示对应方向的 `idle`，没有 `idle` 时停在 `walk` 第一帧。
 
+### 玩家控制
+
+```gdscript
+DRS.enable_player_control("kris")
+DRS.set_player_control_speed(190.0)
+DRS.disable_player_control()
+```
+
+启用后可用 WASD 或方向键移动角色。移动沿用角色配置中的速度、碰撞和方向动画；调用 `set_player_control_speed` 可临时覆盖速度。对话和同一角色的脚本移动会暂时锁住输入，结束后自动恢复；经过 Door 切换房间后，只要目标房间存在相同角色 ID，控制会继续生效。
+
+状态查询：
+
+```gdscript
+DRS.is_player_control_enabled()
+DRS.controlled_character_id()
+```
+
 ## 对话
 
 ```gdscript
 await DRS.say("* Hello.")
 await DRS.say("* This closes automatically.", 1.5)
+await DRS.say_light("* Light World style.")
+await DRS.say_dark("* Dark World style.")
 ```
 
 第二个参数为 `0` 时等待玩家按下确认键；大于 `0` 时在指定秒数后自动关闭。第三个参数控制每秒显示字符数。
+
+`say` 的第四个参数可以直接选择 `"light_world"` 或 `"dark_world"`：
+
+```gdscript
+await DRS.say("* Styled text.", 1.0, 40.0, DRS.DIALOGUE_STYLE_DARK)
+```
+
+两种对话框都使用 Runtime 内置的原始 PNG 模板。输入控制会在对话期间暂停；输入确认键可以立即完成当前打字效果，再次确认关闭对话框。
 
 ## 房间
 

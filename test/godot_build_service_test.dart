@@ -27,6 +27,23 @@ void main() {
       expect(File('${result.directory}/runtime/main.gd').existsSync(), isTrue);
       expect(File('${result.directory}/runtime/drs.gd').existsSync(), isTrue);
       expect(
+        File(
+          '${result.directory}/runtime/dialogue/light_world.png',
+        ).existsSync(),
+        isTrue,
+      );
+      expect(
+        File(
+          '${result.directory}/runtime/dialogue/dark_world.png',
+        ).existsSync(),
+        isTrue,
+      );
+      final runtimeApi = await File(
+        '${result.directory}/runtime/drs.gd',
+      ).readAsString();
+      expect(runtimeApi, contains('func enable_player_control'));
+      expect(runtimeApi, contains('func say_dark'));
+      expect(
         File('${result.directory}/drs_project/project.json').existsSync(),
         isTrue,
       );

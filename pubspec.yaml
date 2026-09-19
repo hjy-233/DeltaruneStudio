@@ -82,6 +82,8 @@ flutter:
     - runtime/godot_template/runtime/main.tscn
     - runtime/godot_template/runtime/main.gd
     - runtime/godot_template/runtime/drs.gd
+    - runtime/godot_template/runtime/dialogue/light_world.png
+    - runtime/godot_template/runtime/dialogue/dark_world.png
     - assets/builtin/deltarune_manifest.json
     - assets/dialogue/dark_world/
     - assets/dialogue/light_world/
