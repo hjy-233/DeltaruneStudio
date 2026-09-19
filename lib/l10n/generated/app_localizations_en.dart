@@ -268,5 +268,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get characterDefaultName => 'Character';
 
   @override
+  String get addBackground => 'Add background';
+
+  @override
+  String get addCharacter => 'Add character';
+
+  @override
+  String get addProp => 'Add prop';
+
+  @override
+  String get addCollision => 'Add collision';
+
+  @override
+  String get addSpawn => 'Add spawn point';
+
+  @override
+  String get addDoor => 'Add door';
+
+  @override
+  String get layers => 'Layers';
+
+  @override
+  String get newLayer => 'New layer';
+
+  @override
+  String get layer => 'Layer';
+
+  @override
+  String get visible => 'Visible';
+
+  @override
+  String get locked => 'Locked';
+
+  @override
+  String get collisionRegion => 'Collision region';
+
+  @override
+  String get spawnPoint => 'Spawn point';
+
+  @override
+  String get doorConnection => 'Door connection';
+
+  @override
+  String get targetRoom => 'Target room';
+
+  @override
+  String get targetSpawn => 'Target spawn point';
+
+  @override
+  String get defaultSpawn => 'Default spawn point';
+
+  @override
+  String get spawnFacing => 'Spawn facing';
+
+  @override
+  String get noSpawnPoints => 'No spawn points in this room';
+
+  @override
+  String get resource => 'Resource';
+
+  @override
+  String get assetPath => 'Asset path';
+
+  @override
+  String get order => 'Order';
+
+  @override
+  String get entryScript => 'Entry script';
+
+  @override
   String get ok => 'OK';
 }

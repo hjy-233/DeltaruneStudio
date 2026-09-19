@@ -267,5 +267,74 @@ class AppLocalizationsZh extends AppLocalizations {
   String get characterDefaultName => '角色';
 
   @override
+  String get addBackground => '添加背景';
+
+  @override
+  String get addCharacter => '添加角色';
+
+  @override
+  String get addProp => '添加物品';
+
+  @override
+  String get addCollision => '添加碰撞区域';
+
+  @override
+  String get addSpawn => '添加出生点';
+
+  @override
+  String get addDoor => '添加 Door';
+
+  @override
+  String get layers => '图层';
+
+  @override
+  String get newLayer => '新建图层';
+
+  @override
+  String get layer => '图层';
+
+  @override
+  String get visible => '可见';
+
+  @override
+  String get locked => '锁定';
+
+  @override
+  String get collisionRegion => '碰撞区域';
+
+  @override
+  String get spawnPoint => '出生点';
+
+  @override
+  String get doorConnection => 'Door 连接';
+
+  @override
+  String get targetRoom => '目标房间';
+
+  @override
+  String get targetSpawn => '目标出生点';
+
+  @override
+  String get defaultSpawn => '默认出生点';
+
+  @override
+  String get spawnFacing => '出生朝向';
+
+  @override
+  String get noSpawnPoints => '目标房间没有出生点';
+
+  @override
+  String get resource => '资源';
+
+  @override
+  String get assetPath => '资源路径';
+
+  @override
+  String get order => '层内顺序';
+
+  @override
+  String get entryScript => '入口脚本';
+
+  @override
   String get ok => '确定';
 }

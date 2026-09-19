@@ -15,6 +15,7 @@ class GodotBuildResult {
 
 class GodotBuildService {
   Future<GodotBuildResult> prepare(ProjectDocument document) async {
+    await _validateProject(document);
     final template = await _findTemplate();
     final output = Directory(p.join(document.path, '.build', 'godot'));
     if (await output.exists()) {
@@ -165,7 +166,12 @@ class GodotBuildService {
   }
 
   Future<void> _copyBundledTemplate(Directory output) async {
-    const files = ['project.godot', 'runtime/main.tscn', 'runtime/main.gd'];
+    const files = [
+      'project.godot',
+      'runtime/main.tscn',
+      'runtime/main.gd',
+      'runtime/drs.gd',
+    ];
     try {
       for (final relativePath in files) {
         final data = await rootBundle.load(
@@ -183,12 +189,31 @@ class GodotBuildService {
   Future<void> _copyDirectory(Directory source, Directory target) async {
     await target.create(recursive: true);
     await for (final entity in source.list()) {
+      final name = p.basename(entity.path);
+      if (name == '.godot' || name == '.DS_Store' || name.endsWith('.uid')) {
+        continue;
+      }
       final destination = p.join(target.path, p.basename(entity.path));
       if (entity is Directory) {
         await _copyDirectory(entity, Directory(destination));
       } else if (entity is File) {
         await entity.copy(destination);
       }
+    }
+  }
+
+  Future<void> _validateProject(ProjectDocument document) async {
+    final root = p.normalize(document.path);
+    final scriptPath = p.normalize(
+      p.join(document.path, document.manifest.entryScript),
+    );
+    if (!p.isWithin(root, scriptPath)) {
+      throw StateError('Entry script must be inside the project folder.');
+    }
+    if (!await File(scriptPath).exists()) {
+      throw StateError(
+        'Entry script was not found: ${document.manifest.entryScript}',
+      );
     }
   }
 }

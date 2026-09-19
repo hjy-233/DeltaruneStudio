@@ -20,7 +20,7 @@ class ProjectRepository {
     }
     await _createProjectDirectories(projectDirectory);
     final manifest = ProjectManifest(
-      formatVersion: 1,
+      formatVersion: 2,
       id: folderName,
       name: name.trim(),
       mainScene: 'scenes/main/scene.json',
@@ -44,6 +44,7 @@ class ProjectRepository {
       characters: const [],
     );
     await _writeProjectFiles(document);
+    await _ensureEntryScript(document);
     return document;
   }
 
@@ -284,6 +285,13 @@ class ProjectRepository {
     if (!document.rooms.any((item) => item.path == roomPath)) {
       throw StateError('Room was not found: $roomPath');
     }
+    for (final room in document.rooms) {
+      if (room.scene.objects.any(
+        (object) => object.type == 'door' && object.targetRoomPath == roomPath,
+      )) {
+        throw StateError('Room is connected from: ${room.scene.name}');
+      }
+    }
     final roomFile = File(p.join(document.path, roomPath));
     if (await roomFile.exists()) {
       await roomFile.delete();
@@ -456,6 +464,20 @@ class ProjectRepository {
     ]) {
       await Directory(p.join(root.path, path)).create(recursive: true);
     }
+  }
+
+  Future<void> _ensureEntryScript(ProjectDocument document) async {
+    final file = File(p.join(document.path, document.manifest.entryScript));
+    if (await file.exists()) {
+      return;
+    }
+    await file.parent.create(recursive: true);
+    await file.writeAsString(
+      'extends Node\n\n'
+      '# Called automatically after the first room is ready.\n'
+      'func run() -> void:\n'
+      '\treturn\n',
+    );
   }
 
   Future<void> _writeProjectFiles(ProjectDocument document) async {

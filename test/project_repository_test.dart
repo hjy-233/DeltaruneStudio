@@ -27,10 +27,17 @@ void main() {
       await Directory(p.join(created.path, 'resources/characters')).exists(),
       isTrue,
     );
+    expect(created.manifest.formatVersion, 2);
+    expect(created.manifest.entryScript, 'scripts/manual/main.gd');
+    expect(
+      await File(p.join(created.path, 'scripts/manual/main.gd')).exists(),
+      isTrue,
+    );
 
     final reopened = await repository.open(created.path);
     expect(reopened.manifest.name, '教堂暗世界');
     expect(reopened.manifest.mainScene, 'scenes/main/scene.json');
+    expect(reopened.manifest.entryScript, 'scripts/manual/main.gd');
     expect(reopened.mainScene.id, 'main');
   });
 
@@ -332,6 +339,138 @@ void main() {
     expect(
       reopened.characters.single.definition.animations.single.frames.single,
       'resources/characters/susie_idle.png',
+    );
+  });
+
+  test('persists room layers, collisions, spawn points, and doors', () async {
+    final parent = await Directory.systemTemp.createTemp('drs_room_data_');
+    addTearDown(() => parent.delete(recursive: true));
+    final repository = ProjectRepository();
+    var document = await repository.create(
+      parentPath: parent.path,
+      name: 'Room Data Test',
+    );
+    document = await repository.addRoom(document, 'Hall');
+    final hall = document.rooms.last;
+    final mainScene = document.mainScene.copyWith(
+      layers: const [
+        ProjectSceneLayer(id: 'floor', name: 'Floor', order: 0),
+        ProjectSceneLayer(id: 'actors', name: 'Actors', order: 1),
+      ],
+      objects: [
+        const ProjectSceneObject(
+          id: 'wall',
+          type: 'collision',
+          name: 'North wall',
+          asset: '',
+          x: 0,
+          y: 0,
+          zIndex: 0,
+          width: 640,
+          height: 32,
+          layerId: 'floor',
+        ),
+        const ProjectSceneObject(
+          id: 'entry',
+          type: 'spawn',
+          name: 'Entry',
+          asset: '',
+          x: 320,
+          y: 400,
+          zIndex: 1,
+          layerId: 'actors',
+          facing: 'up',
+          defaultSpawn: true,
+        ),
+        ProjectSceneObject(
+          id: 'hall_door',
+          type: 'door',
+          name: 'Hall Door',
+          asset: '',
+          x: 300,
+          y: 0,
+          zIndex: 2,
+          width: 40,
+          height: 32,
+          layerId: 'actors',
+          targetRoomPath: hall.path,
+          targetSpawnId: 'hall_entry',
+        ),
+      ],
+    );
+    document = document.copyWith(
+      mainScene: mainScene,
+      rooms: document.rooms
+          .map(
+            (room) => room.path == document.manifest.mainScene
+                ? room.copyWith(scene: mainScene)
+                : room,
+          )
+          .toList(growable: false),
+    );
+    await repository.save(document);
+
+    final reopened = await repository.open(document.path);
+    expect(reopened.mainScene.layers.map((layer) => layer.id), [
+      'floor',
+      'actors',
+    ]);
+    expect(reopened.mainScene.objects[0].type, 'collision');
+    expect(reopened.mainScene.objects[1].defaultSpawn, isTrue);
+    expect(reopened.mainScene.objects[1].facing, 'up');
+    expect(reopened.mainScene.objects[2].targetRoomPath, hall.path);
+    expect(reopened.mainScene.objects[2].targetSpawnId, 'hall_entry');
+  });
+
+  test('old rooms receive default layers', () {
+    final scene = ProjectScene.fromJson(const {
+      'id': 'legacy',
+      'name': 'Legacy Room',
+      'objects': <Map<String, dynamic>>[],
+    });
+
+    expect(scene.layers, hasLength(4));
+    expect(scene.layers.first.id, 'background');
+  });
+
+  test('does not delete a room targeted by a door', () async {
+    final parent = await Directory.systemTemp.createTemp('drs_door_ref_');
+    addTearDown(() => parent.delete(recursive: true));
+    final repository = ProjectRepository();
+    var document = await repository.create(
+      parentPath: parent.path,
+      name: 'Door Reference Test',
+    );
+    document = await repository.addRoom(document, 'Hall');
+    final hall = document.rooms.last;
+    final mainScene = document.mainScene.copyWith(
+      objects: [
+        ProjectSceneObject(
+          id: 'hall_door',
+          type: 'door',
+          name: 'Hall Door',
+          asset: '',
+          x: 0,
+          y: 0,
+          zIndex: 0,
+          targetRoomPath: hall.path,
+        ),
+      ],
+    );
+    document = document.copyWith(
+      mainScene: mainScene,
+      rooms: document.rooms
+          .map(
+            (room) => room.path == document.manifest.mainScene
+                ? room.copyWith(scene: mainScene)
+                : room,
+          )
+          .toList(growable: false),
+    );
+
+    expect(
+      () => repository.deleteRoom(document, hall.path),
+      throwsA(isA<StateError>()),
     );
   });
 }

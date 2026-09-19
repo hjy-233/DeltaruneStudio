@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import 'project_character.dart';
 import 'project_manifest.dart';
+import 'project_room_layer_inspector.dart';
 
 class ProjectSceneEditor extends StatefulWidget {
   const ProjectSceneEditor({
@@ -47,7 +48,6 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   @override
   Widget build(BuildContext context) {
     final selected = _selectedObject;
-    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -88,10 +88,14 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
                 child:
                     widget.externalInspector ??
                     (selected == null
-                        ? Center(child: Text(l10n.selectObject))
+                        ? ProjectRoomLayerInspector(
+                            scene: _scene,
+                            onChanged: _emit,
+                          )
                         : SingleChildScrollView(
                             child: _ObjectInspector(
                               object: selected,
+                              document: widget.document,
                               assets: widget.document.assets,
                               characters: widget.document.characters,
                               onChanged: _updateObject,
@@ -121,14 +125,26 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   }
 
   void _addObject(String type) {
+    final l10n = AppLocalizations.of(context)!;
+    final dimensions = switch (type) {
+      'collision' => const Size(128, 64),
+      'door' => const Size(32, 48),
+      'spawn' => const Size(16, 16),
+      _ => const Size(-1, -1),
+    };
     final object = ProjectSceneObject(
       id: const Uuid().v4(),
       type: type,
-      name: type[0].toUpperCase() + type.substring(1),
+      name: _defaultObjectName(l10n, type),
       asset: '',
       x: 320,
       y: 240,
       zIndex: _scene.objects.length,
+      width: dimensions.width,
+      height: dimensions.height,
+      layerId: _layerIdForType(type),
+      defaultSpawn:
+          type == 'spawn' && !_scene.objects.any((item) => item.defaultSpawn),
     );
     _selectedId = object.id;
     _emit(_scene.copyWith(objects: [..._scene.objects, object]));
@@ -136,7 +152,7 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
 
   void _moveObject(String id, Offset delta) {
     final object = _findObject(id);
-    if (object == null) {
+    if (object == null || _layerLocked(object.layerId)) {
       return;
     }
     _updateObject(
@@ -146,7 +162,17 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
 
   void _updateObject(ProjectSceneObject updated) {
     final objects = _scene.objects
-        .map((object) => object.id == updated.id ? updated : object)
+        .map((object) {
+          if (object.id == updated.id) {
+            return updated;
+          }
+          if (updated.type == 'spawn' &&
+              updated.defaultSpawn &&
+              object.type == 'spawn') {
+            return object.copyWith(defaultSpawn: false);
+          }
+          return object;
+        })
         .toList(growable: false);
     _emit(_scene.copyWith(objects: objects));
   }
@@ -167,6 +193,23 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
       }
     }
     return null;
+  }
+
+  bool _layerLocked(String id) {
+    for (final layer in _scene.layers) {
+      if (layer.id == id) {
+        return layer.locked;
+      }
+    }
+    return false;
+  }
+
+  String _layerIdForType(String type) {
+    final preferred = _defaultLayerId(type);
+    if (_scene.layers.any((layer) => layer.id == preferred)) {
+      return preferred;
+    }
+    return _scene.layers.isEmpty ? preferred : _scene.layers.first.id;
   }
 
   void _emit(ProjectScene scene) {
@@ -203,23 +246,39 @@ class _EditorToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Wrap(
       spacing: 8,
       children: [
         FilledButton.icon(
           onPressed: () => onAdd('background'),
           icon: const Icon(Icons.image),
-          label: const Text('Add background'),
+          label: Text(l10n.addBackground),
         ),
         FilledButton.icon(
           onPressed: () => onAdd('character'),
           icon: const Icon(Icons.person),
-          label: const Text('Add character'),
+          label: Text(l10n.addCharacter),
         ),
         FilledButton.icon(
           onPressed: () => onAdd('prop'),
           icon: const Icon(Icons.category),
-          label: const Text('Add prop'),
+          label: Text(l10n.addProp),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => onAdd('collision'),
+          icon: const Icon(Icons.crop_square),
+          label: Text(l10n.addCollision),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => onAdd('spawn'),
+          icon: const Icon(Icons.place_outlined),
+          label: Text(l10n.addSpawn),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => onAdd('door'),
+          icon: const Icon(Icons.meeting_room_outlined),
+          label: Text(l10n.addDoor),
         ),
       ],
     );
@@ -243,8 +302,29 @@ class _SceneCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final objects = [...document.mainScene.objects]
-      ..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+    final layerOrder = {
+      for (final layer in document.mainScene.layers) layer.id: layer.order,
+    };
+    final hiddenLayers = document.mainScene.layers
+        .where((layer) => !layer.visible)
+        .map((layer) => layer.id)
+        .toSet();
+    final lockedLayers = document.mainScene.layers
+        .where((layer) => layer.locked)
+        .map((layer) => layer.id)
+        .toSet();
+    final objects =
+        document.mainScene.objects
+            .where((object) => !hiddenLayers.contains(object.layerId))
+            .toList()
+          ..sort((a, b) {
+            final layerComparison = (layerOrder[a.layerId] ?? 0).compareTo(
+              layerOrder[b.layerId] ?? 0,
+            );
+            return layerComparison != 0
+                ? layerComparison
+                : a.zIndex.compareTo(b.zIndex);
+          });
     return GestureDetector(
       onTap: () => onSelect(null),
       child: Stack(
@@ -262,6 +342,7 @@ class _SceneCanvas extends StatelessWidget {
                 rootPath: document.path,
                 scale: scale,
                 selected: selectedId == object.id,
+                layerLocked: lockedLayers.contains(object.layerId),
                 onTap: () => onSelect(object.id),
                 onMove: (delta) => onMove(object.id, delta / scale),
               ),
@@ -291,6 +372,7 @@ class _DraggableObject extends StatelessWidget {
     required this.rootPath,
     required this.scale,
     required this.selected,
+    required this.layerLocked,
     required this.onTap,
     required this.onMove,
   });
@@ -300,11 +382,15 @@ class _DraggableObject extends StatelessWidget {
   final String rootPath;
   final double scale;
   final bool selected;
+  final bool layerLocked;
   final VoidCallback onTap;
   final ValueChanged<Offset> onMove;
 
   @override
   Widget build(BuildContext context) {
+    if (_isEditorMarker(object.type)) {
+      return _marker(context);
+    }
     final file = File('$rootPath/${visual.assetPath}');
     final child = file.existsSync()
         ? SizedBox(
@@ -326,7 +412,9 @@ class _DraggableObject extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       onPanStart: (_) => onTap(),
-      onPanUpdate: object.locked ? null : (details) => onMove(details.delta),
+      onPanUpdate: object.locked || layerLocked
+          ? null
+          : (details) => onMove(details.delta),
       child: DecoratedBox(
         decoration: selected
             ? BoxDecoration(border: Border.all(color: Colors.amber, width: 2))
@@ -335,11 +423,42 @@ class _DraggableObject extends StatelessWidget {
       ),
     );
   }
+
+  Widget _marker(BuildContext context) {
+    final color = switch (object.type) {
+      'collision' => Colors.cyan,
+      'spawn' => Colors.greenAccent,
+      _ => Colors.orange,
+    };
+    final width = (visual.width > 0 ? visual.width : 24) * scale;
+    final height = (visual.height > 0 ? visual.height : 24) * scale;
+    return GestureDetector(
+      onTap: onTap,
+      onPanStart: (_) => onTap(),
+      onPanUpdate: object.locked || layerLocked
+          ? null
+          : (details) => onMove(details.delta),
+      child: Container(
+        width: width.clamp(14, double.infinity),
+        height: height.clamp(14, double.infinity),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.2),
+          border: Border.all(
+            color: selected ? Colors.amber : color,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Icon(_markerIcon(object.type), color: color, size: 16),
+      ),
+    );
+  }
 }
 
 class _ObjectInspector extends StatelessWidget {
   const _ObjectInspector({
     required this.object,
+    required this.document,
     required this.assets,
     required this.characters,
     required this.onChanged,
@@ -347,6 +466,7 @@ class _ObjectInspector extends StatelessWidget {
   });
 
   final ProjectSceneObject object;
+  final ProjectDocument document;
   final List<ProjectAsset> assets;
   final List<ProjectCharacterFile> characters;
   final ValueChanged<ProjectSceneObject> onChanged;
@@ -354,6 +474,8 @@ class _ObjectInspector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final marker = _isEditorMarker(object.type);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Wrap(
@@ -361,6 +483,33 @@ class _ObjectInspector extends StatelessWidget {
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          SizedBox(
+            width: 300,
+            child: DropdownButtonFormField<String>(
+              initialValue:
+                  document.mainScene.layers.any(
+                    (layer) => layer.id == object.layerId,
+                  )
+                  ? object.layerId
+                  : document.mainScene.layers.isEmpty
+                  ? null
+                  : document.mainScene.layers.first.id,
+              decoration: InputDecoration(labelText: l10n.layer),
+              items: document.mainScene.layers
+                  .map(
+                    (layer) => DropdownMenuItem(
+                      value: layer.id,
+                      child: Text(layer.name),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) {
+                if (value != null) {
+                  onChanged(object.copyWith(layerId: value));
+                }
+              },
+            ),
+          ),
           if (object.type == 'character')
             DropdownButtonFormField<String>(
               initialValue:
@@ -395,48 +544,50 @@ class _ObjectInspector extends StatelessWidget {
                 ),
               ),
             ),
-          DropdownButtonFormField<String>(
-            initialValue: object.asset.isEmpty ? null : object.asset,
-            decoration: const InputDecoration(labelText: 'Resource'),
-            items: assets
-                .map(
-                  (asset) => DropdownMenuItem<String>(
-                    value: asset.path,
-                    child: Text(asset.name, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) {
-              if (value != null) {
-                onChanged(
-                  object.copyWith(
-                    asset: value,
-                    width: -1,
-                    height: -1,
-                    characterPath: object.type == 'character'
-                        ? ''
-                        : object.characterPath,
-                  ),
-                );
-              }
-            },
-          ),
+          if (!marker)
+            DropdownButtonFormField<String>(
+              initialValue: object.asset.isEmpty ? null : object.asset,
+              decoration: InputDecoration(labelText: l10n.resource),
+              items: assets
+                  .map(
+                    (asset) => DropdownMenuItem<String>(
+                      value: asset.path,
+                      child: Text(asset.name, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) {
+                if (value != null) {
+                  onChanged(
+                    object.copyWith(
+                      asset: value,
+                      width: -1,
+                      height: -1,
+                      characterPath: object.type == 'character'
+                          ? ''
+                          : object.characterPath,
+                    ),
+                  );
+                }
+              },
+            ),
           SizedBox(
             width: 180,
             child: _textField(
-              'Name',
+              l10n.name,
               object.name,
               (value) => onChanged(object.copyWith(name: value)),
             ),
           ),
-          SizedBox(
-            width: 300,
-            child: _textField(
-              'Asset path',
-              object.asset,
-              (value) => onChanged(object.copyWith(asset: value)),
+          if (!marker)
+            SizedBox(
+              width: 300,
+              child: _textField(
+                l10n.assetPath,
+                object.asset,
+                (value) => onChanged(object.copyWith(asset: value)),
+              ),
             ),
-          ),
           SizedBox(
             width: 100,
             child: _numberField(
@@ -445,6 +596,8 @@ class _ObjectInspector extends StatelessWidget {
               (value) => onChanged(object.copyWith(x: value)),
             ),
           ),
+          if (object.type == 'spawn') ..._spawnFields(context),
+          if (object.type == 'door') ..._doorFields(context),
           SizedBox(
             width: 100,
             child: _numberField(
@@ -456,7 +609,7 @@ class _ObjectInspector extends StatelessWidget {
           SizedBox(
             width: 100,
             child: _numberField(
-              'Layer',
+              l10n.order,
               object.zIndex.toDouble(),
               (value) => onChanged(object.copyWith(zIndex: value.toInt())),
             ),
@@ -464,7 +617,7 @@ class _ObjectInspector extends StatelessWidget {
           SizedBox(
             width: 100,
             child: _numberField(
-              'Width',
+              l10n.width,
               object.width,
               (value) => onChanged(object.copyWith(width: value)),
             ),
@@ -472,25 +625,120 @@ class _ObjectInspector extends StatelessWidget {
           SizedBox(
             width: 100,
             child: _numberField(
-              'Height',
+              l10n.height,
               object.height,
               (value) => onChanged(object.copyWith(height: value)),
             ),
           ),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Locked'),
+            title: Text(l10n.locked),
             value: object.locked,
             onChanged: (value) => onChanged(object.copyWith(locked: value)),
           ),
           FilledButton.tonalIcon(
             onPressed: onDelete,
             icon: const Icon(Icons.delete),
-            label: const Text('Delete'),
+            label: Text(l10n.delete),
           ),
         ],
       ),
     );
+  }
+
+  List<Widget> _spawnFields(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      SizedBox(
+        width: 180,
+        child: DropdownButtonFormField<String>(
+          initialValue: object.facing,
+          decoration: InputDecoration(labelText: l10n.spawnFacing),
+          items: [
+            for (final direction in const ['up', 'down', 'left', 'right'])
+              DropdownMenuItem(
+                value: direction,
+                child: Text(_directionLabel(l10n, direction)),
+              ),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              onChanged(object.copyWith(facing: value));
+            }
+          },
+        ),
+      ),
+      SwitchListTile.adaptive(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.defaultSpawn),
+        value: object.defaultSpawn,
+        onChanged: (value) => onChanged(object.copyWith(defaultSpawn: value)),
+      ),
+    ];
+  }
+
+  List<Widget> _doorFields(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final targetRoom = _roomByPath(object.targetRoomPath);
+    final spawnPoints =
+        targetRoom?.scene.objects
+            .where((item) => item.type == 'spawn')
+            .toList(growable: false) ??
+        const <ProjectSceneObject>[];
+    return [
+      SizedBox(
+        width: 300,
+        child: DropdownButtonFormField<String>(
+          initialValue:
+              document.rooms.any((room) => room.path == object.targetRoomPath)
+              ? object.targetRoomPath
+              : null,
+          decoration: InputDecoration(labelText: l10n.targetRoom),
+          items: document.rooms
+              .map(
+                (room) => DropdownMenuItem(
+                  value: room.path,
+                  child: Text(room.scene.name),
+                ),
+              )
+              .toList(growable: false),
+          onChanged: (value) => onChanged(
+            object.copyWith(targetRoomPath: value ?? '', targetSpawnId: ''),
+          ),
+        ),
+      ),
+      SizedBox(
+        width: 300,
+        child: DropdownButtonFormField<String>(
+          initialValue:
+              spawnPoints.any((spawn) => spawn.id == object.targetSpawnId)
+              ? object.targetSpawnId
+              : null,
+          decoration: InputDecoration(labelText: l10n.targetSpawn),
+          items: spawnPoints
+              .map(
+                (spawn) =>
+                    DropdownMenuItem(value: spawn.id, child: Text(spawn.name)),
+              )
+              .toList(growable: false),
+          onChanged: spawnPoints.isEmpty
+              ? null
+              : (value) =>
+                    onChanged(object.copyWith(targetSpawnId: value ?? '')),
+        ),
+      ),
+      if (targetRoom != null && spawnPoints.isEmpty)
+        Text(l10n.noSpawnPoints, style: const TextStyle(color: Colors.orange)),
+    ];
+  }
+
+  ProjectRoom? _roomByPath(String path) {
+    for (final room in document.rooms) {
+      if (room.path == path) {
+        return room;
+      }
+    }
+    return null;
   }
 
   Widget _textField(
@@ -577,4 +825,45 @@ String? _previewFrame(ProjectCharacterDefinition definition) {
     }
   }
   return null;
+}
+
+bool _isEditorMarker(String type) {
+  return type == 'collision' || type == 'spawn' || type == 'door';
+}
+
+IconData _markerIcon(String type) {
+  return switch (type) {
+    'collision' => Icons.crop_square,
+    'spawn' => Icons.place,
+    _ => Icons.meeting_room,
+  };
+}
+
+String _defaultLayerId(String type) {
+  return switch (type) {
+    'background' => 'background',
+    'character' => 'characters',
+    _ => 'objects',
+  };
+}
+
+String _defaultObjectName(AppLocalizations l10n, String type) {
+  return switch (type) {
+    'background' => l10n.backgroundResources,
+    'character' => l10n.characterDefaultName,
+    'prop' => l10n.propResources,
+    'collision' => l10n.collisionRegion,
+    'spawn' => l10n.spawnPoint,
+    'door' => l10n.doorConnection,
+    _ => type,
+  };
+}
+
+String _directionLabel(AppLocalizations l10n, String direction) {
+  return switch (direction) {
+    'up' => l10n.directionUp,
+    'left' => l10n.directionLeft,
+    'right' => l10n.directionRight,
+    _ => l10n.directionDown,
+  };
 }

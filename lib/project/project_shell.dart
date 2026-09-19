@@ -509,6 +509,7 @@ class _ProjectShellState extends State<ProjectShell> {
       _message = null;
     });
     try {
+      await _repository.save(document);
       await _godotBuildService.buildAndRun(document);
       if (mounted) {
         setState(() => _message = l10n.godotStarted);

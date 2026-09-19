@@ -1,5 +1,63 @@
 import 'project_character.dart';
 
+const defaultProjectSceneLayers = [
+  ProjectSceneLayer(id: 'background', name: 'Background', order: 0),
+  ProjectSceneLayer(id: 'objects', name: 'Objects', order: 1),
+  ProjectSceneLayer(id: 'characters', name: 'Characters', order: 2),
+  ProjectSceneLayer(id: 'foreground', name: 'Foreground', order: 3),
+];
+
+const defaultEntryScript = 'scripts/manual/main.gd';
+
+class ProjectSceneLayer {
+  const ProjectSceneLayer({
+    required this.id,
+    required this.name,
+    required this.order,
+    this.visible = true,
+    this.locked = false,
+  });
+
+  final String id;
+  final String name;
+  final int order;
+  final bool visible;
+  final bool locked;
+
+  factory ProjectSceneLayer.fromJson(Map<String, dynamic> json) {
+    return ProjectSceneLayer(
+      id: json['id'] as String? ?? 'layer',
+      name: json['name'] as String? ?? 'Layer',
+      order: (json['order'] as num?)?.toInt() ?? 0,
+      visible: json['visible'] as bool? ?? true,
+      locked: json['locked'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'order': order,
+    'visible': visible,
+    'locked': locked,
+  };
+
+  ProjectSceneLayer copyWith({
+    String? name,
+    int? order,
+    bool? visible,
+    bool? locked,
+  }) {
+    return ProjectSceneLayer(
+      id: id,
+      name: name ?? this.name,
+      order: order ?? this.order,
+      visible: visible ?? this.visible,
+      locked: locked ?? this.locked,
+    );
+  }
+}
+
 class ProjectLayout {
   const ProjectLayout({this.sidebarWidth = 230, this.inspectorWidth = 300});
 
@@ -46,6 +104,7 @@ class ProjectManifest {
     required this.mainScene,
     this.rooms = const [],
     this.layout = const ProjectLayout(),
+    this.entryScript = defaultEntryScript,
   });
 
   final int formatVersion;
@@ -54,6 +113,7 @@ class ProjectManifest {
   final String mainScene;
   final List<String> rooms;
   final ProjectLayout layout;
+  final String entryScript;
 
   factory ProjectManifest.fromJson(Map<String, dynamic> json) {
     return ProjectManifest(
@@ -65,6 +125,7 @@ class ProjectManifest {
           .whereType<String>()
           .toList(growable: false),
       layout: ProjectLayout.fromJson(json['layout'] as Map<String, dynamic>?),
+      entryScript: json['entryScript'] as String? ?? defaultEntryScript,
     );
   }
 
@@ -76,10 +137,15 @@ class ProjectManifest {
       'mainScene': mainScene,
       'rooms': rooms.isEmpty ? [mainScene] : rooms,
       'layout': layout.toJson(),
+      'entryScript': entryScript,
     };
   }
 
-  ProjectManifest copyWith({List<String>? rooms, ProjectLayout? layout}) {
+  ProjectManifest copyWith({
+    List<String>? rooms,
+    ProjectLayout? layout,
+    String? entryScript,
+  }) {
     return ProjectManifest(
       formatVersion: formatVersion,
       id: id,
@@ -87,6 +153,7 @@ class ProjectManifest {
       mainScene: mainScene,
       rooms: rooms ?? this.rooms,
       layout: layout ?? this.layout,
+      entryScript: entryScript ?? this.entryScript,
     );
   }
 }
@@ -97,12 +164,14 @@ class ProjectScene {
     required this.name,
     this.background,
     this.objects = const [],
+    this.layers = defaultProjectSceneLayers,
   });
 
   final String id;
   final String name;
   final String? background;
   final List<ProjectSceneObject> objects;
+  final List<ProjectSceneLayer> layers;
 
   ProjectScene copyWith({
     String? id,
@@ -110,12 +179,14 @@ class ProjectScene {
     String? background,
     bool clearBackground = false,
     List<ProjectSceneObject>? objects,
+    List<ProjectSceneLayer>? layers,
   }) {
     return ProjectScene(
       id: id ?? this.id,
       name: name ?? this.name,
       background: clearBackground ? null : background ?? this.background,
       objects: objects ?? this.objects,
+      layers: layers ?? this.layers,
     );
   }
 
@@ -128,16 +199,18 @@ class ProjectScene {
           .whereType<Map<String, dynamic>>()
           .map(ProjectSceneObject.fromJson)
           .toList(growable: false),
+      layers: _sceneLayersFromJson(json['layers']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'formatVersion': 1,
+      'formatVersion': 2,
       'id': id,
       'name': name,
       'background': background,
       'objects': objects.map((object) => object.toJson()).toList(),
+      'layers': layers.map((layer) => layer.toJson()).toList(),
       'triggers': <Object?>[],
       'eventChains': <Object?>[],
     };
@@ -157,6 +230,11 @@ class ProjectSceneObject {
     this.height = -1,
     this.locked = false,
     this.characterPath = '',
+    this.layerId = 'objects',
+    this.targetRoomPath = '',
+    this.targetSpawnId = '',
+    this.facing = 'down',
+    this.defaultSpawn = false,
   });
 
   final String id;
@@ -170,6 +248,11 @@ class ProjectSceneObject {
   final double height;
   final bool locked;
   final String characterPath;
+  final String layerId;
+  final String targetRoomPath;
+  final String targetSpawnId;
+  final String facing;
+  final bool defaultSpawn;
 
   ProjectSceneObject copyWith({
     String? type,
@@ -182,6 +265,11 @@ class ProjectSceneObject {
     double? height,
     bool? locked,
     String? characterPath,
+    String? layerId,
+    String? targetRoomPath,
+    String? targetSpawnId,
+    String? facing,
+    bool? defaultSpawn,
   }) {
     return ProjectSceneObject(
       id: id,
@@ -195,13 +283,19 @@ class ProjectSceneObject {
       height: height ?? this.height,
       locked: locked ?? this.locked,
       characterPath: characterPath ?? this.characterPath,
+      layerId: layerId ?? this.layerId,
+      targetRoomPath: targetRoomPath ?? this.targetRoomPath,
+      targetSpawnId: targetSpawnId ?? this.targetSpawnId,
+      facing: facing ?? this.facing,
+      defaultSpawn: defaultSpawn ?? this.defaultSpawn,
     );
   }
 
   factory ProjectSceneObject.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String? ?? 'prop';
     return ProjectSceneObject(
       id: json['id'] as String? ?? 'object',
-      type: json['type'] as String? ?? 'prop',
+      type: type,
       name: json['name'] as String? ?? 'Object',
       asset: json['asset'] as String? ?? json['resource'] as String? ?? '',
       x: (json['x'] as num?)?.toDouble() ?? 320,
@@ -211,6 +305,11 @@ class ProjectSceneObject {
       height: (json['height'] as num?)?.toDouble() ?? -1,
       locked: json['locked'] as bool? ?? false,
       characterPath: json['character'] as String? ?? '',
+      layerId: json['layer'] as String? ?? _defaultLayerForType(type),
+      targetRoomPath: json['targetRoom'] as String? ?? '',
+      targetSpawnId: json['targetSpawn'] as String? ?? '',
+      facing: json['facing'] as String? ?? 'down',
+      defaultSpawn: json['defaultSpawn'] as bool? ?? false,
     );
   }
 
@@ -227,8 +326,29 @@ class ProjectSceneObject {
       'height': height,
       'locked': locked,
       if (characterPath.isNotEmpty) 'character': characterPath,
+      'layer': layerId,
+      if (targetRoomPath.isNotEmpty) 'targetRoom': targetRoomPath,
+      if (targetSpawnId.isNotEmpty) 'targetSpawn': targetSpawnId,
+      if (type == 'spawn') 'facing': facing,
+      if (type == 'spawn') 'defaultSpawn': defaultSpawn,
     };
   }
+}
+
+String _defaultLayerForType(String type) {
+  return switch (type) {
+    'background' => 'background',
+    'character' => 'characters',
+    _ => 'objects',
+  };
+}
+
+List<ProjectSceneLayer> _sceneLayersFromJson(Object? value) {
+  final layers = (value as List<dynamic>? ?? const [])
+      .whereType<Map<String, dynamic>>()
+      .map(ProjectSceneLayer.fromJson)
+      .toList(growable: false);
+  return layers.isEmpty ? defaultProjectSceneLayers : layers;
 }
 
 class ProjectDocument {

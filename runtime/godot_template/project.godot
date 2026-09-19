@@ -8,6 +8,10 @@ config_version=5
 config/name="Deltarune Studio Game"
 run/main_scene="res://runtime/main.tscn"
 
+[autoload]
+
+DRS="*res://runtime/drs.gd"
+
 [display]
 
 window/size/viewport_width=640

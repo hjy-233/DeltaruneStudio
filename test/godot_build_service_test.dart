@@ -25,6 +25,7 @@ void main() {
 
       expect(File('${result.directory}/project.godot').existsSync(), isTrue);
       expect(File('${result.directory}/runtime/main.gd').existsSync(), isTrue);
+      expect(File('${result.directory}/runtime/drs.gd').existsSync(), isTrue);
       expect(
         File('${result.directory}/drs_project/project.json').existsSync(),
         isTrue,
@@ -32,6 +33,12 @@ void main() {
       expect(
         File(
           '${result.directory}/drs_project/characters/kris/character.json',
+        ).existsSync(),
+        isTrue,
+      );
+      expect(
+        File(
+          '${result.directory}/drs_project/scripts/manual/main.gd',
         ).existsSync(),
         isTrue,
       );

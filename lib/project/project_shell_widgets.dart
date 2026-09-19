@@ -186,6 +186,11 @@ class _ProjectTab extends StatelessWidget {
           title: Text(l10n.sceneFolder),
           subtitle: Text(document.manifest.mainScene),
         ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.entryScript),
+          subtitle: Text(document.manifest.entryScript),
+        ),
       ],
     );
   }

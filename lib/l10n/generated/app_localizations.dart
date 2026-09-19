@@ -590,6 +590,144 @@ abstract class AppLocalizations {
   /// **'Character'**
   String get characterDefaultName;
 
+  /// No description provided for @addBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Add background'**
+  String get addBackground;
+
+  /// No description provided for @addCharacter.
+  ///
+  /// In en, this message translates to:
+  /// **'Add character'**
+  String get addCharacter;
+
+  /// No description provided for @addProp.
+  ///
+  /// In en, this message translates to:
+  /// **'Add prop'**
+  String get addProp;
+
+  /// No description provided for @addCollision.
+  ///
+  /// In en, this message translates to:
+  /// **'Add collision'**
+  String get addCollision;
+
+  /// No description provided for @addSpawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add spawn point'**
+  String get addSpawn;
+
+  /// No description provided for @addDoor.
+  ///
+  /// In en, this message translates to:
+  /// **'Add door'**
+  String get addDoor;
+
+  /// No description provided for @layers.
+  ///
+  /// In en, this message translates to:
+  /// **'Layers'**
+  String get layers;
+
+  /// No description provided for @newLayer.
+  ///
+  /// In en, this message translates to:
+  /// **'New layer'**
+  String get newLayer;
+
+  /// No description provided for @layer.
+  ///
+  /// In en, this message translates to:
+  /// **'Layer'**
+  String get layer;
+
+  /// No description provided for @visible.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible'**
+  String get visible;
+
+  /// No description provided for @locked.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get locked;
+
+  /// No description provided for @collisionRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Collision region'**
+  String get collisionRegion;
+
+  /// No description provided for @spawnPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Spawn point'**
+  String get spawnPoint;
+
+  /// No description provided for @doorConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Door connection'**
+  String get doorConnection;
+
+  /// No description provided for @targetRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Target room'**
+  String get targetRoom;
+
+  /// No description provided for @targetSpawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Target spawn point'**
+  String get targetSpawn;
+
+  /// No description provided for @defaultSpawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Default spawn point'**
+  String get defaultSpawn;
+
+  /// No description provided for @spawnFacing.
+  ///
+  /// In en, this message translates to:
+  /// **'Spawn facing'**
+  String get spawnFacing;
+
+  /// No description provided for @noSpawnPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'No spawn points in this room'**
+  String get noSpawnPoints;
+
+  /// No description provided for @resource.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource'**
+  String get resource;
+
+  /// No description provided for @assetPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset path'**
+  String get assetPath;
+
+  /// No description provided for @order.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get order;
+
+  /// No description provided for @entryScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry script'**
+  String get entryScript;
+
   /// No description provided for @ok.
   ///
   /// In en, this message translates to:
