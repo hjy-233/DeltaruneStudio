@@ -13,10 +13,12 @@ void main() {
       );
       addTearDown(() => temporaryDirectory.delete(recursive: true));
 
-      final source = await ProjectRepository().create(
+      final repository = ProjectRepository();
+      var source = await repository.create(
         parentPath: temporaryDirectory.path,
         name: 'Sample Game',
       );
+      source = await repository.addCharacter(source, 'Kris');
       expect(Directory('${source.path}/.build').existsSync(), isFalse);
 
       final result = await GodotBuildService().prepare(source);
@@ -25,6 +27,12 @@ void main() {
       expect(File('${result.directory}/runtime/main.gd').existsSync(), isTrue);
       expect(
         File('${result.directory}/drs_project/project.json').existsSync(),
+        isTrue,
+      );
+      expect(
+        File(
+          '${result.directory}/drs_project/characters/kris/character.json',
+        ).existsSync(),
         isTrue,
       );
       expect(

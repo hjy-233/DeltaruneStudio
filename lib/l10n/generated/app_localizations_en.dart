@@ -108,6 +108,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get characterResources => 'Character';
 
   @override
+  String get portraitResources => 'Portrait';
+
+  @override
   String get propResources => 'Prop';
 
   @override
@@ -118,4 +121,152 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectObject => 'Select an object to edit its properties.';
+
+  @override
+  String get rename => 'Rename';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get newFolder => 'New folder';
+
+  @override
+  String get importHere => 'Import here';
+
+  @override
+  String get renameFolder => 'Rename folder';
+
+  @override
+  String get renameResource => 'Rename resource';
+
+  @override
+  String get renameRoom => 'Rename room';
+
+  @override
+  String get resourceRenamed => 'Resource renamed.';
+
+  @override
+  String get resourceDeleted => 'Resource deleted.';
+
+  @override
+  String get folderCreated => 'Folder created.';
+
+  @override
+  String get folderRenamed => 'Folder renamed.';
+
+  @override
+  String get folderDeleted => 'Folder deleted.';
+
+  @override
+  String get roomRenamed => 'Room renamed.';
+
+  @override
+  String get roomDeleted => 'Room deleted.';
+
+  @override
+  String deleteQuestion(Object name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get resourceProperties => 'Resource properties';
+
+  @override
+  String get roomProperties => 'Room properties';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get type => 'Type';
+
+  @override
+  String get path => 'Path';
+
+  @override
+  String get none => 'None';
+
+  @override
+  String get objectCount => 'Object count';
+
+  @override
+  String get newCharacter => 'New character';
+
+  @override
+  String get noCharacters => 'No characters yet.';
+
+  @override
+  String characterCreated(Object name) {
+    return 'Created character $name.';
+  }
+
+  @override
+  String get characterSaved => 'Character saved.';
+
+  @override
+  String get characterDeleted => 'Character deleted.';
+
+  @override
+  String get characterProperties => 'Character properties';
+
+  @override
+  String get characterId => 'Character ID';
+
+  @override
+  String get defaultSize => 'Default size';
+
+  @override
+  String get width => 'Width';
+
+  @override
+  String get height => 'Height';
+
+  @override
+  String get moveSpeed => 'Move speed';
+
+  @override
+  String get collisionBox => 'Collision box';
+
+  @override
+  String get animations => 'Animations';
+
+  @override
+  String get addAnimation => 'Add animation';
+
+  @override
+  String get deleteAnimation => 'Delete animation';
+
+  @override
+  String get direction => 'Direction';
+
+  @override
+  String get directionUp => 'Up';
+
+  @override
+  String get directionDown => 'Down';
+
+  @override
+  String get directionLeft => 'Left';
+
+  @override
+  String get directionRight => 'Right';
+
+  @override
+  String get framesPerSecond => 'Frames per second';
+
+  @override
+  String get loop => 'Loop';
+
+  @override
+  String get addFrame => 'Add frame';
+
+  @override
+  String get characterDefinition => 'Character definition';
+
+  @override
+  String get characterDefaultName => 'Character';
+
+  @override
+  String get ok => 'OK';
 }

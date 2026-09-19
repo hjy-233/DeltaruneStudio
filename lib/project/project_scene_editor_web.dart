@@ -10,6 +10,8 @@ class ProjectSceneEditor extends StatelessWidget {
     required this.onSelectionChanged,
     required this.inspectorWidth,
     required this.onInspectorWidthChanged,
+    this.externalInspector,
+    this.externalSelectionKey,
   });
 
   final ProjectDocument document;
@@ -17,6 +19,8 @@ class ProjectSceneEditor extends StatelessWidget {
   final ValueChanged<String?> onSelectionChanged;
   final double inspectorWidth;
   final ValueChanged<double> onInspectorWidthChanged;
+  final Widget? externalInspector;
+  final String? externalSelectionKey;
 
   @override
   Widget build(BuildContext context) {

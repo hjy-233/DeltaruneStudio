@@ -278,6 +278,12 @@ abstract class AppLocalizations {
   /// **'Character'**
   String get characterResources;
 
+  /// No description provided for @portraitResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Portrait'**
+  String get portraitResources;
+
   /// No description provided for @propResources.
   ///
   /// In en, this message translates to:
@@ -301,6 +307,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select an object to edit its properties.'**
   String get selectObject;
+
+  /// No description provided for @rename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get rename;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @newFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get newFolder;
+
+  /// No description provided for @importHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Import here'**
+  String get importHere;
+
+  /// No description provided for @renameFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename folder'**
+  String get renameFolder;
+
+  /// No description provided for @renameResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename resource'**
+  String get renameResource;
+
+  /// No description provided for @renameRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename room'**
+  String get renameRoom;
+
+  /// No description provided for @resourceRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource renamed.'**
+  String get resourceRenamed;
+
+  /// No description provided for @resourceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource deleted.'**
+  String get resourceDeleted;
+
+  /// No description provided for @folderCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder created.'**
+  String get folderCreated;
+
+  /// No description provided for @folderRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder renamed.'**
+  String get folderRenamed;
+
+  /// No description provided for @folderDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder deleted.'**
+  String get folderDeleted;
+
+  /// No description provided for @roomRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Room renamed.'**
+  String get roomRenamed;
+
+  /// No description provided for @roomDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Room deleted.'**
+  String get roomDeleted;
+
+  /// No description provided for @deleteQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String deleteQuestion(Object name);
+
+  /// No description provided for @resourceProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource properties'**
+  String get resourceProperties;
+
+  /// No description provided for @roomProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Room properties'**
+  String get roomProperties;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get type;
+
+  /// No description provided for @path.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get path;
+
+  /// No description provided for @none.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get none;
+
+  /// No description provided for @objectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Object count'**
+  String get objectCount;
+
+  /// No description provided for @newCharacter.
+  ///
+  /// In en, this message translates to:
+  /// **'New character'**
+  String get newCharacter;
+
+  /// No description provided for @noCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'No characters yet.'**
+  String get noCharacters;
+
+  /// No description provided for @characterCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created character {name}.'**
+  String characterCreated(Object name);
+
+  /// No description provided for @characterSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Character saved.'**
+  String get characterSaved;
+
+  /// No description provided for @characterDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Character deleted.'**
+  String get characterDeleted;
+
+  /// No description provided for @characterProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Character properties'**
+  String get characterProperties;
+
+  /// No description provided for @characterId.
+  ///
+  /// In en, this message translates to:
+  /// **'Character ID'**
+  String get characterId;
+
+  /// No description provided for @defaultSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Default size'**
+  String get defaultSize;
+
+  /// No description provided for @width.
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get width;
+
+  /// No description provided for @height.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get height;
+
+  /// No description provided for @moveSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Move speed'**
+  String get moveSpeed;
+
+  /// No description provided for @collisionBox.
+  ///
+  /// In en, this message translates to:
+  /// **'Collision box'**
+  String get collisionBox;
+
+  /// No description provided for @animations.
+  ///
+  /// In en, this message translates to:
+  /// **'Animations'**
+  String get animations;
+
+  /// No description provided for @addAnimation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add animation'**
+  String get addAnimation;
+
+  /// No description provided for @deleteAnimation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete animation'**
+  String get deleteAnimation;
+
+  /// No description provided for @direction.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction'**
+  String get direction;
+
+  /// No description provided for @directionUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up'**
+  String get directionUp;
+
+  /// No description provided for @directionDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down'**
+  String get directionDown;
+
+  /// No description provided for @directionLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get directionLeft;
+
+  /// No description provided for @directionRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get directionRight;
+
+  /// No description provided for @framesPerSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Frames per second'**
+  String get framesPerSecond;
+
+  /// No description provided for @loop.
+  ///
+  /// In en, this message translates to:
+  /// **'Loop'**
+  String get loop;
+
+  /// No description provided for @addFrame.
+  ///
+  /// In en, this message translates to:
+  /// **'Add frame'**
+  String get addFrame;
+
+  /// No description provided for @characterDefinition.
+  ///
+  /// In en, this message translates to:
+  /// **'Character definition'**
+  String get characterDefinition;
+
+  /// No description provided for @characterDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Character'**
+  String get characterDefaultName;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
 }
 
 class _AppLocalizationsDelegate

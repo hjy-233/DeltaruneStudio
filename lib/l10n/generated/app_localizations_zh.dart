@@ -107,6 +107,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get characterResources => '角色';
 
   @override
+  String get portraitResources => '头像';
+
+  @override
   String get propResources => '物品';
 
   @override
@@ -117,4 +120,152 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get selectObject => '选择对象以编辑属性。';
+
+  @override
+  String get rename => '重命名';
+
+  @override
+  String get delete => '删除';
+
+  @override
+  String get newFolder => '新建文件夹';
+
+  @override
+  String get importHere => '导入到这里';
+
+  @override
+  String get renameFolder => '重命名文件夹';
+
+  @override
+  String get renameResource => '重命名资源';
+
+  @override
+  String get renameRoom => '重命名房间';
+
+  @override
+  String get resourceRenamed => '资源已重命名。';
+
+  @override
+  String get resourceDeleted => '资源已删除。';
+
+  @override
+  String get folderCreated => '文件夹已创建。';
+
+  @override
+  String get folderRenamed => '文件夹已重命名。';
+
+  @override
+  String get folderDeleted => '文件夹已删除。';
+
+  @override
+  String get roomRenamed => '房间已重命名。';
+
+  @override
+  String get roomDeleted => '房间已删除。';
+
+  @override
+  String deleteQuestion(Object name) {
+    return '确定删除$name吗？';
+  }
+
+  @override
+  String get resourceProperties => '资源属性';
+
+  @override
+  String get roomProperties => '房间属性';
+
+  @override
+  String get name => '名称';
+
+  @override
+  String get type => '类型';
+
+  @override
+  String get path => '路径';
+
+  @override
+  String get none => '无';
+
+  @override
+  String get objectCount => '对象数量';
+
+  @override
+  String get newCharacter => '新建角色';
+
+  @override
+  String get noCharacters => '还没有角色。';
+
+  @override
+  String characterCreated(Object name) {
+    return '已创建角色：$name。';
+  }
+
+  @override
+  String get characterSaved => '角色已保存。';
+
+  @override
+  String get characterDeleted => '角色已删除。';
+
+  @override
+  String get characterProperties => '角色属性';
+
+  @override
+  String get characterId => '角色 ID';
+
+  @override
+  String get defaultSize => '默认尺寸';
+
+  @override
+  String get width => '宽度';
+
+  @override
+  String get height => '高度';
+
+  @override
+  String get moveSpeed => '移动速度';
+
+  @override
+  String get collisionBox => '碰撞箱';
+
+  @override
+  String get animations => '动画';
+
+  @override
+  String get addAnimation => '添加动画';
+
+  @override
+  String get deleteAnimation => '删除动画';
+
+  @override
+  String get direction => '方向';
+
+  @override
+  String get directionUp => '上';
+
+  @override
+  String get directionDown => '下';
+
+  @override
+  String get directionLeft => '左';
+
+  @override
+  String get directionRight => '右';
+
+  @override
+  String get framesPerSecond => '每秒帧数';
+
+  @override
+  String get loop => '循环播放';
+
+  @override
+  String get addFrame => '添加帧';
+
+  @override
+  String get characterDefinition => '角色定义';
+
+  @override
+  String get characterDefaultName => '角色';
+
+  @override
+  String get ok => '确定';
 }

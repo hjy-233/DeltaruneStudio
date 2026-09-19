@@ -4,6 +4,7 @@ import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
+import 'project_character.dart';
 import 'project_manifest.dart';
 
 class ProjectSceneEditor extends StatefulWidget {
@@ -14,6 +15,8 @@ class ProjectSceneEditor extends StatefulWidget {
     required this.onSelectionChanged,
     required this.inspectorWidth,
     required this.onInspectorWidthChanged,
+    this.externalInspector,
+    this.externalSelectionKey,
   });
 
   final ProjectDocument document;
@@ -21,6 +24,8 @@ class ProjectSceneEditor extends StatefulWidget {
   final ValueChanged<String?> onSelectionChanged;
   final double inspectorWidth;
   final ValueChanged<double> onInspectorWidthChanged;
+  final Widget? externalInspector;
+  final String? externalSelectionKey;
 
   @override
   State<ProjectSceneEditor> createState() => _ProjectSceneEditorState();
@@ -29,6 +34,15 @@ class ProjectSceneEditor extends StatefulWidget {
 class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   String? _selectedId;
   ProjectScene get _scene => widget.document.mainScene;
+
+  @override
+  void didUpdateWidget(covariant ProjectSceneEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.externalSelectionKey != null &&
+        widget.externalSelectionKey != oldWidget.externalSelectionKey) {
+      _selectedId = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,16 +85,19 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
               ),
               SizedBox(
                 width: widget.inspectorWidth,
-                child: selected == null
-                    ? Center(child: Text(l10n.selectObject))
-                    : SingleChildScrollView(
-                        child: _ObjectInspector(
-                          object: selected,
-                          assets: widget.document.assets,
-                          onChanged: _updateObject,
-                          onDelete: () => _deleteObject(selected.id),
-                        ),
-                      ),
+                child:
+                    widget.externalInspector ??
+                    (selected == null
+                        ? Center(child: Text(l10n.selectObject))
+                        : SingleChildScrollView(
+                            child: _ObjectInspector(
+                              object: selected,
+                              assets: widget.document.assets,
+                              characters: widget.document.characters,
+                              onChanged: _updateObject,
+                              onDelete: () => _deleteObject(selected.id),
+                            ),
+                          )),
               ),
             ],
           ),
@@ -241,6 +258,7 @@ class _SceneCanvas extends StatelessWidget {
               top: object.y * scale,
               child: _DraggableObject(
                 object: object,
+                visual: _resolveObjectVisual(document, object),
                 rootPath: document.path,
                 scale: scale,
                 selected: selectedId == object.id,
@@ -269,6 +287,7 @@ class _SceneCanvas extends StatelessWidget {
 class _DraggableObject extends StatelessWidget {
   const _DraggableObject({
     required this.object,
+    required this.visual,
     required this.rootPath,
     required this.scale,
     required this.selected,
@@ -277,6 +296,7 @@ class _DraggableObject extends StatelessWidget {
   });
 
   final ProjectSceneObject object;
+  final _ResolvedObjectVisual visual;
   final String rootPath;
   final double scale;
   final bool selected;
@@ -285,14 +305,14 @@ class _DraggableObject extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final file = File('$rootPath/${object.asset}');
+    final file = File('$rootPath/${visual.assetPath}');
     final child = file.existsSync()
         ? SizedBox(
-            width: object.width > 0 ? object.width * scale : null,
-            height: object.height > 0 ? object.height * scale : null,
+            width: visual.width > 0 ? visual.width * scale : null,
+            height: visual.height > 0 ? visual.height * scale : null,
             child: Image.file(
               file,
-              fit: object.width > 0 || object.height > 0
+              fit: visual.width > 0 || visual.height > 0
                   ? BoxFit.fill
                   : BoxFit.none,
               filterQuality: FilterQuality.none,
@@ -321,12 +341,14 @@ class _ObjectInspector extends StatelessWidget {
   const _ObjectInspector({
     required this.object,
     required this.assets,
+    required this.characters,
     required this.onChanged,
     required this.onDelete,
   });
 
   final ProjectSceneObject object;
   final List<ProjectAsset> assets;
+  final List<ProjectCharacterFile> characters;
   final ValueChanged<ProjectSceneObject> onChanged;
   final VoidCallback onDelete;
 
@@ -339,6 +361,40 @@ class _ObjectInspector extends StatelessWidget {
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          if (object.type == 'character')
+            DropdownButtonFormField<String>(
+              initialValue:
+                  characters.any(
+                    (character) => character.path == object.characterPath,
+                  )
+                  ? object.characterPath
+                  : null,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.characterDefinition,
+              ),
+              items: [
+                DropdownMenuItem<String>(
+                  value: '',
+                  child: Text(AppLocalizations.of(context)!.none),
+                ),
+                for (final character in characters)
+                  DropdownMenuItem<String>(
+                    value: character.path,
+                    child: Text(
+                      character.definition.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (value) => onChanged(
+                object.copyWith(
+                  characterPath: value ?? '',
+                  asset: value == null || value.isEmpty ? object.asset : '',
+                  width: -1,
+                  height: -1,
+                ),
+              ),
+            ),
           DropdownButtonFormField<String>(
             initialValue: object.asset.isEmpty ? null : object.asset,
             decoration: const InputDecoration(labelText: 'Resource'),
@@ -352,7 +408,16 @@ class _ObjectInspector extends StatelessWidget {
                 .toList(growable: false),
             onChanged: (value) {
               if (value != null) {
-                onChanged(object.copyWith(asset: value, width: -1, height: -1));
+                onChanged(
+                  object.copyWith(
+                    asset: value,
+                    width: -1,
+                    height: -1,
+                    characterPath: object.type == 'character'
+                        ? ''
+                        : object.characterPath,
+                  ),
+                );
               }
             },
           ),
@@ -452,4 +517,64 @@ class _ObjectInspector extends StatelessWidget {
       onFieldSubmitted: (text) => onSubmitted(double.tryParse(text) ?? value),
     );
   }
+}
+
+class _ResolvedObjectVisual {
+  const _ResolvedObjectVisual({
+    required this.assetPath,
+    required this.width,
+    required this.height,
+  });
+
+  final String assetPath;
+  final double width;
+  final double height;
+}
+
+_ResolvedObjectVisual _resolveObjectVisual(
+  ProjectDocument document,
+  ProjectSceneObject object,
+) {
+  ProjectCharacterDefinition? definition;
+  if (object.type == 'character' && object.characterPath.isNotEmpty) {
+    for (final character in document.characters) {
+      if (character.path == object.characterPath) {
+        definition = character.definition;
+        break;
+      }
+    }
+  }
+  final frame = definition == null ? null : _previewFrame(definition);
+  return _ResolvedObjectVisual(
+    assetPath: frame ?? object.asset,
+    width: object.width > 0
+        ? object.width
+        : definition?.defaultWidth ?? object.width,
+    height: object.height > 0
+        ? object.height
+        : definition?.defaultHeight ?? object.height,
+  );
+}
+
+String? _previewFrame(ProjectCharacterDefinition definition) {
+  for (final preferredName in const ['idle', 'walk']) {
+    for (final animation in definition.animations) {
+      if (animation.name == preferredName &&
+          animation.direction == 'down' &&
+          animation.frames.isNotEmpty) {
+        return animation.frames.first;
+      }
+    }
+  }
+  for (final animation in definition.animations) {
+    if (animation.direction == 'down' && animation.frames.isNotEmpty) {
+      return animation.frames.first;
+    }
+  }
+  for (final animation in definition.animations) {
+    if (animation.frames.isNotEmpty) {
+      return animation.frames.first;
+    }
+  }
+  return null;
 }

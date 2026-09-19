@@ -39,12 +39,67 @@ func _add_scene_visuals() -> void:
 	var sorted_objects := _sort_objects(objects)
 	for object_variant in sorted_objects:
 		if object_variant is Dictionary:
-			var object: Dictionary = object_variant
+			var object := _resolve_character_object(object_variant)
 			var asset := _string_value(object, "asset")
 			if asset.is_empty():
 				asset = _string_value(object, "resource")
 			if not asset.is_empty():
 				_add_sprite(asset, object)
+
+func _resolve_character_object(object: Dictionary) -> Dictionary:
+	var character_path := _string_value(object, "character")
+	if character_path.is_empty():
+		return object
+	var definition := _read_json(PROJECT_ROOT.path_join(character_path))
+	if definition.is_empty():
+		return object
+	var resolved: Dictionary = object.duplicate(true)
+	var frame := _character_preview_frame(definition)
+	if not frame.is_empty():
+		resolved["asset"] = frame
+	if _number_value(resolved, "width", -1.0) <= 0.0:
+		resolved["width"] = _number_value(definition, "defaultWidth", -1.0)
+	if _number_value(resolved, "height", -1.0) <= 0.0:
+		resolved["height"] = _number_value(definition, "defaultHeight", -1.0)
+	return resolved
+
+func _character_preview_frame(definition: Dictionary) -> String:
+	for animation_name in ["idle", "walk"]:
+		var frame := _animation_frame(definition, animation_name, "down")
+		if not frame.is_empty():
+			return frame
+	var animations: Array = definition.get("animations", [])
+	for animation_variant in animations:
+		if animation_variant is Dictionary:
+			var animation: Dictionary = animation_variant
+			if _string_value(animation, "direction") == "down":
+				var frames: Array = animation.get("frames", [])
+				if not frames.is_empty() and frames[0] is String:
+					return frames[0]
+	for animation_variant in animations:
+		if animation_variant is Dictionary:
+			var frames: Array = animation_variant.get("frames", [])
+			if not frames.is_empty() and frames[0] is String:
+				return frames[0]
+	return ""
+
+func _animation_frame(
+	definition: Dictionary,
+	animation_name: String,
+	direction: String
+) -> String:
+	var animations: Array = definition.get("animations", [])
+	for animation_variant in animations:
+		if animation_variant is Dictionary:
+			var animation: Dictionary = animation_variant
+			if (
+				_string_value(animation, "name") == animation_name
+				and _string_value(animation, "direction") == direction
+			):
+				var frames: Array = animation.get("frames", [])
+				if not frames.is_empty() and frames[0] is String:
+					return frames[0]
+	return ""
 
 func _sort_objects(objects: Array) -> Array:
 	var result: Array = []

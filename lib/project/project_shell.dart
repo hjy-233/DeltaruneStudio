@@ -1,14 +1,22 @@
 import 'dart:async';
 
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
+import 'package:deltarune_studio/project/project_character.dart';
+import 'package:deltarune_studio/project/project_character_browser.dart';
+import 'package:deltarune_studio/project/project_character_inspector.dart';
 import 'package:deltarune_studio/project/project_manifest.dart';
 import 'package:deltarune_studio/project/godot_build_service.dart';
-import 'package:deltarune_studio/project/project_asset_thumbnail.dart';
 import 'package:deltarune_studio/project/project_repository.dart';
+import 'package:deltarune_studio/project/project_resource_browser.dart';
 import 'package:deltarune_studio/project/project_scene_editor.dart';
+import 'package:deltarune_studio/project/project_selection_inspector.dart';
 import 'package:deltarune_studio/project/recent_projects.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+
+part 'project_shell_widgets.dart';
+part 'project_shell_character_actions.dart';
 
 class ProjectShell extends StatefulWidget {
   const ProjectShell({super.key});
@@ -24,6 +32,9 @@ class _ProjectShellState extends State<ProjectShell> {
   ProjectDocument? _document;
   String? _activeRoomPath;
   String? _selectedObjectId;
+  String? _selectedAssetPath;
+  String? _selectedRoomPath;
+  String? _selectedCharacterPath;
   final List<String> _recentProjects = [];
   String? _message;
   bool _busy = false;
@@ -110,12 +121,27 @@ class _ProjectShellState extends State<ProjectShell> {
             : _ProjectOverview(
                 document: document,
                 activeRoomPath: _activeRoomPath,
+                selectedAssetPath: _selectedAssetPath,
+                selectedRoomPath: _selectedRoomPath,
+                selectedCharacterPath: _selectedCharacterPath,
                 onRoomSelected: _selectRoom,
                 onNewRoom: _newRoom,
                 onSceneChanged: _updateScene,
-                onSelectionChanged: (id) => _selectedObjectId = id,
-                onAssetSelected: _replaceSelectedAsset,
+                onSelectionChanged: _selectObject,
+                onAssetSelected: _selectAsset,
                 onImportAsset: _importAsset,
+                onAssetContextMenu: _showAssetContextMenu,
+                onFolderContextMenu: _showFolderContextMenu,
+                onRoomContextMenu: _showRoomContextMenu,
+                onAssetRenamed: _renameAssetTo,
+                onAssetDeleted: _deleteAsset,
+                onRoomRenamed: _renameRoomTo,
+                onRoomDeleted: _deleteRoom,
+                onRoomBackgroundChanged: _changeRoomBackground,
+                onCharacterSelected: _selectCharacter,
+                onNewCharacter: _newCharacter,
+                onCharacterChanged: _saveCharacter,
+                onCharacterDeleted: _deleteCharacter,
                 onLayoutChanged: _updateLayout,
               ),
       ),
@@ -183,7 +209,7 @@ class _ProjectShellState extends State<ProjectShell> {
     }, success: (_) => l10n.projectSaved);
   }
 
-  Future<void> _importAsset(String type) async {
+  Future<void> _importAsset(String type, {String? destinationPath}) async {
     final document = _document;
     if (document == null) {
       return;
@@ -194,8 +220,13 @@ class _ProjectShellState extends State<ProjectShell> {
     }
     final l10n = AppLocalizations.of(context)!;
     await _run(
-      () =>
-          _repository.importAsset(document, sourcePath: file.path, type: type),
+      () => _repository.importAsset(
+        document,
+        sourcePath: file.path,
+        type: type,
+        destinationPath: destinationPath,
+      ),
+      preserveActiveRoom: true,
       success: (_) => l10n.resourceImported(file.name),
     );
   }
@@ -231,6 +262,240 @@ class _ProjectShellState extends State<ProjectShell> {
         setState(() => _busy = false);
       }
     }
+  }
+
+  Future<void> _showAssetContextMenu(
+    ProjectAsset asset,
+    Offset position,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: [
+        PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+        PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+      ],
+    );
+    if (!mounted) {
+      return;
+    }
+    if (action == 'rename') {
+      final name = await _askValue(l10n.renameResource, asset.name);
+      if (name != null) {
+        await _renameAssetTo(asset, name);
+      }
+    } else if (action == 'delete') {
+      await _deleteAsset(asset);
+    }
+  }
+
+  Future<void> _showFolderContextMenu(
+    String folderPath,
+    Offset position,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final nested = p.split(p.normalize(folderPath)).length > 2;
+    final action = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: [
+        PopupMenuItem(value: 'new', child: Text(l10n.newFolder)),
+        PopupMenuItem(value: 'import', child: Text(l10n.importHere)),
+        if (nested) PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+        if (nested) PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+      ],
+    );
+    if (action == null || !mounted) {
+      return;
+    }
+    final parts = p.split(p.normalize(folderPath));
+    final type = parts.length > 1 ? parts[1] : '';
+    if (action == 'import') {
+      await _importAsset(type, destinationPath: folderPath);
+    } else if (action == 'new') {
+      final name = await _askValue(l10n.newFolder, l10n.newFolder);
+      if (name == null) {
+        return;
+      }
+      await _run(
+        () => _repository.createResourceFolder(_document!, folderPath, name),
+        preserveActiveRoom: true,
+        success: (_) => l10n.folderCreated,
+      );
+    } else if (action == 'rename') {
+      final name = await _askValue(l10n.renameFolder, p.basename(folderPath));
+      if (name == null) {
+        return;
+      }
+      await _run(
+        () => _repository.renameResourceFolder(_document!, folderPath, name),
+        preserveActiveRoom: true,
+        success: (_) => l10n.folderRenamed,
+      );
+    } else if (action == 'delete') {
+      final confirmed = await _confirm(
+        l10n.deleteQuestion(p.basename(folderPath)),
+      );
+      if (confirmed != true) {
+        return;
+      }
+      await _run(
+        () => _repository.deleteResourceFolder(_document!, folderPath),
+        preserveActiveRoom: true,
+        success: (_) => l10n.folderDeleted,
+      );
+    }
+  }
+
+  Future<void> _showRoomContextMenu(ProjectRoom room, Offset position) async {
+    final l10n = AppLocalizations.of(context)!;
+    final items = <PopupMenuEntry<String>>[
+      PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+    ];
+    if (room.path != _document?.manifest.mainScene) {
+      items.add(PopupMenuItem(value: 'delete', child: Text(l10n.delete)));
+    }
+    final action = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: items,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (action == 'rename') {
+      final name = await _askValue(l10n.renameRoom, room.scene.name);
+      if (name != null) {
+        await _renameRoomTo(room, name);
+      }
+    } else if (action == 'delete') {
+      await _deleteRoom(room);
+    }
+  }
+
+  Future<void> _renameAssetTo(ProjectAsset asset, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty || trimmed == asset.name) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final parent = p.dirname(asset.path);
+    await _run(
+      () => _repository.renameAsset(_document!, asset, trimmed),
+      preserveActiveRoom: true,
+      success: (_) {
+        _selectedAssetPath = p.join(parent, trimmed);
+        return l10n.resourceRenamed;
+      },
+    );
+  }
+
+  Future<void> _deleteAsset(ProjectAsset asset) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await _confirm(l10n.deleteQuestion(asset.name));
+    if (confirmed != true) {
+      return;
+    }
+    await _run(
+      () => _repository.deleteAsset(_document!, asset),
+      preserveActiveRoom: true,
+      success: (_) {
+        if (_selectedAssetPath == asset.path) {
+          _selectedAssetPath = null;
+        }
+        return l10n.resourceDeleted;
+      },
+    );
+  }
+
+  Future<void> _renameRoomTo(ProjectRoom room, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty || trimmed == room.scene.name) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    await _run(
+      () => _repository.renameRoom(_document!, room.path, trimmed),
+      preserveActiveRoom: true,
+      success: (_) => l10n.roomRenamed,
+    );
+  }
+
+  Future<void> _deleteRoom(ProjectRoom room) async {
+    final document = _document;
+    if (document == null || room.path == document.manifest.mainScene) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await _confirm(l10n.deleteQuestion(room.scene.name));
+    if (confirmed != true) {
+      return;
+    }
+    await _run(
+      () => _repository.deleteRoom(document, room.path),
+      preserveActiveRoom: true,
+      success: (_) {
+        _activeRoomPath = document.manifest.mainScene;
+        _selectedRoomPath = document.manifest.mainScene;
+        return l10n.roomDeleted;
+      },
+    );
+  }
+
+  Future<String?> _askValue(String title, String initialValue) {
+    final controller = TextEditingController(text: initialValue);
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(controller: controller, autofocus: true),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(AppLocalizations.of(context)!.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _confirm(String message) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context)!.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppLocalizations.of(context)!.ok),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _buildAndRun() async {
@@ -315,10 +580,51 @@ class _ProjectShellState extends State<ProjectShell> {
         objects: current.objects
             .map(
               (object) => object.id == selectedId
-                  ? object.copyWith(asset: asset.path, width: -1, height: -1)
+                  ? object.copyWith(
+                      asset: asset.path,
+                      width: -1,
+                      height: -1,
+                      characterPath: object.type == 'character'
+                          ? ''
+                          : object.characterPath,
+                    )
                   : object,
             )
             .toList(growable: false),
+      ),
+    );
+  }
+
+  void _selectAsset(ProjectAsset asset) {
+    if (_selectedObjectId != null) {
+      _replaceSelectedAsset(asset);
+      return;
+    }
+    if (asset.type == 'backgrounds') {
+      _replaceSelectedAsset(asset);
+    }
+    setState(() {
+      _selectedAssetPath = asset.path;
+      _selectedRoomPath = null;
+      _selectedCharacterPath = null;
+    });
+  }
+
+  void _selectObject(String? id) {
+    setState(() {
+      _selectedObjectId = id;
+      _selectedAssetPath = null;
+      _selectedRoomPath = null;
+      _selectedCharacterPath = null;
+    });
+  }
+
+  void _changeRoomBackground(ProjectRoom room, String? assetPath) {
+    _activeRoomPath = room.path;
+    _updateScene(
+      room.scene.copyWith(
+        background: assetPath,
+        clearBackground: assetPath == null,
       ),
     );
   }
@@ -348,12 +654,28 @@ class _ProjectShellState extends State<ProjectShell> {
   }
 
   void _selectRoom(String path) {
-    setState(() => _activeRoomPath = path);
+    setState(() {
+      _activeRoomPath = path;
+      _selectedRoomPath = path;
+      _selectedAssetPath = null;
+      _selectedObjectId = null;
+      _selectedCharacterPath = null;
+    });
+  }
+
+  void _selectCharacterState(ProjectCharacterFile character) {
+    setState(() {
+      _selectedCharacterPath = character.path;
+      _selectedAssetPath = null;
+      _selectedRoomPath = null;
+      _selectedObjectId = null;
+    });
   }
 
   Future<void> _run(
     Future<ProjectDocument> Function() action, {
     required String Function(ProjectDocument document) success,
+    bool preserveActiveRoom = false,
   }) async {
     setState(() {
       _busy = true;
@@ -366,7 +688,13 @@ class _ProjectShellState extends State<ProjectShell> {
       }
       setState(() {
         _document = document;
-        _activeRoomPath = document.manifest.mainScene;
+        if (!preserveActiveRoom) {
+          _activeRoomPath = document.manifest.mainScene;
+          _selectedObjectId = null;
+          _selectedAssetPath = null;
+          _selectedRoomPath = null;
+          _selectedCharacterPath = null;
+        }
         _rememberProject(document.path);
         _message = success(document);
       });
@@ -443,68 +771,57 @@ class _ProjectShellState extends State<ProjectShell> {
   }
 }
 
-class _EmptyProjectView extends StatelessWidget {
-  const _EmptyProjectView({
-    required this.busy,
-    required this.onCreate,
-    required this.onOpen,
-  });
-
-  final bool busy;
-  final VoidCallback onCreate;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.folder_copy_outlined, size: 64),
-        const SizedBox(height: 20),
-        Text(l10n.noProject, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 24),
-        Wrap(
-          spacing: 12,
-          children: [
-            FilledButton.icon(
-              onPressed: busy ? null : onCreate,
-              icon: const Icon(Icons.create_new_folder),
-              label: Text(l10n.newProject),
-            ),
-            OutlinedButton.icon(
-              onPressed: busy ? null : onOpen,
-              icon: const Icon(Icons.folder_open),
-              label: Text(l10n.openProject),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 class _ProjectOverview extends StatefulWidget {
   const _ProjectOverview({
     required this.document,
     required this.activeRoomPath,
+    required this.selectedAssetPath,
+    required this.selectedRoomPath,
+    required this.selectedCharacterPath,
     required this.onRoomSelected,
     required this.onNewRoom,
     required this.onSceneChanged,
     required this.onSelectionChanged,
     required this.onAssetSelected,
     required this.onImportAsset,
+    required this.onAssetContextMenu,
+    required this.onFolderContextMenu,
+    required this.onRoomContextMenu,
+    required this.onAssetRenamed,
+    required this.onAssetDeleted,
+    required this.onRoomRenamed,
+    required this.onRoomDeleted,
+    required this.onRoomBackgroundChanged,
+    required this.onCharacterSelected,
+    required this.onNewCharacter,
+    required this.onCharacterChanged,
+    required this.onCharacterDeleted,
     required this.onLayoutChanged,
   });
 
   final ProjectDocument document;
   final String? activeRoomPath;
+  final String? selectedAssetPath;
+  final String? selectedRoomPath;
+  final String? selectedCharacterPath;
   final ValueChanged<String> onRoomSelected;
   final VoidCallback onNewRoom;
   final ValueChanged<ProjectScene> onSceneChanged;
   final ValueChanged<String?> onSelectionChanged;
   final ValueChanged<ProjectAsset> onAssetSelected;
   final ValueChanged<String> onImportAsset;
+  final void Function(ProjectAsset, Offset) onAssetContextMenu;
+  final void Function(String, Offset) onFolderContextMenu;
+  final void Function(ProjectRoom, Offset) onRoomContextMenu;
+  final Future<void> Function(ProjectAsset, String) onAssetRenamed;
+  final Future<void> Function(ProjectAsset) onAssetDeleted;
+  final Future<void> Function(ProjectRoom, String) onRoomRenamed;
+  final Future<void> Function(ProjectRoom) onRoomDeleted;
+  final void Function(ProjectRoom, String?) onRoomBackgroundChanged;
+  final ValueChanged<ProjectCharacterFile> onCharacterSelected;
+  final VoidCallback onNewCharacter;
+  final ValueChanged<ProjectCharacterFile> onCharacterChanged;
+  final ValueChanged<ProjectCharacterFile> onCharacterDeleted;
   final ValueChanged<ProjectLayout> onLayoutChanged;
 
   @override
@@ -545,10 +862,17 @@ class _ProjectOverviewState extends State<_ProjectOverview> {
                 child: _WorkspaceSidebar(
                   document: document,
                   activePath: widget.activeRoomPath,
+                  selectedAssetPath: widget.selectedAssetPath,
+                  selectedCharacterPath: widget.selectedCharacterPath,
                   onRoomSelected: widget.onRoomSelected,
                   onNewRoom: widget.onNewRoom,
                   onAssetSelected: widget.onAssetSelected,
                   onImportAsset: widget.onImportAsset,
+                  onAssetContextMenu: widget.onAssetContextMenu,
+                  onFolderContextMenu: widget.onFolderContextMenu,
+                  onRoomContextMenu: widget.onRoomContextMenu,
+                  onCharacterSelected: widget.onCharacterSelected,
+                  onNewCharacter: widget.onNewCharacter,
                 ),
               ),
               _PanelDivider(
@@ -571,6 +895,8 @@ class _ProjectOverviewState extends State<_ProjectOverview> {
                   onInspectorWidthChanged: (width) => widget.onLayoutChanged(
                     document.manifest.layout.copyWith(inspectorWidth: width),
                   ),
+                  externalInspector: _externalInspector(document),
+                  externalSelectionKey: _externalSelectionKey,
                 ),
               ),
             ],
@@ -590,385 +916,76 @@ class _ProjectOverviewState extends State<_ProjectOverview> {
     );
     return document.copyWith(mainScene: room.scene);
   }
-}
 
-class _PanelDivider extends StatelessWidget {
-  const _PanelDivider({required this.onDrag});
-
-  final ValueChanged<double> onDrag;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeColumn,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragUpdate: (details) => onDrag(details.delta.dx),
-        child: const SizedBox(
-          width: 12,
-          child: Center(child: VerticalDivider(width: 1, thickness: 1)),
-        ),
-      ),
-    );
-  }
-}
-
-class _WorkspaceSidebar extends StatelessWidget {
-  const _WorkspaceSidebar({
-    required this.document,
-    required this.activePath,
-    required this.onRoomSelected,
-    required this.onNewRoom,
-    required this.onAssetSelected,
-    required this.onImportAsset,
-  });
-
-  final ProjectDocument document;
-  final String? activePath;
-  final ValueChanged<String> onRoomSelected;
-  final VoidCallback onNewRoom;
-  final ValueChanged<ProjectAsset> onAssetSelected;
-  final ValueChanged<String> onImportAsset;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return DefaultTabController(
-      length: 4,
-      child: Column(
-        children: [
-          TabBar(
-            isScrollable: false,
-            labelPadding: EdgeInsets.zero,
-            indicatorSize: TabBarIndicatorSize.tab,
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.folder_copy_outlined),
-                text: l10n.projectTab,
-              ),
-              Tab(
-                icon: const Icon(Icons.image_outlined),
-                text: l10n.resourcesTab,
-              ),
-              Tab(
-                icon: const Icon(Icons.people_outline),
-                text: l10n.charactersTab,
-              ),
-              Tab(
-                icon: const Icon(Icons.meeting_room_outlined),
-                text: l10n.roomsTab,
-              ),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _ProjectTab(document: document),
-                _ResourceTab(
-                  document: document,
-                  title: l10n.resourcesTab,
-                  onAssetSelected: onAssetSelected,
-                  onImportAsset: onImportAsset,
-                ),
-                _ResourceTab(
-                  document: document,
-                  title: l10n.charactersTab,
-                  typeFilter: 'characters',
-                  onAssetSelected: onAssetSelected,
-                  onImportAsset: onImportAsset,
-                ),
-                _RoomTab(
-                  document: document,
-                  activePath: activePath,
-                  onSelected: onRoomSelected,
-                  onNewRoom: onNewRoom,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProjectTab extends StatelessWidget {
-  const _ProjectTab({required this.document});
-
-  final ProjectDocument document;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.games_outlined),
-          title: Text(document.manifest.name),
-          subtitle: Text(l10n.projectTab),
-        ),
-        const Divider(),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.projectPath),
-          subtitle: Text(document.path),
-        ),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.sceneFolder),
-          subtitle: Text(document.manifest.mainScene),
-        ),
-      ],
-    );
-  }
-}
-
-class _ResourceTab extends StatefulWidget {
-  const _ResourceTab({
-    required this.document,
-    required this.title,
-    required this.onAssetSelected,
-    required this.onImportAsset,
-    this.typeFilter,
-  });
-
-  final ProjectDocument document;
-  final String title;
-  final String? typeFilter;
-  final ValueChanged<ProjectAsset> onAssetSelected;
-  final ValueChanged<String> onImportAsset;
-
-  @override
-  State<_ResourceTab> createState() => _ResourceTabState();
-}
-
-class _ResourceTabState extends State<_ResourceTab> {
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final query = _query.trim().toLowerCase();
-    final assets = widget.document.assets
-        .where(
-          (asset) =>
-              widget.typeFilter == null || asset.type == widget.typeFilter,
-        )
-        .where(
-          (asset) =>
-              query.isEmpty ||
-              asset.name.toLowerCase().contains(query) ||
-              asset.path.toLowerCase().contains(query),
-        )
-        .toList(growable: false);
-    final groupedAssets = <String, List<ProjectAsset>>{};
-    for (final asset in assets) {
-      groupedAssets.putIfAbsent(asset.type, () => []).add(asset);
+  String? get _externalSelectionKey {
+    if (widget.selectedCharacterPath != null) {
+      return 'character:${widget.selectedCharacterPath}';
     }
-    final groups = groupedAssets.keys.toList()..sort();
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: l10n.searchResources,
-                    isDense: true,
-                  ),
-                  onChanged: (value) => setState(() => _query = value),
-                ),
-              ),
-              IconButton(
-                tooltip: l10n.importResource,
-                icon: const Icon(Icons.add),
-                onPressed: () => _chooseImportType(context),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: groups.isEmpty ? 1 : groups.length,
-            itemBuilder: (context, index) {
-              if (groups.isEmpty) {
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.folder_open_outlined),
-                  title: Text(widget.title),
-                  subtitle: Text(l10n.noResources),
-                );
-              }
-              final group = groups[index];
-              final groupAssets = groupedAssets[group]!;
-              return ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(left: 12),
-                leading: const Icon(Icons.folder_outlined),
-                title: Text(group),
-                subtitle: Text('${groupAssets.length}'),
-                children: [
-                  for (final asset in groupAssets)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: ProjectAssetThumbnail(
-                        path: '${widget.document.path}/${asset.path}',
-                      ),
-                      title: Text(
-                        asset.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(_assetSubpath(asset)),
-                      onTap: () => widget.onAssetSelected(asset),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
-    );
+    if (widget.selectedAssetPath != null) {
+      return 'asset:${widget.selectedAssetPath}';
+    }
+    if (widget.selectedRoomPath != null) {
+      return 'room:${widget.selectedRoomPath}';
+    }
+    return null;
   }
 
-  String _assetSubpath(ProjectAsset asset) {
-    final prefix = 'resources/${asset.type}/';
-    return asset.path.startsWith(prefix)
-        ? asset.path.substring(prefix.length)
-        : asset.path;
-  }
-
-  Future<void> _chooseImportType(BuildContext context) async {
-    final type =
-        widget.typeFilter ??
-        await showDialog<String>(
-          context: context,
-          builder: (context) {
-            final l10n = AppLocalizations.of(context)!;
-            return SimpleDialog(
-              title: Text(l10n.selectResourceType),
-              children: [
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, 'backgrounds'),
-                  child: Text(l10n.backgroundResources),
-                ),
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, 'characters'),
-                  child: Text(l10n.characterResources),
-                ),
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, 'props'),
-                  child: Text(l10n.propResources),
-                ),
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, 'audio'),
-                  child: Text(l10n.audioResources),
-                ),
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, 'video'),
-                  child: Text(l10n.videoResources),
-                ),
-              ],
-            );
-          },
+  Widget? _externalInspector(ProjectDocument document) {
+    final characterPath = widget.selectedCharacterPath;
+    if (characterPath != null) {
+      for (final character in document.characters) {
+        if (character.path == characterPath) {
+          return ProjectCharacterInspector(
+            document: document,
+            character: character,
+            onChanged: widget.onCharacterChanged,
+            onDelete: () => widget.onCharacterDeleted(character),
+          );
+        }
+      }
+    }
+    final assetPath = widget.selectedAssetPath;
+    if (assetPath != null) {
+      ProjectAsset? selected;
+      for (final asset in document.assets) {
+        if (asset.path == assetPath) {
+          selected = asset;
+          break;
+        }
+      }
+      if (selected != null) {
+        final asset = selected;
+        return ProjectAssetInspector(
+          document: document,
+          asset: asset,
+          onRename: (name) => widget.onAssetRenamed(asset, name),
+          onDelete: () => widget.onAssetDeleted(asset),
         );
-    if (type != null && mounted) {
-      widget.onImportAsset(type);
+      }
     }
-  }
-}
-
-class _RoomTab extends StatelessWidget {
-  const _RoomTab({
-    required this.document,
-    required this.activePath,
-    required this.onSelected,
-    required this.onNewRoom,
-  });
-
-  final ProjectDocument document;
-  final String? activePath;
-  final ValueChanged<String> onSelected;
-  final VoidCallback onNewRoom;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final rooms = document.rooms.isEmpty
-        ? [
-            ProjectRoom(
-              path: document.manifest.mainScene,
-              scene: document.mainScene,
-            ),
-          ]
-        : document.rooms;
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 12),
-      children: [
-        ListTile(
-          title: Text(l10n.roomsTab),
-          trailing: IconButton(
-            tooltip: l10n.newRoom,
-            onPressed: onNewRoom,
-            icon: const Icon(Icons.add),
-          ),
-        ),
-        for (final room in rooms)
-          ListTile(
-            dense: true,
-            selected: room.path == activePath,
-            leading: const Icon(Icons.meeting_room_outlined),
-            title: Text(room.scene.name),
-            subtitle: Text(
-              room.path,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            onTap: () => onSelected(room.path),
-          ),
-      ],
-    );
-  }
-}
-
-class _RecentProjectsDrawer extends StatelessWidget {
-  const _RecentProjectsDrawer({required this.paths, required this.onOpen});
-
-  final List<String> paths;
-  final ValueChanged<String> onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: Text('Recent Projects', style: TextStyle(fontSize: 18)),
-          ),
-          if (paths.isEmpty)
-            const ListTile(title: Text('No recent projects'))
-          else
-            for (final path in paths)
-              ListTile(
-                leading: const Icon(Icons.folder_outlined),
-                title: Text(path.split('/').last),
-                subtitle: Text(
-                  path,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onTap: () => onOpen(path),
-              ),
-        ],
-      ),
-    );
+    final roomPath = widget.selectedRoomPath;
+    if (roomPath != null) {
+      ProjectRoom? selected;
+      for (final room in document.rooms) {
+        if (room.path == roomPath) {
+          selected = room;
+          break;
+        }
+      }
+      if (selected != null) {
+        final room = selected;
+        return ProjectRoomInspector(
+          document: document,
+          room: room,
+          onRename: (name) => widget.onRoomRenamed(room, name),
+          onBackgroundChanged: (path) =>
+              widget.onRoomBackgroundChanged(room, path),
+          onDelete: room.path == document.manifest.mainScene
+              ? null
+              : () => widget.onRoomDeleted(room),
+        );
+      }
+    }
+    return null;
   }
 }

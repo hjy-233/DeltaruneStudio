@@ -1,3 +1,5 @@
+import 'project_character.dart';
+
 class ProjectLayout {
   const ProjectLayout({this.sidebarWidth = 230, this.inspectorWidth = 300});
 
@@ -103,13 +105,16 @@ class ProjectScene {
   final List<ProjectSceneObject> objects;
 
   ProjectScene copyWith({
+    String? id,
+    String? name,
     String? background,
+    bool clearBackground = false,
     List<ProjectSceneObject>? objects,
   }) {
     return ProjectScene(
-      id: id,
-      name: name,
-      background: background ?? this.background,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      background: clearBackground ? null : background ?? this.background,
       objects: objects ?? this.objects,
     );
   }
@@ -151,6 +156,7 @@ class ProjectSceneObject {
     this.width = -1,
     this.height = -1,
     this.locked = false,
+    this.characterPath = '',
   });
 
   final String id;
@@ -163,6 +169,7 @@ class ProjectSceneObject {
   final double width;
   final double height;
   final bool locked;
+  final String characterPath;
 
   ProjectSceneObject copyWith({
     String? type,
@@ -174,6 +181,7 @@ class ProjectSceneObject {
     double? width,
     double? height,
     bool? locked,
+    String? characterPath,
   }) {
     return ProjectSceneObject(
       id: id,
@@ -186,6 +194,7 @@ class ProjectSceneObject {
       width: width ?? this.width,
       height: height ?? this.height,
       locked: locked ?? this.locked,
+      characterPath: characterPath ?? this.characterPath,
     );
   }
 
@@ -201,6 +210,7 @@ class ProjectSceneObject {
       width: (json['width'] as num?)?.toDouble() ?? -1,
       height: (json['height'] as num?)?.toDouble() ?? -1,
       locked: json['locked'] as bool? ?? false,
+      characterPath: json['character'] as String? ?? '',
     );
   }
 
@@ -216,6 +226,7 @@ class ProjectSceneObject {
       'width': width,
       'height': height,
       'locked': locked,
+      if (characterPath.isNotEmpty) 'character': characterPath,
     };
   }
 }
@@ -227,6 +238,8 @@ class ProjectDocument {
     required this.path,
     this.rooms = const [],
     this.assets = const [],
+    this.resourceFolders = const [],
+    this.characters = const [],
   });
 
   final ProjectManifest manifest;
@@ -234,12 +247,16 @@ class ProjectDocument {
   final String path;
   final List<ProjectRoom> rooms;
   final List<ProjectAsset> assets;
+  final List<String> resourceFolders;
+  final List<ProjectCharacterFile> characters;
 
   ProjectDocument copyWith({
     ProjectManifest? manifest,
     ProjectScene? mainScene,
     List<ProjectRoom>? rooms,
     List<ProjectAsset>? assets,
+    List<String>? resourceFolders,
+    List<ProjectCharacterFile>? characters,
   }) {
     return ProjectDocument(
       manifest: manifest ?? this.manifest,
@@ -247,6 +264,8 @@ class ProjectDocument {
       path: path,
       rooms: rooms ?? this.rooms,
       assets: assets ?? this.assets,
+      resourceFolders: resourceFolders ?? this.resourceFolders,
+      characters: characters ?? this.characters,
     );
   }
 }

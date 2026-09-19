@@ -1,4 +1,5 @@
 import 'project_manifest.dart';
+import 'project_character.dart';
 
 class ProjectRepository {
   Future<ProjectDocument> create({
@@ -26,6 +27,7 @@ class ProjectRepository {
     ProjectDocument document, {
     required String sourcePath,
     required String type,
+    String? destinationPath,
   }) {
     return Future.error(
       UnsupportedError('Resource import is not available on the web yet.'),
@@ -35,6 +37,97 @@ class ProjectRepository {
   Future<ProjectDocument> addRoom(ProjectDocument document, String name) {
     return Future.error(
       UnsupportedError('Room creation is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> addCharacter(ProjectDocument document, String name) {
+    return Future.error(
+      UnsupportedError('Character editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> saveCharacter(
+    ProjectDocument document,
+    ProjectCharacterFile character,
+  ) {
+    return Future.error(
+      UnsupportedError('Character editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> deleteCharacter(
+    ProjectDocument document,
+    ProjectCharacterFile character,
+  ) {
+    return Future.error(
+      UnsupportedError('Character editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> renameRoom(
+    ProjectDocument document,
+    String roomPath,
+    String name,
+  ) {
+    return Future.error(
+      UnsupportedError('Room editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> deleteRoom(
+    ProjectDocument document,
+    String roomPath,
+  ) {
+    return Future.error(
+      UnsupportedError('Room deletion is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> renameAsset(
+    ProjectDocument document,
+    ProjectAsset asset,
+    String name,
+  ) {
+    return Future.error(
+      UnsupportedError('Resource editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> deleteAsset(
+    ProjectDocument document,
+    ProjectAsset asset,
+  ) {
+    return Future.error(
+      UnsupportedError('Resource deletion is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> createResourceFolder(
+    ProjectDocument document,
+    String parentPath,
+    String name,
+  ) {
+    return Future.error(
+      UnsupportedError('Resource folders are not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> renameResourceFolder(
+    ProjectDocument document,
+    String folderPath,
+    String name,
+  ) {
+    return Future.error(
+      UnsupportedError('Resource folders are not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> deleteResourceFolder(
+    ProjectDocument document,
+    String folderPath,
+  ) {
+    return Future.error(
+      UnsupportedError('Resource folders are not available on the web yet.'),
     );
   }
 }
