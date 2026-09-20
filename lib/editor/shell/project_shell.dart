@@ -1,22 +1,28 @@
 import 'dart:async';
 
+import 'package:deltarune_studio/data/project_repository.dart';
+import 'package:deltarune_studio/data/recent_projects.dart';
+import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
+import 'package:deltarune_studio/editor/canvas/project_scene_editor.dart';
+import 'package:deltarune_studio/editor/project_feature_strings.dart';
+import 'package:deltarune_studio/editor/panels/project_character_browser.dart';
+import 'package:deltarune_studio/editor/panels/project_character_inspector.dart';
+import 'package:deltarune_studio/editor/panels/project_resource_browser.dart';
+import 'package:deltarune_studio/editor/panels/project_selection_inspector.dart';
+import 'package:deltarune_studio/editor/widgets/project_settings_dialog.dart';
+import 'package:deltarune_studio/editor/widgets/project_room_graph_dialog.dart';
+import 'package:deltarune_studio/godot/godot_build_service.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
-import 'package:deltarune_studio/project/project_character.dart';
-import 'package:deltarune_studio/project/project_character_browser.dart';
-import 'package:deltarune_studio/project/project_character_inspector.dart';
-import 'package:deltarune_studio/project/project_manifest.dart';
-import 'package:deltarune_studio/project/godot_build_service.dart';
-import 'package:deltarune_studio/project/project_repository.dart';
-import 'package:deltarune_studio/project/project_resource_browser.dart';
-import 'package:deltarune_studio/project/project_scene_editor.dart';
-import 'package:deltarune_studio/project/project_selection_inspector.dart';
-import 'package:deltarune_studio/project/recent_projects.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
 part 'project_shell_widgets.dart';
 part 'project_shell_character_actions.dart';
+part 'project_shell_runtime_actions.dart';
+part 'project_shell_settings_actions.dart';
 
 class ProjectShell extends StatefulWidget {
   const ProjectShell({super.key});
@@ -38,6 +44,9 @@ class _ProjectShellState extends State<ProjectShell> {
   final List<String> _recentProjects = [];
   String? _message;
   bool _busy = false;
+  final ValueNotifier<List<String>> _runtimeLogs = ValueNotifier([]);
+  GodotRunSession? _runSession;
+  StreamSubscription<String>? _runLogSubscription;
 
   @override
   void initState() {
@@ -45,25 +54,18 @@ class _ProjectShellState extends State<ProjectShell> {
     _loadRecentProjects();
   }
 
-  Future<void> _loadRecentProjects() async {
-    final paths = await _recentProjectsStore.load();
-    if (mounted) {
-      setState(() {
-        _recentProjects
-          ..clear()
-          ..addAll(paths);
-      });
+  @override
+  void dispose() {
+    unawaited(_runLogSubscription?.cancel());
+    final session = _runSession;
+    if (session != null) {
+      unawaited(session.stop());
     }
+    _runtimeLogs.dispose();
+    super.dispose();
   }
 
-  void _rememberProject(String path) {
-    _recentProjects.remove(path);
-    _recentProjects.insert(0, path);
-    if (_recentProjects.length > 8) {
-      _recentProjects.removeLast();
-    }
-    unawaited(_recentProjectsStore.save(_recentProjects));
-  }
+  void _setShellState(VoidCallback update) => setState(update);
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +108,22 @@ class _ProjectShellState extends State<ProjectShell> {
             onPressed: document == null || _busy ? null : _buildAndRun,
             icon: const Icon(Icons.play_arrow),
           ),
+          IconButton(
+            tooltip: l10n.runtimeConsole,
+            onPressed: document == null ? null : _showRuntimeConsole,
+            icon: const Icon(Icons.terminal),
+          ),
+          IconButton(
+            tooltip: ProjectFeatureStrings.of(context).projectSettings,
+            onPressed: document == null || _busy ? null : _showProjectSettings,
+            icon: const Icon(Icons.settings_outlined),
+          ),
+          if (!kIsWeb)
+            IconButton(
+              tooltip: l10n.exportGame,
+              onPressed: document == null || _busy ? null : _exportGame,
+              icon: const Icon(Icons.ios_share),
+            ),
         ],
       ),
       body: Padding(
@@ -496,34 +514,6 @@ class _ProjectShellState extends State<ProjectShell> {
         ],
       ),
     );
-  }
-
-  Future<void> _buildAndRun() async {
-    final document = _document;
-    if (document == null) {
-      return;
-    }
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _busy = true;
-      _message = null;
-    });
-    try {
-      await _repository.save(document);
-      await _godotBuildService.buildAndRun(document);
-      if (mounted) {
-        setState(() => _message = l10n.godotStarted);
-      }
-    } on Object catch (error) {
-      if (mounted) {
-        final message = error is StateError ? error.message : error.toString();
-        setState(() => _message = message);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _busy = false);
-      }
-    }
   }
 
   void _updateScene(ProjectScene scene) {

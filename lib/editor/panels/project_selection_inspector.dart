@@ -1,8 +1,9 @@
+import 'package:deltarune_studio/domain/project_manifest.dart';
+import 'package:deltarune_studio/domain/project_audit.dart';
+import 'package:deltarune_studio/editor/project_feature_strings.dart';
+import 'package:deltarune_studio/editor/widgets/project_asset_thumbnail.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
-
-import 'project_asset_thumbnail.dart';
-import 'project_manifest.dart';
 
 class ProjectAssetInspector extends StatelessWidget {
   const ProjectAssetInspector({
@@ -21,6 +22,8 @@ class ProjectAssetInspector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final references = auditProject(document).referencesFor(asset.path);
+    final strings = ProjectFeatureStrings.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -49,6 +52,12 @@ class ProjectAssetInspector extends StatelessWidget {
         const SizedBox(height: 12),
         _ReadOnlyProperty(label: l10n.type, value: asset.type),
         _ReadOnlyProperty(label: l10n.path, value: asset.path),
+        _ReadOnlyProperty(
+          label: strings.usedBy,
+          value: references.isEmpty
+              ? strings.noReferences
+              : references.join('\n'),
+        ),
         const SizedBox(height: 20),
         OutlinedButton.icon(
           onPressed: onDelete,

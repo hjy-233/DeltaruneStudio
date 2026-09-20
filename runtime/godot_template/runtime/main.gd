@@ -1,24 +1,34 @@
 extends Node2D
 
-const VIEW_SIZE := Vector2(640, 480)
 const PROJECT_ROOT := "res://drs_project"
+const DEBUG_OVERLAY_SCRIPT := preload("res://runtime/debug_overlay.gd")
+const VARIABLE_DEBUGGER_SCRIPT := preload("res://runtime/variable_debugger.gd")
 
 var project_data: Dictionary = {}
 var scene_data: Dictionary = {}
 var room_root: Node2D
 var _room_changing := false
 var _runtime_camera: Camera2D
-var _camera_position := VIEW_SIZE / 2.0
+var _camera_position := Vector2(320, 240)
 var _camera_follow_id := ""
 var _camera_shake_strength := 0.0
 var _camera_shake_remaining := 0.0
 var _camera_shake_elapsed := 0.0
 var _follow_rules: Dictionary = {}
 var _follow_paths: Dictionary = {}
+var _current_scene_path := ""
+var _view_size := Vector2(640, 480)
 
 func _ready() -> void:
 	project_data = _read_json(PROJECT_ROOT.path_join("project.json"))
+	var game_settings: Dictionary = project_data.get("gameSettings", {})
+	_view_size = Vector2(
+		maxf(float(game_settings.get("viewportWidth", 640)), 1.0),
+		maxf(float(game_settings.get("viewportHeight", 480)), 1.0)
+	)
+	_camera_position = _view_size / 2.0
 	var scene_path: String = project_data.get("mainScene", "scenes/main/scene.json")
+	_current_scene_path = scene_path
 	scene_data = _read_json(PROJECT_ROOT.path_join(scene_path))
 	RenderingServer.set_default_clear_color(Color.BLACK)
 	room_root = Node2D.new()
@@ -32,7 +42,30 @@ func _ready() -> void:
 	_add_scene_visuals()
 	_add_runtime_label()
 	DRS.register_runtime(self)
+	var debug_overlay := DEBUG_OVERLAY_SCRIPT.new()
+	debug_overlay.name = "DebugOverlay"
+	add_child(debug_overlay)
+	debug_overlay.setup(self)
+	var variable_debugger := VARIABLE_DEBUGGER_SCRIPT.new()
+	variable_debugger.name = "VariableDebugger"
+	add_child(variable_debugger)
+	variable_debugger.setup()
 	_run_entry_script.call_deferred()
+
+func drs_current_room() -> String:
+	return _current_scene_path
+
+func drs_debug_character_positions() -> Dictionary:
+	var characters := {}
+	for child in room_root.get_children():
+		if child is CharacterBody2D:
+			var object_id := String(child.get_meta("object_id", child.name))
+			characters[object_id] = {
+				"x": child.position.x,
+				"y": child.position.y,
+				"facing": child.get_meta("facing", "down"),
+			}
+	return characters
 
 func _process(delta: float) -> void:
 	_update_forced_animations(delta)
@@ -78,8 +111,10 @@ func _add_scene_visuals() -> void:
 	if typeof(background) == TYPE_STRING and not String(background).is_empty():
 		_add_sprite(String(background), {
 			"type": "background",
-			"x": VIEW_SIZE.x / 2.0,
-			"y": VIEW_SIZE.y / 2.0,
+			"x": _view_size.x / 2.0,
+			"y": _view_size.y / 2.0,
+			"width": _view_size.x,
+			"height": _view_size.y,
 			"zIndex": -1000
 		})
 
@@ -96,6 +131,9 @@ func _add_scene_visuals() -> void:
 				continue
 			if object_type == "door":
 				_add_door(object)
+				continue
+			if object_type == "savePoint":
+				_add_save_point(object)
 				continue
 			if object_type == "spawn":
 				continue
@@ -213,8 +251,8 @@ func _add_sprite(asset: String, object: Dictionary) -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	var position := Vector2(
-		_number_value(object, "x", VIEW_SIZE.x / 2.0),
-		_number_value(object, "y", VIEW_SIZE.y / 2.0)
+		_number_value(object, "x", _view_size.x / 2.0),
+		_number_value(object, "y", _view_size.y / 2.0)
 	)
 	sprite.z_index = _render_z(object)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -257,11 +295,37 @@ func _add_door(object: Dictionary) -> void:
 	area.position = _rect_center(object)
 	area.set_meta("target_room", _string_value(object, "targetRoom"))
 	area.set_meta("target_spawn", _string_value(object, "targetSpawn"))
+	area.set_meta("transition_color", _string_value(object, "transitionColor"))
+	area.set_meta("fade_out", _number_value(object, "fadeOutSeconds", 0.15))
+	area.set_meta("fade_in", _number_value(object, "fadeInSeconds", 0.15))
 	_register_runtime_object(area, object)
 	area.add_to_group("drs_door")
 	room_root.add_child(area)
 	_add_rect_shape(area, object)
 	area.body_entered.connect(_on_door_body_entered.bind(area))
+
+func _add_save_point(object: Dictionary) -> void:
+	var area := Area2D.new()
+	area.name = _string_value(object, "name")
+	area.position = _rect_center(object)
+	area.set_meta("save_slot", clampi(int(object.get("saveSlot", 1)), 1, 3))
+	_register_runtime_object(area, object)
+	area.add_to_group("drs_save_point")
+	room_root.add_child(area)
+	_add_rect_shape(area, object)
+	var marker := Polygon2D.new()
+	var radius := maxf(minf(
+		_number_value(object, "width", 28.0),
+		_number_value(object, "height", 28.0)
+	) / 2.0, 6.0)
+	marker.polygon = PackedVector2Array([
+		Vector2(0, -radius),
+		Vector2(radius, 0),
+		Vector2(0, radius),
+		Vector2(-radius, 0),
+	])
+	marker.color = Color(1.0, 0.85, 0.2, 0.9)
+	area.add_child(marker)
 
 func _register_runtime_object(node: Node2D, object: Dictionary) -> void:
 	var object_id := _string_value(object, "id")
@@ -306,11 +370,27 @@ func _on_door_body_entered(body: Node2D, door: Area2D) -> void:
 	var target_room := String(door.get_meta("target_room", ""))
 	if target_room.is_empty():
 		return
-	_change_room(
+	_transition_room(
 		target_room,
 		String(door.get_meta("target_spawn", "")),
-		body as CharacterBody2D
+		body as CharacterBody2D,
+		String(door.get_meta("transition_color", "#FF000000")),
+		float(door.get_meta("fade_out", 0.15)),
+		float(door.get_meta("fade_in", 0.15))
 	)
+
+func _transition_room(
+	room_path: String,
+	spawn_id: String,
+	traveler: CharacterBody2D,
+	color_value: String,
+	fade_out_seconds: float,
+	fade_in_seconds: float
+) -> void:
+	var color := Color.from_string(color_value, Color.BLACK)
+	await DRS.fade_out(maxf(fade_out_seconds, 0.0), color)
+	await _change_room(room_path, spawn_id, traveler)
+	await DRS.fade_in(maxf(fade_in_seconds, 0.0))
 
 func _change_room(
 	room_path: String,
@@ -335,7 +415,9 @@ func _change_room(
 		room_root.remove_child(child)
 		child.queue_free()
 	scene_data = next_scene
+	_current_scene_path = room_path
 	_add_scene_visuals()
+	DRS.refresh_save_points()
 	var target := _find_runtime_character(traveler_id)
 	if target == null and traveler != null:
 		room_root.add_child(traveler)
@@ -362,10 +444,7 @@ func _apply_spawn(spawn_id: String, character: CharacterBody2D) -> void:
 	var spawn := _find_spawn(spawn_id)
 	if spawn.is_empty():
 		return
-	character.position = Vector2(
-		_number_value(spawn, "x", VIEW_SIZE.x / 2.0),
-		_number_value(spawn, "y", VIEW_SIZE.y / 2.0)
-	)
+	character.position = _rect_center(spawn)
 	character.set_meta("facing", _string_value(spawn, "facing"))
 
 func _find_runtime_character(object_id: String) -> CharacterBody2D:
@@ -571,6 +650,43 @@ func drs_change_room(
 				traveler = child
 				break
 	await _change_room(room_path, spawn_id, traveler)
+
+func drs_project_id() -> String:
+	return String(project_data.get("id", "project"))
+
+func drs_capture_save_state() -> Dictionary:
+	var characters: Array[Dictionary] = []
+	for child in room_root.get_children():
+		if child is CharacterBody2D:
+			characters.append({
+				"id": String(child.get_meta("object_id", "")),
+				"x": child.position.x,
+				"y": child.position.y,
+				"facing": String(child.get_meta("facing", "down")),
+			})
+	return {
+		"room": _current_scene_path,
+		"characters": characters,
+	}
+
+func drs_restore_save_state(state: Dictionary) -> void:
+	var room_path := String(state.get("room", _current_scene_path))
+	if room_path != _current_scene_path:
+		await _change_room(room_path, "", null)
+	var characters: Array = state.get("characters", [])
+	for character_variant in characters:
+		if character_variant is not Dictionary:
+			continue
+		var character: Dictionary = character_variant
+		var body := _find_runtime_character(String(character.get("id", "")))
+		if body == null:
+			continue
+		body.position = Vector2(
+			float(character.get("x", body.position.x)),
+			float(character.get("y", body.position.y))
+		)
+		body.set_meta("facing", String(character.get("facing", "down")))
+	_reset_follow_paths()
 
 func _update_forced_animations(delta: float) -> void:
 	for child in room_root.get_children():
@@ -789,7 +905,7 @@ func drs_camera_shake(strength: float, duration: float) -> void:
 
 func drs_camera_reset() -> void:
 	_camera_follow_id = ""
-	_camera_position = VIEW_SIZE / 2.0
+	_camera_position = _view_size / 2.0
 	_runtime_camera.position = _camera_position
 	_runtime_camera.zoom = Vector2.ONE
 	_camera_shake_remaining = 0.0
@@ -825,6 +941,10 @@ func _find_spawn(spawn_id: String) -> Dictionary:
 
 func _load_texture(asset: String) -> Texture2D:
 	var resource_path := PROJECT_ROOT.path_join(asset)
+	if ResourceLoader.exists(resource_path):
+		var texture := load(resource_path) as Texture2D
+		if texture != null:
+			return texture
 	var absolute_path := ProjectSettings.globalize_path(resource_path)
 	var image := Image.load_from_file(absolute_path)
 	if image != null and not image.is_empty():

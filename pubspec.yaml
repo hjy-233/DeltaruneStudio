@@ -79,9 +79,12 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - runtime/godot_template/project.godot
+    - runtime/godot_template/export_presets.cfg
     - runtime/godot_template/runtime/main.tscn
     - runtime/godot_template/runtime/main.gd
     - runtime/godot_template/runtime/drs.gd
+    - runtime/godot_template/runtime/debug_overlay.gd
+    - runtime/godot_template/runtime/variable_debugger.gd
     - runtime/godot_template/runtime/dialogue/light_world.png
     - runtime/godot_template/runtime/dialogue/dark_world.png
     - assets/builtin/deltarune_manifest.json

@@ -1,5 +1,5 @@
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
-import 'package:deltarune_studio/project/project_shell.dart';
+import 'package:deltarune_studio/editor/shell/project_shell.dart';
 import 'package:flutter/material.dart';
 
 class DeltaruneStudioApp extends StatelessWidget {

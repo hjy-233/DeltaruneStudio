@@ -1,8 +1,7 @@
+import 'package:deltarune_studio/domain/project_manifest.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-
-import 'project_manifest.dart';
 
 class ProjectRoomLayerInspector extends StatelessWidget {
   const ProjectRoomLayerInspector({

@@ -1,6 +1,5 @@
+import 'package:deltarune_studio/domain/project_manifest.dart';
 import 'package:flutter/material.dart';
-
-import 'project_manifest.dart';
 
 class ProjectSceneEditor extends StatelessWidget {
   const ProjectSceneEditor({

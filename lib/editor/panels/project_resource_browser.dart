@@ -1,9 +1,10 @@
+import 'package:deltarune_studio/domain/project_manifest.dart';
+import 'package:deltarune_studio/editor/widgets/project_audit_dialog.dart';
+import 'package:deltarune_studio/editor/project_feature_strings.dart';
+import 'package:deltarune_studio/editor/widgets/project_asset_thumbnail.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-
-import 'project_asset_thumbnail.dart';
-import 'project_manifest.dart';
 
 class ProjectResourceBrowser extends StatefulWidget {
   const ProjectResourceBrowser({
@@ -58,6 +59,15 @@ class _ProjectResourceBrowserState extends State<ProjectResourceBrowser> {
                     isDense: true,
                   ),
                   onChanged: (value) => setState(() => _query = value),
+                ),
+              ),
+              IconButton(
+                tooltip: ProjectFeatureStrings.of(context).resourceAudit,
+                icon: const Icon(Icons.fact_check_outlined),
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) =>
+                      ProjectAuditDialog(document: widget.document),
                 ),
               ),
               IconButton(

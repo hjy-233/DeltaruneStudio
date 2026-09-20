@@ -52,6 +52,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buildAndRun => 'Build and run in Godot';
 
   @override
+  String get runtimeConsole => 'Runtime console';
+
+  @override
+  String runtimeExited(int code) {
+    return 'Runtime exited with code $code.';
+  }
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get stopRuntime => 'Stop runtime';
+
+  @override
+  String get exportGame => 'Export game';
+
+  @override
+  String get exportTarget => 'Export target';
+
+  @override
+  String get exportMacOS => 'macOS (.zip)';
+
+  @override
+  String get exportWindows => 'Windows (.exe)';
+
+  @override
+  String get exportLinux => 'Linux (.x86_64)';
+
+  @override
+  String exportCompleted(String path) {
+    return 'Exported game to $path';
+  }
+
+  @override
   String get godotStarted => 'Godot runtime started.';
 
   @override
@@ -232,6 +266,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get animations => 'Animations';
 
   @override
+  String get animationPreview => 'Animation preview';
+
+  @override
+  String get playPreview => 'Play preview';
+
+  @override
+  String get pausePreview => 'Pause preview';
+
+  @override
   String get addAnimation => 'Add animation';
 
   @override
@@ -286,6 +329,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addDoor => 'Add door';
 
   @override
+  String get addSavePoint => 'Add save point';
+
+  @override
   String get layers => 'Layers';
 
   @override
@@ -308,6 +354,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get doorConnection => 'Door connection';
+
+  @override
+  String get savePoint => 'Save point';
+
+  @override
+  String get saveSlot => 'Save slot';
+
+  @override
+  String get transitionColor => 'Transition color';
+
+  @override
+  String get fadeOutSeconds => 'Fade-out seconds';
+
+  @override
+  String get fadeInSeconds => 'Fade-in seconds';
 
   @override
   String get targetRoom => 'Target room';

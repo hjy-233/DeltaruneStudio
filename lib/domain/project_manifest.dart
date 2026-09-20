@@ -1,4 +1,5 @@
 import 'project_character.dart';
+import 'project_settings.dart';
 
 const defaultProjectSceneLayers = [
   ProjectSceneLayer(id: 'background', name: 'Background', order: 0),
@@ -105,6 +106,8 @@ class ProjectManifest {
     this.rooms = const [],
     this.layout = const ProjectLayout(),
     this.entryScript = defaultEntryScript,
+    this.gameSettings = const ProjectGameSettings(),
+    this.exportSettings = const ProjectExportSettings(),
   });
 
   final int formatVersion;
@@ -114,6 +117,8 @@ class ProjectManifest {
   final List<String> rooms;
   final ProjectLayout layout;
   final String entryScript;
+  final ProjectGameSettings gameSettings;
+  final ProjectExportSettings exportSettings;
 
   factory ProjectManifest.fromJson(Map<String, dynamic> json) {
     return ProjectManifest(
@@ -126,6 +131,12 @@ class ProjectManifest {
           .toList(growable: false),
       layout: ProjectLayout.fromJson(json['layout'] as Map<String, dynamic>?),
       entryScript: json['entryScript'] as String? ?? defaultEntryScript,
+      gameSettings: ProjectGameSettings.fromJson(
+        json['gameSettings'] as Map<String, dynamic>?,
+      ),
+      exportSettings: ProjectExportSettings.fromJson(
+        json['exportSettings'] as Map<String, dynamic>?,
+      ),
     );
   }
 
@@ -138,6 +149,8 @@ class ProjectManifest {
       'rooms': rooms.isEmpty ? [mainScene] : rooms,
       'layout': layout.toJson(),
       'entryScript': entryScript,
+      'gameSettings': gameSettings.toJson(),
+      'exportSettings': exportSettings.toJson(),
     };
   }
 
@@ -145,6 +158,8 @@ class ProjectManifest {
     List<String>? rooms,
     ProjectLayout? layout,
     String? entryScript,
+    ProjectGameSettings? gameSettings,
+    ProjectExportSettings? exportSettings,
   }) {
     return ProjectManifest(
       formatVersion: formatVersion,
@@ -154,6 +169,8 @@ class ProjectManifest {
       rooms: rooms ?? this.rooms,
       layout: layout ?? this.layout,
       entryScript: entryScript ?? this.entryScript,
+      gameSettings: gameSettings ?? this.gameSettings,
+      exportSettings: exportSettings ?? this.exportSettings,
     );
   }
 }
@@ -235,6 +252,10 @@ class ProjectSceneObject {
     this.targetSpawnId = '',
     this.facing = 'down',
     this.defaultSpawn = false,
+    this.saveSlot = 1,
+    this.transitionColor = '#FF000000',
+    this.fadeOutSeconds = 0.15,
+    this.fadeInSeconds = 0.15,
   });
 
   final String id;
@@ -253,6 +274,10 @@ class ProjectSceneObject {
   final String targetSpawnId;
   final String facing;
   final bool defaultSpawn;
+  final int saveSlot;
+  final String transitionColor;
+  final double fadeOutSeconds;
+  final double fadeInSeconds;
 
   ProjectSceneObject copyWith({
     String? type,
@@ -270,6 +295,10 @@ class ProjectSceneObject {
     String? targetSpawnId,
     String? facing,
     bool? defaultSpawn,
+    int? saveSlot,
+    String? transitionColor,
+    double? fadeOutSeconds,
+    double? fadeInSeconds,
   }) {
     return ProjectSceneObject(
       id: id,
@@ -288,6 +317,10 @@ class ProjectSceneObject {
       targetSpawnId: targetSpawnId ?? this.targetSpawnId,
       facing: facing ?? this.facing,
       defaultSpawn: defaultSpawn ?? this.defaultSpawn,
+      saveSlot: saveSlot ?? this.saveSlot,
+      transitionColor: transitionColor ?? this.transitionColor,
+      fadeOutSeconds: fadeOutSeconds ?? this.fadeOutSeconds,
+      fadeInSeconds: fadeInSeconds ?? this.fadeInSeconds,
     );
   }
 
@@ -310,6 +343,10 @@ class ProjectSceneObject {
       targetSpawnId: json['targetSpawn'] as String? ?? '',
       facing: json['facing'] as String? ?? 'down',
       defaultSpawn: json['defaultSpawn'] as bool? ?? false,
+      saveSlot: ((json['saveSlot'] as num?)?.toInt() ?? 1).clamp(1, 3),
+      transitionColor: json['transitionColor'] as String? ?? '#FF000000',
+      fadeOutSeconds: (json['fadeOutSeconds'] as num?)?.toDouble() ?? 0.15,
+      fadeInSeconds: (json['fadeInSeconds'] as num?)?.toDouble() ?? 0.15,
     );
   }
 
@@ -331,6 +368,10 @@ class ProjectSceneObject {
       if (targetSpawnId.isNotEmpty) 'targetSpawn': targetSpawnId,
       if (type == 'spawn') 'facing': facing,
       if (type == 'spawn') 'defaultSpawn': defaultSpawn,
+      if (type == 'savePoint') 'saveSlot': saveSlot,
+      if (type == 'door') 'transitionColor': transitionColor,
+      if (type == 'door') 'fadeOutSeconds': fadeOutSeconds,
+      if (type == 'door') 'fadeInSeconds': fadeInSeconds,
     };
   }
 }

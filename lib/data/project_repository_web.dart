@@ -1,5 +1,5 @@
-import 'project_manifest.dart';
-import 'project_character.dart';
+import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
 
 class ProjectRepository {
   Future<ProjectDocument> create({

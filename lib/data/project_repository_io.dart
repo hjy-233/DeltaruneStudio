@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'project_character.dart';
-import 'project_manifest.dart';
+import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
 
 class ProjectRepository {
   Future<ProjectDocument> create({

@@ -1,7 +1,6 @@
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
+import 'package:deltarune_studio/domain/project_character.dart';
 import 'package:flutter/material.dart';
-
-import 'project_character.dart';
 
 class ProjectCharacterBrowser extends StatelessWidget {
   const ProjectCharacterBrowser({

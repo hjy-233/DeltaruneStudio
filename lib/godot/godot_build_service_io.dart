@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 
-import 'project_manifest.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
+
+import 'godot_build_models.dart';
 
 class GodotBuildResult {
   const GodotBuildResult({required this.directory, required this.godotPath});
@@ -27,13 +30,14 @@ class GodotBuildService {
       await _copyBundledTemplate(output);
     }
     await _copyProjectData(document, output);
+    await _personalizeProject(output, document);
     return GodotBuildResult(
       directory: output.path,
       godotPath: await _findGodotExecutable(),
     );
   }
 
-  Future<void> buildAndRun(ProjectDocument document) async {
+  Future<GodotRunSession> buildAndRun(ProjectDocument document) async {
     final result = await prepare(document);
     final godot = result.godotPath;
     if (godot == null) {
@@ -41,12 +45,54 @@ class GodotBuildService {
         'Godot was not found in the standard installation locations.',
       );
     }
-    unawaited(
-      Process.start(godot, [
-        '--path',
-        result.directory,
-      ], mode: ProcessStartMode.detached),
-    );
+    final process = await Process.start(godot, ['--path', result.directory]);
+    return _IoGodotRunSession(process);
+  }
+
+  Future<void> exportProject(
+    ProjectDocument document,
+    GodotExportTarget target,
+    String outputPath, {
+    void Function(String line)? onOutput,
+  }) async {
+    final result = await prepare(document);
+    final godot = result.godotPath;
+    if (godot == null) {
+      throw StateError(
+        'Godot was not found in the standard installation locations.',
+      );
+    }
+    final process = await Process.start(godot, [
+      '--headless',
+      '--path',
+      result.directory,
+      '--export-release',
+      target.preset,
+      outputPath,
+    ]);
+    final lines = <String>[];
+    void collect(String line) {
+      lines.add(line);
+      onOutput?.call(line);
+    }
+
+    await Future.wait([
+      process.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .forEach(collect),
+      process.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .forEach(collect),
+    ]);
+    final exitCode = await process.exitCode;
+    if (exitCode != 0) {
+      final detail = lines.length > 20
+          ? lines.sublist(lines.length - 20).join('\n')
+          : lines.join('\n');
+      throw StateError('Godot export failed ($exitCode).\n$detail');
+    }
   }
 
   Future<Directory?> _findTemplate() async {
@@ -165,12 +211,95 @@ class GodotBuildService {
     }
   }
 
+  Future<void> _personalizeProject(
+    Directory output,
+    ProjectDocument document,
+  ) async {
+    final name = document.manifest.name;
+    final game = document.manifest.gameSettings;
+    final export = document.manifest.exportSettings;
+    final projectFile = File(p.join(output.path, 'project.godot'));
+    final safeName = name
+        .replaceAll('\\', '\\\\')
+        .replaceAll('"', '\\"')
+        .replaceAll(RegExp(r'[\r\n]+'), ' ');
+    if (await projectFile.exists()) {
+      final source = await projectFile.readAsString();
+      var personalized = source.replaceFirst(
+        'config/name="Deltarune Studio Game"',
+        'config/name="$safeName"',
+      );
+      personalized = personalized
+          .replaceFirst(
+            'window/size/viewport_width=640',
+            'window/size/viewport_width=${game.viewportWidth}',
+          )
+          .replaceFirst(
+            'window/size/viewport_height=480',
+            'window/size/viewport_height=${game.viewportHeight}',
+          )
+          .replaceFirst(
+            'window/size/window_width_override=960',
+            'window/size/window_width_override=${game.windowWidth}',
+          )
+          .replaceFirst(
+            'window/size/window_height_override=720',
+            'window/size/window_height_override=${game.windowHeight}',
+          )
+          .replaceFirst(
+            'window/stretch/mode="canvas_items"',
+            'window/stretch/mode="${game.pixelPerfect ? 'canvas_items' : 'viewport'}"\nwindow/size/mode=${game.startFullscreen ? 3 : 0}',
+          );
+      await projectFile.writeAsString(personalized);
+    }
+
+    final presetFile = File(p.join(output.path, 'export_presets.cfg'));
+    if (!await presetFile.exists()) {
+      return;
+    }
+    final bundleSuffix = name.toLowerCase().replaceAll(
+      RegExp('[^a-z0-9]+'),
+      '',
+    );
+    final bundleIdentifier = export.bundleIdentifier.trim().isNotEmpty
+        ? export.bundleIdentifier.trim()
+        : 'com.deltarunestudio.${bundleSuffix.isEmpty ? 'game' : bundleSuffix}';
+    var presetSource = await presetFile.readAsString();
+    final iconPath = await _copyExportIcon(output, export.iconPath);
+    presetSource = presetSource.replaceAll(
+      'application/icon=""',
+      'application/icon="$iconPath"\napplication/version="${export.version}"',
+    );
+    await presetFile.writeAsString(
+      presetSource.replaceFirst(
+        'application/bundle_identifier="com.deltarunestudio.game"',
+        'application/bundle_identifier="$bundleIdentifier"',
+      ),
+    );
+  }
+
+  Future<String> _copyExportIcon(Directory output, String sourcePath) async {
+    if (sourcePath.trim().isEmpty) return '';
+    final source = File(sourcePath);
+    if (!await source.exists()) return '';
+    final extension = p.extension(source.path).toLowerCase();
+    final target = File(
+      p.join(output.path, 'runtime', 'export_icon$extension'),
+    );
+    await target.parent.create(recursive: true);
+    await source.copy(target.path);
+    return 'res://runtime/${p.basename(target.path)}';
+  }
+
   Future<void> _copyBundledTemplate(Directory output) async {
     const files = [
       'project.godot',
+      'export_presets.cfg',
       'runtime/main.tscn',
       'runtime/main.gd',
       'runtime/drs.gd',
+      'runtime/debug_overlay.gd',
+      'runtime/variable_debugger.gd',
       'runtime/dialogue/light_world.png',
       'runtime/dialogue/dark_world.png',
     ];
@@ -192,7 +321,10 @@ class GodotBuildService {
     await target.create(recursive: true);
     await for (final entity in source.list()) {
       final name = p.basename(entity.path);
-      if (name == '.godot' || name == '.DS_Store' || name.endsWith('.uid')) {
+      if (name == '.godot' ||
+          name == '.DS_Store' ||
+          name.endsWith('.uid') ||
+          name.endsWith('.import')) {
         continue;
       }
       final destination = p.join(target.path, p.basename(entity.path));
@@ -217,5 +349,45 @@ class GodotBuildService {
         'Entry script was not found: ${document.manifest.entryScript}',
       );
     }
+  }
+}
+
+class _IoGodotRunSession implements GodotRunSession {
+  _IoGodotRunSession(this.process) {
+    final controller = StreamController<String>();
+    var openStreams = 2;
+    void bind(Stream<List<int>> source) {
+      source
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen(
+            controller.add,
+            onError: controller.addError,
+            onDone: () {
+              openStreams -= 1;
+              if (openStreams == 0) {
+                unawaited(controller.close());
+              }
+            },
+          );
+    }
+
+    bind(process.stdout);
+    bind(process.stderr);
+    output = controller.stream;
+  }
+
+  final Process process;
+
+  @override
+  late final Stream<String> output;
+
+  @override
+  Future<int> get exitCode => process.exitCode;
+
+  @override
+  Future<void> stop() async {
+    process.kill();
+    await process.exitCode;
   }
 }

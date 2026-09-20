@@ -52,6 +52,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get buildAndRun => '构建并在 Godot 中运行';
 
   @override
+  String get runtimeConsole => '运行调试台';
+
+  @override
+  String runtimeExited(int code) {
+    return '运行进程已退出，代码 $code。';
+  }
+
+  @override
+  String get clear => '清空';
+
+  @override
+  String get stopRuntime => '停止运行';
+
+  @override
+  String get exportGame => '导出游戏';
+
+  @override
+  String get exportTarget => '导出平台';
+
+  @override
+  String get exportMacOS => 'macOS（.zip）';
+
+  @override
+  String get exportWindows => 'Windows（.exe）';
+
+  @override
+  String get exportLinux => 'Linux（.x86_64）';
+
+  @override
+  String exportCompleted(String path) {
+    return '游戏已导出到 $path';
+  }
+
+  @override
   String get godotStarted => 'Godot 运行时已启动。';
 
   @override
@@ -231,6 +265,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get animations => '动画';
 
   @override
+  String get animationPreview => '动画预览';
+
+  @override
+  String get playPreview => '播放预览';
+
+  @override
+  String get pausePreview => '暂停预览';
+
+  @override
   String get addAnimation => '添加动画';
 
   @override
@@ -285,6 +328,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addDoor => '添加 Door';
 
   @override
+  String get addSavePoint => '添加存档点';
+
+  @override
   String get layers => '图层';
 
   @override
@@ -307,6 +353,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get doorConnection => 'Door 连接';
+
+  @override
+  String get savePoint => '存档点';
+
+  @override
+  String get saveSlot => '存档槽位';
+
+  @override
+  String get transitionColor => '过渡颜色';
+
+  @override
+  String get fadeOutSeconds => '淡出秒数';
+
+  @override
+  String get fadeInSeconds => '淡入秒数';
 
   @override
   String get targetRoom => '目标房间';

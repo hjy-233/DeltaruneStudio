@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:deltarune_studio/project/project_character.dart';
-import 'package:deltarune_studio/project/project_repository.dart';
-import 'package:deltarune_studio/project/project_manifest.dart';
+import 'package:deltarune_studio/data/project_repository.dart';
+import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
+import 'package:deltarune_studio/domain/project_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -75,6 +76,46 @@ void main() {
     expect(reopened.mainScene.background, 'resources/backgrounds/atrium.svg');
     expect(reopened.mainScene.objects.single.asset, object.asset);
     expect(reopened.mainScene.objects.single.x, 320);
+  });
+
+  test('persists game and export settings', () async {
+    final parent = await Directory.systemTemp.createTemp('drs_settings_');
+    addTearDown(() => parent.delete(recursive: true));
+    final repository = ProjectRepository();
+    final created = await repository.create(
+      parentPath: parent.path,
+      name: 'Settings Test',
+    );
+    final updated = created.copyWith(
+      manifest: created.manifest.copyWith(
+        gameSettings: const ProjectGameSettings(
+          viewportWidth: 320,
+          viewportHeight: 240,
+          windowWidth: 1280,
+          windowHeight: 960,
+          startFullscreen: true,
+          enableWasd: false,
+        ),
+        exportSettings: const ProjectExportSettings(
+          bundleIdentifier: 'studio.deltarune.test',
+          version: '2.3.0',
+          defaultTarget: 'linux',
+          outputDirectory: '/tmp/exports',
+        ),
+      ),
+    );
+
+    await repository.save(updated);
+    final reopened = await repository.open(created.path);
+
+    expect(reopened.manifest.gameSettings.viewportWidth, 320);
+    expect(reopened.manifest.gameSettings.startFullscreen, isTrue);
+    expect(reopened.manifest.gameSettings.enableWasd, isFalse);
+    expect(
+      reopened.manifest.exportSettings.bundleIdentifier,
+      'studio.deltarune.test',
+    );
+    expect(reopened.manifest.exportSettings.defaultTarget, 'linux');
   });
 
   test('renaming a resource updates scene references', () async {
@@ -395,6 +436,22 @@ void main() {
           layerId: 'actors',
           targetRoomPath: hall.path,
           targetSpawnId: 'hall_entry',
+          transitionColor: '#FF201040',
+          fadeOutSeconds: 0.3,
+          fadeInSeconds: 0.4,
+        ),
+        const ProjectSceneObject(
+          id: 'save_2',
+          type: 'savePoint',
+          name: 'Save Point',
+          asset: '',
+          x: 280,
+          y: 360,
+          zIndex: 3,
+          width: 28,
+          height: 28,
+          layerId: 'actors',
+          saveSlot: 2,
         ),
       ],
     );
@@ -420,6 +477,11 @@ void main() {
     expect(reopened.mainScene.objects[1].facing, 'up');
     expect(reopened.mainScene.objects[2].targetRoomPath, hall.path);
     expect(reopened.mainScene.objects[2].targetSpawnId, 'hall_entry');
+    expect(reopened.mainScene.objects[2].transitionColor, '#FF201040');
+    expect(reopened.mainScene.objects[2].fadeOutSeconds, 0.3);
+    expect(reopened.mainScene.objects[2].fadeInSeconds, 0.4);
+    expect(reopened.mainScene.objects[3].type, 'savePoint');
+    expect(reopened.mainScene.objects[3].saveSlot, 2);
   });
 
   test('old rooms receive default layers', () {

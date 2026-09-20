@@ -1,10 +1,12 @@
+import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
+import 'package:deltarune_studio/editor/project_feature_strings.dart';
+import 'package:deltarune_studio/editor/widgets/project_animation_preview.dart';
+import 'package:deltarune_studio/editor/widgets/project_asset_thumbnail.dart';
+import 'package:deltarune_studio/editor/widgets/project_collision_editor.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-
-import 'project_asset_thumbnail.dart';
-import 'project_character.dart';
-import 'project_manifest.dart';
 
 class ProjectCharacterInspector extends StatelessWidget {
   const ProjectCharacterInspector({
@@ -119,6 +121,12 @@ class ProjectCharacterInspector extends StatelessWidget {
     final collision = definition.collision;
     return Column(
       children: [
+        ProjectCollisionEditor(
+          character: definition,
+          onChanged: (collision) =>
+              _update(definition.copyWith(collision: collision)),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -186,12 +194,17 @@ class ProjectCharacterInspector extends StatelessWidget {
   ) {
     final l10n = AppLocalizations.of(context)!;
     return ExpansionTile(
-      key: PageStorageKey(animation.id),
+      key: ValueKey('animation:${animation.id}'),
       tilePadding: EdgeInsets.zero,
       title: Text(
         '${animation.name} · ${_directionLabel(l10n, animation.direction)}',
       ),
       children: [
+        ProjectAnimationPreview(
+          projectPath: document.path,
+          animation: animation,
+        ),
+        const SizedBox(height: 8),
         _textField(
           key: ValueKey('${animation.id}:name'),
           label: l10n.name,
@@ -236,25 +249,7 @@ class ProjectCharacterInspector extends StatelessWidget {
           onChanged: (value) =>
               _replaceAnimation(definition, animation.copyWith(loop: value)),
         ),
-        DropdownButtonFormField<String>(
-          decoration: InputDecoration(labelText: l10n.addFrame),
-          items: frameAssets
-              .map(
-                (asset) => DropdownMenuItem(
-                  value: asset.path,
-                  child: Text(asset.name, overflow: TextOverflow.ellipsis),
-                ),
-              )
-              .toList(growable: false),
-          onChanged: (path) {
-            if (path != null) {
-              _replaceAnimation(
-                definition,
-                animation.copyWith(frames: [...animation.frames, path]),
-              );
-            }
-          },
-        ),
+        _framePicker(context, definition, animation, frameAssets),
         for (var index = 0; index < animation.frames.length; index++)
           ListTile(
             dense: true,
@@ -267,35 +262,104 @@ class ProjectCharacterInspector extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: IconButton(
-              tooltip: l10n.delete,
-              onPressed: () {
-                final frames = [...animation.frames]..removeAt(index);
-                _replaceAnimation(
-                  definition,
-                  animation.copyWith(frames: frames),
-                );
-              },
-              icon: const Icon(Icons.close),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: ProjectFeatureStrings.of(context).moveFrameLeft,
+                  onPressed: index == 0
+                      ? null
+                      : () =>
+                            _moveFrame(definition, animation, index, index - 1),
+                  icon: const Icon(Icons.arrow_upward),
+                ),
+                IconButton(
+                  tooltip: ProjectFeatureStrings.of(context).moveFrameRight,
+                  onPressed: index == animation.frames.length - 1
+                      ? null
+                      : () =>
+                            _moveFrame(definition, animation, index, index + 1),
+                  icon: const Icon(Icons.arrow_downward),
+                ),
+                IconButton(
+                  tooltip: l10n.delete,
+                  onPressed: () {
+                    final frames = [...animation.frames]..removeAt(index);
+                    _replaceAnimation(
+                      definition,
+                      animation.copyWith(frames: frames),
+                    );
+                  },
+                  icon: const Icon(Icons.close),
+                ),
+              ],
             ),
           ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () {
-              _update(
-                definition.copyWith(
-                  animations: definition.animations
-                      .where((item) => item.id != animation.id)
-                      .toList(growable: false),
-                ),
-              );
-            },
-            icon: const Icon(Icons.delete_outline),
-            label: Text(l10n.deleteAnimation),
-          ),
+        Wrap(
+          alignment: WrapAlignment.end,
+          children: [
+            TextButton.icon(
+              onPressed: () => _duplicateAnimation(definition, animation),
+              icon: const Icon(Icons.copy_outlined),
+              label: Text(ProjectFeatureStrings.of(context).duplicateAnimation),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                _update(
+                  definition.copyWith(
+                    animations: definition.animations
+                        .where((item) => item.id != animation.id)
+                        .toList(growable: false),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.delete_outline),
+              label: Text(l10n.deleteAnimation),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _framePicker(
+    BuildContext context,
+    ProjectCharacterDefinition definition,
+    ProjectCharacterAnimation animation,
+    List<ProjectAsset> frameAssets,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: MenuAnchor(
+        menuChildren: [
+          for (final asset in frameAssets)
+            MenuItemButton(
+              leadingIcon: ProjectAssetThumbnail(
+                path: '${document.path}/${asset.path}',
+                width: 28,
+                height: 28,
+              ),
+              onPressed: () => _replaceAnimation(
+                definition,
+                animation.copyWith(frames: [...animation.frames, asset.path]),
+              ),
+              child: SizedBox(
+                width: 220,
+                child: Text(asset.name, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+        ],
+        builder: (context, controller, child) => OutlinedButton.icon(
+          key: ValueKey('${animation.id}:addFrame'),
+          onPressed: frameAssets.isEmpty
+              ? null
+              : () =>
+                    controller.isOpen ? controller.close() : controller.open(),
+          icon: const Icon(Icons.add_photo_alternate_outlined),
+          label: Text(l10n.addFrame),
+        ),
+      ),
     );
   }
 
@@ -321,6 +385,35 @@ class ProjectCharacterInspector extends StatelessWidget {
             .toList(growable: false),
       ),
     );
+  }
+
+  void _duplicateAnimation(
+    ProjectCharacterDefinition definition,
+    ProjectCharacterAnimation animation,
+  ) {
+    final duplicate = ProjectCharacterAnimation(
+      id: const Uuid().v4(),
+      name: '${animation.name} copy',
+      direction: animation.direction,
+      fps: animation.fps,
+      loop: animation.loop,
+      frames: [...animation.frames],
+    );
+    _update(
+      definition.copyWith(animations: [...definition.animations, duplicate]),
+    );
+  }
+
+  void _moveFrame(
+    ProjectCharacterDefinition definition,
+    ProjectCharacterAnimation animation,
+    int from,
+    int to,
+  ) {
+    final frames = [...animation.frames];
+    final frame = frames.removeAt(from);
+    frames.insert(to, frame);
+    _replaceAnimation(definition, animation.copyWith(frames: frames));
   }
 
   void _update(ProjectCharacterDefinition definition) {

@@ -2,6 +2,8 @@ extends Node
 
 signal room_changed(room_path: String)
 signal interacted(object_id: String)
+signal game_saved(slot: int)
+signal game_loaded(slot: int)
 
 const PROJECT_ROOT := "res://drs_project"
 const DIALOGUE_STYLE_LIGHT := "light_world"
@@ -32,6 +34,7 @@ var _overlay_layer: CanvasLayer
 var _overlay_image: TextureRect
 var _effect_layer: CanvasLayer
 var _effect_rect: ColorRect
+var _registered_save_points: Array[String] = []
 
 func _ready() -> void:
 	_bgm_player = AudioStreamPlayer.new()
@@ -43,6 +46,7 @@ func _ready() -> void:
 
 func register_runtime(runtime: Node) -> void:
 	_runtime = runtime
+	refresh_save_points()
 
 func _physics_process(delta: float) -> void:
 	if _runtime == null or _controlled_character_id.is_empty():
@@ -146,6 +150,8 @@ func enable_player_control(character_id: String, speed: float = -1.0) -> void:
 		return
 	_controlled_character_id = character_id
 	_control_speed = speed
+	if _interaction_character_id.is_empty():
+		enable_interaction(character_id)
 
 func disable_player_control() -> void:
 	if _runtime != null and not _controlled_character_id.is_empty():
@@ -362,6 +368,112 @@ func add_value(name: String, amount: float) -> float:
 	var result := float(_values.get(name, 0.0)) + amount
 	_values[name] = result
 	return result
+
+func debug_state() -> Dictionary:
+	var state := {
+		"flags": _flags.duplicate(true),
+		"values": _values.duplicate(true),
+	}
+	if is_instance_valid(_runtime):
+		if _runtime.has_method("drs_current_room"):
+			state["room"] = _runtime.call("drs_current_room")
+		if _runtime.has_method("drs_debug_character_positions"):
+			state["characters"] = _runtime.call("drs_debug_character_positions")
+	return state
+
+func save_game(slot: int = -1) -> bool:
+	var host := await _runtime_host()
+	var resolved_slot := _resolved_save_slot(slot)
+	var data := {
+		"formatVersion": 1,
+		"flags": _flags,
+		"values": _values,
+		"controlledCharacter": _controlled_character_id,
+		"runtime": host.drs_capture_save_state(),
+	}
+	var directory := _save_directory(host.drs_project_id())
+	var absolute_directory := ProjectSettings.globalize_path(directory)
+	var error := DirAccess.make_dir_recursive_absolute(absolute_directory)
+	if error != OK:
+		push_error("DRS save directory could not be created: %s" % error_string(error))
+		return false
+	var file := FileAccess.open(_save_path(host.drs_project_id(), resolved_slot), FileAccess.WRITE)
+	if file == null:
+		push_error("DRS save file could not be opened: %s" % FileAccess.get_open_error())
+		return false
+	file.store_string(JSON.stringify(data, "  "))
+	game_saved.emit(resolved_slot)
+	return true
+
+func load_game(slot: int = -1) -> bool:
+	var host := await _runtime_host()
+	var resolved_slot := _resolved_save_slot(slot)
+	var path := _save_path(host.drs_project_id(), resolved_slot)
+	if not FileAccess.file_exists(path):
+		return false
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if parsed is not Dictionary:
+		push_error("DRS save file is invalid: " + path)
+		return false
+	var data: Dictionary = parsed
+	_flags = data.get("flags", {}).duplicate(true)
+	_values = data.get("values", {}).duplicate(true)
+	await host.drs_restore_save_state(data.get("runtime", {}))
+	_controlled_character_id = String(data.get("controlledCharacter", ""))
+	if not _controlled_character_id.is_empty():
+		_interaction_character_id = _controlled_character_id
+	game_loaded.emit(resolved_slot)
+	return true
+
+func has_save(slot: int = -1) -> bool:
+	if _runtime == null:
+		return false
+	return FileAccess.file_exists(
+		_save_path(_runtime.drs_project_id(), _resolved_save_slot(slot))
+	)
+
+func delete_save(slot: int = -1) -> bool:
+	if _runtime == null:
+		return false
+	var path := _save_path(_runtime.drs_project_id(), _resolved_save_slot(slot))
+	if not FileAccess.file_exists(path):
+		return true
+	return DirAccess.remove_absolute(ProjectSettings.globalize_path(path)) == OK
+
+func refresh_save_points() -> void:
+	if _runtime == null:
+		return
+	for object_id in _registered_save_points:
+		unregister_interactable(object_id)
+	_registered_save_points.clear()
+	for node in get_tree().get_nodes_in_group("drs_save_point"):
+		var object_id := String(node.get_meta("object_id", ""))
+		if object_id.is_empty():
+			continue
+		var slot := clampi(int(node.get_meta("save_slot", 1)), 1, 3)
+		register_interactable(object_id, _save_from_point.bind(slot), 56.0, false)
+		_registered_save_points.append(object_id)
+
+func _save_from_point(slot: int) -> void:
+	if await save_game(slot):
+		await flash(Color(1.0, 0.9, 0.35, 0.65), 0.12)
+
+func _save_directory(project_id: String) -> String:
+	return "user://saves/" + project_id.validate_filename()
+
+func _save_path(project_id: String, slot: int) -> String:
+	return _save_directory(project_id).path_join("slot_%d.json" % slot)
+
+func _resolved_save_slot(slot: int) -> int:
+	if slot > 0:
+		return clampi(slot, 1, 3)
+	if is_instance_valid(_runtime):
+		var settings: Dictionary = _runtime.project_data.get("gameSettings", {})
+		return clampi(int(settings.get("defaultSaveSlot", 1)), 1, 3)
+	return 1
 
 func enable_interaction(character_id: String, distance: float = 48.0) -> void:
 	if character(character_id) == null:
@@ -668,18 +780,27 @@ func _apply_dialogue_style(style: String) -> void:
 	_dialogue_label.position = Vector2(58, 326)
 
 func _player_input_direction() -> Vector2:
-	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
-	if Input.is_physical_key_pressed(KEY_A):
+	var settings: Dictionary = {}
+	if is_instance_valid(_runtime):
+		settings = _runtime.project_data.get("gameSettings", {})
+	var direction := Vector2.ZERO
+	if bool(settings.get("enableArrowKeys", true)):
+		direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	if bool(settings.get("enableWasd", true)) and Input.is_physical_key_pressed(KEY_A):
 		direction.x -= 1.0
-	if Input.is_physical_key_pressed(KEY_D):
+	if bool(settings.get("enableWasd", true)) and Input.is_physical_key_pressed(KEY_D):
 		direction.x += 1.0
-	if Input.is_physical_key_pressed(KEY_W):
+	if bool(settings.get("enableWasd", true)) and Input.is_physical_key_pressed(KEY_W):
 		direction.y -= 1.0
-	if Input.is_physical_key_pressed(KEY_S):
+	if bool(settings.get("enableWasd", true)) and Input.is_physical_key_pressed(KEY_S):
 		direction.y += 1.0
 	return direction.normalized() if direction.length_squared() > 1.0 else direction
 
 func _load_runtime_texture(resource_path: String) -> Texture2D:
+	if ResourceLoader.exists(resource_path):
+		var texture := load(resource_path) as Texture2D
+		if texture != null:
+			return texture
 	var file_path := ProjectSettings.globalize_path(resource_path)
 	var image := Image.load_from_file(file_path)
 	if image == null or image.is_empty():

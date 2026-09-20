@@ -227,10 +227,26 @@ class _RoomTab extends StatelessWidget {
       children: [
         ListTile(
           title: Text(l10n.roomsTab),
-          trailing: IconButton(
-            tooltip: l10n.newRoom,
-            onPressed: onNewRoom,
-            icon: const Icon(Icons.add),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: ProjectFeatureStrings.of(context).roomGraph,
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) => ProjectRoomGraphDialog(
+                    document: document,
+                    onRoomSelected: onSelected,
+                  ),
+                ),
+                icon: const Icon(Icons.account_tree_outlined),
+              ),
+              IconButton(
+                tooltip: l10n.newRoom,
+                onPressed: onNewRoom,
+                icon: const Icon(Icons.add),
+              ),
+            ],
           ),
         ),
         for (final room in rooms)

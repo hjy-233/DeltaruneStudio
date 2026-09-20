@@ -127,7 +127,18 @@ DRS.add_value("money", 5)
 var money = DRS.value("money", 0)
 ```
 
-当前状态属于本次运行；未来存档系统会序列化同一组 Flag 和 Value。
+Flag 和 Value 会随通用存档一起保存。值必须是 JSON 可序列化的数据。
+
+## 存档
+
+```gdscript
+await DRS.save_game(1)
+await DRS.load_game(1)
+DRS.has_save(1)
+DRS.delete_save(1)
+```
+
+槽位范围为 1–3。存档按项目 ID 隔离，包含 Flag、Value、当前房间、角色位置与朝向、当前受控角色。房间中放置 `savePoint` 对象后，Runtime 会自动把它注册为交互对象；玩家靠近并按确认键即可写入该对象指定的槽位。
 
 ## 场景对象
 
@@ -156,6 +167,12 @@ await DRS.change_room("scenes/hall/room.json", "hall_entry", "kris")
 ```
 
 参数依次是目标房间、目标出生点 ID、需要带入目标房间的角色 ID。后两项可以省略。
+
+编辑器中的 Door 可以设置过渡颜色、淡出时间和淡入时间。玩家进入 Door 时，Runtime 会自动完成遮罩过渡并切换房间。
+
+## 调试
+
+运行生成项目时按 `F3` 可显示或隐藏碰撞区域、Door、出生点、存档点与运行时对象 ID。Godot 的标准输出和脚本错误会同步显示在编辑器的“运行调试台”中。
 
 ## 音频
 

@@ -1,12 +1,11 @@
 import 'dart:io';
 
+import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
+import 'package:deltarune_studio/editor/panels/project_room_layer_inspector.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-
-import 'project_character.dart';
-import 'project_manifest.dart';
-import 'project_room_layer_inspector.dart';
 
 class ProjectSceneEditor extends StatefulWidget {
   const ProjectSceneEditor({
@@ -48,6 +47,7 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   @override
   Widget build(BuildContext context) {
     final selected = _selectedObject;
+    final game = widget.document.manifest.gameSettings;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -60,16 +60,17 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
               Expanded(
                 child: Center(
                   child: AspectRatio(
-                    aspectRatio: 4 / 3,
+                    aspectRatio: game.viewportWidth / game.viewportHeight,
                     child: ColoredBox(
                       color: Colors.black,
                       child: LayoutBuilder(
                         builder: (context, constraints) => _SceneCanvas(
                           document: widget.document,
                           selectedId: _selectedId,
-                          scale: constraints.maxWidth / 640,
+                          scale: constraints.maxWidth / game.viewportWidth,
                           onSelect: _select,
                           onMove: _moveObject,
+                          onResize: _resizeObject,
                         ),
                       ),
                     ),
@@ -129,6 +130,7 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
     final dimensions = switch (type) {
       'collision' => const Size(128, 64),
       'door' => const Size(32, 48),
+      'savePoint' => const Size(28, 28),
       'spawn' => const Size(16, 16),
       _ => const Size(-1, -1),
     };
@@ -137,8 +139,8 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
       type: type,
       name: _defaultObjectName(l10n, type),
       asset: '',
-      x: 320,
-      y: 240,
+      x: widget.document.manifest.gameSettings.viewportWidth / 2,
+      y: widget.document.manifest.gameSettings.viewportHeight / 2,
       zIndex: _scene.objects.length,
       width: dimensions.width,
       height: dimensions.height,
@@ -157,6 +159,17 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
     }
     _updateObject(
       object.copyWith(x: object.x + delta.dx, y: object.y + delta.dy),
+    );
+  }
+
+  void _resizeObject(String id, Offset delta) {
+    final object = _findObject(id);
+    if (object == null || object.locked || _layerLocked(object.layerId)) return;
+    _updateObject(
+      object.copyWith(
+        width: (object.width + delta.dx).clamp(4.0, 4096.0),
+        height: (object.height + delta.dy).clamp(4.0, 4096.0),
+      ),
     );
   }
 
@@ -280,6 +293,11 @@ class _EditorToolbar extends StatelessWidget {
           icon: const Icon(Icons.meeting_room_outlined),
           label: Text(l10n.addDoor),
         ),
+        OutlinedButton.icon(
+          onPressed: () => onAdd('savePoint'),
+          icon: const Icon(Icons.save_outlined),
+          label: Text(l10n.addSavePoint),
+        ),
       ],
     );
   }
@@ -292,6 +310,7 @@ class _SceneCanvas extends StatelessWidget {
     required this.scale,
     required this.onSelect,
     required this.onMove,
+    required this.onResize,
   });
 
   final ProjectDocument document;
@@ -299,6 +318,7 @@ class _SceneCanvas extends StatelessWidget {
   final double scale;
   final ValueChanged<String?> onSelect;
   final void Function(String id, Offset delta) onMove;
+  final void Function(String id, Offset delta) onResize;
 
   @override
   Widget build(BuildContext context) {
@@ -336,15 +356,22 @@ class _SceneCanvas extends StatelessWidget {
             Positioned(
               left: object.x * scale,
               top: object.y * scale,
-              child: _DraggableObject(
-                object: object,
-                visual: _resolveObjectVisual(document, object),
-                rootPath: document.path,
-                scale: scale,
-                selected: selectedId == object.id,
-                layerLocked: lockedLayers.contains(object.layerId),
-                onTap: () => onSelect(object.id),
-                onMove: (delta) => onMove(object.id, delta / scale),
+              child: FractionalTranslation(
+                key: ValueKey('scene-object-${object.id}-anchor'),
+                translation: _isEditorMarker(object.type)
+                    ? Offset.zero
+                    : const Offset(-0.5, -0.5),
+                child: _DraggableObject(
+                  object: object,
+                  visual: _resolveObjectVisual(document, object),
+                  rootPath: document.path,
+                  scale: scale,
+                  selected: selectedId == object.id,
+                  layerLocked: lockedLayers.contains(object.layerId),
+                  onTap: () => onSelect(object.id),
+                  onMove: (delta) => onMove(object.id, delta / scale),
+                  onResize: (delta) => onResize(object.id, delta / scale),
+                ),
               ),
             ),
         ],
@@ -375,6 +402,7 @@ class _DraggableObject extends StatelessWidget {
     required this.layerLocked,
     required this.onTap,
     required this.onMove,
+    required this.onResize,
   });
 
   final ProjectSceneObject object;
@@ -385,6 +413,7 @@ class _DraggableObject extends StatelessWidget {
   final bool layerLocked;
   final VoidCallback onTap;
   final ValueChanged<Offset> onMove;
+  final ValueChanged<Offset> onResize;
 
   @override
   Widget build(BuildContext context) {
@@ -392,15 +421,15 @@ class _DraggableObject extends StatelessWidget {
       return _marker(context);
     }
     final file = File('$rootPath/${visual.assetPath}');
+    final hasExplicitSize = visual.width > 0 || visual.height > 0;
     final child = file.existsSync()
         ? SizedBox(
             width: visual.width > 0 ? visual.width * scale : null,
             height: visual.height > 0 ? visual.height * scale : null,
             child: Image.file(
               file,
-              fit: visual.width > 0 || visual.height > 0
-                  ? BoxFit.fill
-                  : BoxFit.none,
+              scale: hasExplicitSize ? 1 : 1 / scale,
+              fit: hasExplicitSize ? BoxFit.fill : BoxFit.none,
               filterQuality: FilterQuality.none,
             ),
           )
@@ -428,28 +457,57 @@ class _DraggableObject extends StatelessWidget {
     final color = switch (object.type) {
       'collision' => Colors.cyan,
       'spawn' => Colors.greenAccent,
+      'savePoint' => Colors.amber,
       _ => Colors.orange,
     };
     final width = (visual.width > 0 ? visual.width : 24) * scale;
     final height = (visual.height > 0 ? visual.height : 24) * scale;
-    return GestureDetector(
-      onTap: onTap,
-      onPanStart: (_) => onTap(),
-      onPanUpdate: object.locked || layerLocked
-          ? null
-          : (details) => onMove(details.delta),
-      child: Container(
-        width: width.clamp(14, double.infinity),
-        height: height.clamp(14, double.infinity),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.2),
-          border: Border.all(
-            color: selected ? Colors.amber : color,
-            width: selected ? 2 : 1,
+    final locked = object.locked || layerLocked;
+    return SizedBox(
+      width: width.clamp(14, double.infinity),
+      height: height.clamp(14, double.infinity),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: onTap,
+              onPanStart: (_) => onTap(),
+              onPanUpdate: locked ? null : (details) => onMove(details.delta),
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  border: Border.all(
+                    color: selected ? Colors.amber : color,
+                    width: selected ? 2 : 1,
+                  ),
+                ),
+                child: Icon(_markerIcon(object.type), color: color, size: 16),
+              ),
+            ),
           ),
-        ),
-        child: Icon(_markerIcon(object.type), color: color, size: 16),
+          if (selected && !locked)
+            Positioned(
+              right: -5,
+              bottom: -5,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.resizeDownRight,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: (details) => onResize(details.delta),
+                  child: Container(
+                    width: 11,
+                    height: 11,
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      border: Border.all(color: Colors.black),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -598,6 +656,7 @@ class _ObjectInspector extends StatelessWidget {
           ),
           if (object.type == 'spawn') ..._spawnFields(context),
           if (object.type == 'door') ..._doorFields(context),
+          if (object.type == 'savePoint') ..._savePointFields(context),
           SizedBox(
             width: 100,
             child: _numberField(
@@ -729,6 +788,52 @@ class _ObjectInspector extends StatelessWidget {
       ),
       if (targetRoom != null && spawnPoints.isEmpty)
         Text(l10n.noSpawnPoints, style: const TextStyle(color: Colors.orange)),
+      SizedBox(
+        width: 180,
+        child: _textField(
+          l10n.transitionColor,
+          object.transitionColor,
+          (value) => onChanged(object.copyWith(transitionColor: value)),
+        ),
+      ),
+      SizedBox(
+        width: 140,
+        child: _numberField(
+          l10n.fadeOutSeconds,
+          object.fadeOutSeconds,
+          (value) => onChanged(object.copyWith(fadeOutSeconds: value)),
+        ),
+      ),
+      SizedBox(
+        width: 140,
+        child: _numberField(
+          l10n.fadeInSeconds,
+          object.fadeInSeconds,
+          (value) => onChanged(object.copyWith(fadeInSeconds: value)),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _savePointFields(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      SizedBox(
+        width: 180,
+        child: DropdownButtonFormField<int>(
+          initialValue: object.saveSlot,
+          decoration: InputDecoration(labelText: l10n.saveSlot),
+          items: [
+            for (var slot = 1; slot <= 3; slot++)
+              DropdownMenuItem(value: slot, child: Text(slot.toString())),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              onChanged(object.copyWith(saveSlot: value));
+            }
+          },
+        ),
+      ),
     ];
   }
 
@@ -828,13 +933,17 @@ String? _previewFrame(ProjectCharacterDefinition definition) {
 }
 
 bool _isEditorMarker(String type) {
-  return type == 'collision' || type == 'spawn' || type == 'door';
+  return type == 'collision' ||
+      type == 'spawn' ||
+      type == 'door' ||
+      type == 'savePoint';
 }
 
 IconData _markerIcon(String type) {
   return switch (type) {
     'collision' => Icons.crop_square,
     'spawn' => Icons.place,
+    'savePoint' => Icons.save_outlined,
     _ => Icons.meeting_room,
   };
 }
@@ -855,6 +964,7 @@ String _defaultObjectName(AppLocalizations l10n, String type) {
     'collision' => l10n.collisionRegion,
     'spawn' => l10n.spawnPoint,
     'door' => l10n.doorConnection,
+    'savePoint' => l10n.savePoint,
     _ => type,
   };
 }

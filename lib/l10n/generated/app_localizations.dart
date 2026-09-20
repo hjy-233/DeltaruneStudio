@@ -176,6 +176,66 @@ abstract class AppLocalizations {
   /// **'Build and run in Godot'**
   String get buildAndRun;
 
+  /// No description provided for @runtimeConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime console'**
+  String get runtimeConsole;
+
+  /// No description provided for @runtimeExited.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime exited with code {code}.'**
+  String runtimeExited(int code);
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @stopRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop runtime'**
+  String get stopRuntime;
+
+  /// No description provided for @exportGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Export game'**
+  String get exportGame;
+
+  /// No description provided for @exportTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Export target'**
+  String get exportTarget;
+
+  /// No description provided for @exportMacOS.
+  ///
+  /// In en, this message translates to:
+  /// **'macOS (.zip)'**
+  String get exportMacOS;
+
+  /// No description provided for @exportWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows (.exe)'**
+  String get exportWindows;
+
+  /// No description provided for @exportLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux (.x86_64)'**
+  String get exportLinux;
+
+  /// No description provided for @exportCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported game to {path}'**
+  String exportCompleted(String path);
+
   /// No description provided for @godotStarted.
   ///
   /// In en, this message translates to:
@@ -518,6 +578,24 @@ abstract class AppLocalizations {
   /// **'Animations'**
   String get animations;
 
+  /// No description provided for @animationPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation preview'**
+  String get animationPreview;
+
+  /// No description provided for @playPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Play preview'**
+  String get playPreview;
+
+  /// No description provided for @pausePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause preview'**
+  String get pausePreview;
+
   /// No description provided for @addAnimation.
   ///
   /// In en, this message translates to:
@@ -626,6 +704,12 @@ abstract class AppLocalizations {
   /// **'Add door'**
   String get addDoor;
 
+  /// No description provided for @addSavePoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add save point'**
+  String get addSavePoint;
+
   /// No description provided for @layers.
   ///
   /// In en, this message translates to:
@@ -673,6 +757,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Door connection'**
   String get doorConnection;
+
+  /// No description provided for @savePoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Save point'**
+  String get savePoint;
+
+  /// No description provided for @saveSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Save slot'**
+  String get saveSlot;
+
+  /// No description provided for @transitionColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Transition color'**
+  String get transitionColor;
+
+  /// No description provided for @fadeOutSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade-out seconds'**
+  String get fadeOutSeconds;
+
+  /// No description provided for @fadeInSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade-in seconds'**
+  String get fadeInSeconds;
 
   /// No description provided for @targetRoom.
   ///
