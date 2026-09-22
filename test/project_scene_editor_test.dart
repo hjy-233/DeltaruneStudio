@@ -30,6 +30,17 @@ void main() {
       width: 32,
       height: 48,
     );
+    const savePoint = ProjectSceneObject(
+      id: 'save',
+      type: 'savePoint',
+      name: 'Save Point',
+      asset: '',
+      x: 200,
+      y: 220,
+      zIndex: 2,
+      width: 28,
+      height: 28,
+    );
     const document = ProjectDocument(
       manifest: ProjectManifest(
         formatVersion: 2,
@@ -40,7 +51,7 @@ void main() {
       mainScene: ProjectScene(
         id: 'main',
         name: 'Main',
-        objects: [character, door],
+        objects: [character, door, savePoint],
       ),
       path: '/missing',
     );
@@ -74,5 +85,11 @@ void main() {
 
     expect(characterAnchor.translation, const Offset(-0.5, -0.5));
     expect(doorAnchor.translation, Offset.zero);
+    expect(find.byIcon(Icons.grid_on_outlined), findsOneWidget);
+    final savePointImage = tester.widget<Image>(find.byType(Image));
+    expect(
+      (savePointImage.image as AssetImage).assetName,
+      'runtime/godot_template/runtime/save_point/save_point_0.png',
+    );
   });
 }

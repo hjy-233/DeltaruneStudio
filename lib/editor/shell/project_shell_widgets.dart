@@ -77,6 +77,8 @@ class _WorkspaceSidebar extends StatelessWidget {
     required this.onRoomContextMenu,
     required this.onCharacterSelected,
     required this.onNewCharacter,
+    required this.onPrefabs,
+    required this.onDialogues,
   });
 
   final ProjectDocument document;
@@ -92,6 +94,8 @@ class _WorkspaceSidebar extends StatelessWidget {
   final void Function(ProjectRoom, Offset) onRoomContextMenu;
   final ValueChanged<ProjectCharacterFile> onCharacterSelected;
   final VoidCallback onNewCharacter;
+  final VoidCallback onPrefabs;
+  final VoidCallback onDialogues;
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +130,11 @@ class _WorkspaceSidebar extends StatelessWidget {
           Expanded(
             child: TabBarView(
               children: [
-                _ProjectTab(document: document),
+                _ProjectTab(
+                  document: document,
+                  onPrefabs: onPrefabs,
+                  onDialogues: onDialogues,
+                ),
                 ProjectResourceBrowser(
                   document: document,
                   title: l10n.resourcesTab,
@@ -159,9 +167,15 @@ class _WorkspaceSidebar extends StatelessWidget {
 }
 
 class _ProjectTab extends StatelessWidget {
-  const _ProjectTab({required this.document});
+  const _ProjectTab({
+    required this.document,
+    required this.onPrefabs,
+    required this.onDialogues,
+  });
 
   final ProjectDocument document;
+  final VoidCallback onPrefabs;
+  final VoidCallback onDialogues;
 
   @override
   Widget build(BuildContext context) {
@@ -190,6 +204,20 @@ class _ProjectTab extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(l10n.entryScript),
           subtitle: Text(document.manifest.entryScript),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.inventory_2_outlined),
+          title: Text(ProjectFeatureStrings.of(context).prefabs),
+          trailing: Text('${document.prefabs.length}'),
+          onTap: onPrefabs,
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.chat_bubble_outline),
+          title: Text(ProjectFeatureStrings.of(context).dialogues),
+          trailing: Text('${document.dialogues.length}'),
+          onTap: onDialogues,
         ),
       ],
     );

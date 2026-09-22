@@ -32,6 +32,8 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+**/.godot/
+*.gd.uid
 
 # Symbolication related
 app.*.symbols

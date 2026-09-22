@@ -127,6 +127,30 @@ extension _ProjectShellRuntimeActions on _ProjectShellState {
       return;
     }
     final l10n = AppLocalizations.of(context)!;
+    _setShellState(() {
+      _busy = true;
+      _message = ProjectFeatureStrings.of(context).exportPreflight;
+    });
+    GodotExportPreflight report;
+    try {
+      await _repository.save(document);
+      report = await _godotBuildService.preflight(document);
+    } on Object catch (error) {
+      if (mounted) {
+        _setShellState(() {
+          _busy = false;
+          _message = error is StateError ? error.message : error.toString();
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
+    _setShellState(() => _busy = false);
+    final shouldExport = await showDialog<bool>(
+      context: context,
+      builder: (context) => ProjectExportPreflightDialog(report: report),
+    );
+    if (shouldExport != true || !mounted) return;
     final preferredTarget = _exportTargetFromName(
       document.manifest.exportSettings.defaultTarget,
     );

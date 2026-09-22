@@ -44,6 +44,7 @@ extension _ProjectShellCharacterActions on _ProjectShellState {
       preserveActiveRoom: true,
       success: (_) {
         _selectedCharacterPath = character.path;
+        _scheduleHotReload();
         return l10n.characterSaved;
       },
     );

@@ -35,6 +35,9 @@ var _overlay_image: TextureRect
 var _effect_layer: CanvasLayer
 var _effect_rect: ColorRect
 var _registered_save_points: Array[String] = []
+var _registered_scene_interactions: Array[String] = []
+var _interaction_prompt_layer: CanvasLayer
+var _interaction_prompt_label: Label
 
 func _ready() -> void:
 	_bgm_player = AudioStreamPlayer.new()
@@ -63,9 +66,12 @@ func _physics_process(delta: float) -> void:
 
 func _process(_delta: float) -> void:
 	if _dialogue_active or _interaction_character_id.is_empty():
+		_set_interaction_prompt("")
 		return
+	var nearest := _nearest_interactable()
+	_set_interaction_prompt(_interaction_prompt(nearest))
 	if Input.is_action_just_pressed("ui_accept"):
-		_try_interaction()
+		_try_interaction(nearest)
 
 func character(character_id: String) -> CharacterBody2D:
 	if _runtime == null:
@@ -202,12 +208,31 @@ func say_portrait(
 		portrait_asset
 	)
 
+func dialogue(dialogue_id: String, auto_close_seconds: float = 0.0) -> void:
+	var path := PROJECT_ROOT.path_join("dialogues").path_join(dialogue_id + ".json")
+	var data := _read_dialogue(path)
+	if data.is_empty():
+		push_error("DRS dialogue was not found: " + dialogue_id)
+		return
+	var translations: Dictionary = data.get("translations", {})
+	var locale := TranslationServer.get_locale().get_slice("_", 0)
+	var text := String(translations.get(locale, translations.get("en", "")))
+	await _show_dialogue(
+		text,
+		auto_close_seconds,
+		float(data.get("charactersPerSecond", 40.0)),
+		String(data.get("style", DIALOGUE_STYLE_LIGHT)),
+		String(data.get("portrait", "")),
+		String(data.get("sound", ""))
+	)
+
 func _show_dialogue(
 	text: String,
 	auto_close_seconds: float,
 	characters_per_second: float,
 	style: String,
-	portrait_asset: String
+	portrait_asset: String,
+	typing_sound: String = ""
 ) -> void:
 	_ensure_dialogue()
 	_apply_dialogue_style(style)
@@ -225,6 +250,8 @@ func _show_dialogue(
 			break
 		index += 1
 		_dialogue_label.visible_characters = index
+		if not typing_sound.is_empty() and not text[index - 1].strip_edges().is_empty():
+			play_sound(typing_sound)
 		await get_tree().create_timer(delay).timeout
 	if auto_close_seconds > 0.0:
 		await get_tree().create_timer(auto_close_seconds).timeout
@@ -335,6 +362,14 @@ func hide(object_id: String) -> void:
 func remove(object_id: String) -> void:
 	var host := await _runtime_host()
 	host.drs_remove_object(object_id)
+
+func create_save_point(
+	object_id: String,
+	position: Vector2,
+	slot: int = 1
+) -> Area2D:
+	var host := await _runtime_host()
+	return host.drs_create_save_point(object_id, position, slot)
 
 func set_texture(object_id: String, asset: String) -> void:
 	var host := await _runtime_host()
@@ -495,6 +530,8 @@ func register_interactable(
 		"callback": callback,
 		"distance": distance,
 		"require_facing": require_facing,
+		"prompt": "",
+		"once": false,
 	}
 
 func unregister_interactable(object_id: String) -> void:
@@ -505,12 +542,58 @@ func wait_for_interaction(object_id: String) -> void:
 	while int(_interaction_counts.get(object_id, 0)) == initial_count:
 		await get_tree().process_frame
 
-func _try_interaction() -> void:
+func refresh_scene_interactables() -> void:
+	for object_id in _registered_scene_interactions:
+		unregister_interactable(object_id)
+	_registered_scene_interactions.clear()
 	if _runtime == null:
 		return
+	for node in get_tree().get_nodes_in_group("drs_object"):
+		var interaction: Variant = node.get_meta("interaction", {})
+		if interaction is not Dictionary or not bool(interaction.get("enabled", false)):
+			continue
+		var object_id := String(node.get_meta("object_id", ""))
+		var function_name := String(interaction.get("function", ""))
+		if object_id.is_empty() or function_name.is_empty():
+			continue
+		if bool(interaction.get("once", false)) and flag("__interaction_once_" + object_id):
+			continue
+		_interactables[object_id] = {
+			"callback": _call_scene_interaction.bind(function_name),
+			"distance": float(interaction.get("distance", 48.0)),
+			"require_facing": bool(interaction.get("requireFacing", false)),
+			"prompt": String(interaction.get("prompt", "")),
+			"once": bool(interaction.get("once", false)),
+		}
+		_registered_scene_interactions.append(object_id)
+
+func _call_scene_interaction(function_name: String) -> void:
+	_runtime.drs_call_project_function(function_name)
+
+func _try_interaction(best_id: String = "") -> void:
+	if _runtime == null:
+		return
+	if best_id.is_empty():
+		best_id = _nearest_interactable()
+	if best_id.is_empty():
+		return
+	var settings: Dictionary = _interactables[best_id]
+	if bool(settings.get("once", false)):
+		set_flag("__interaction_once_" + best_id)
+		unregister_interactable(best_id)
+		_registered_scene_interactions.erase(best_id)
+	_interaction_counts[best_id] = int(_interaction_counts.get(best_id, 0)) + 1
+	interacted.emit(best_id)
+	var callback: Callable = settings.get("callback", Callable())
+	if callback.is_valid():
+		callback.call()
+
+func _nearest_interactable() -> String:
+	if _runtime == null:
+		return ""
 	var character_node := character(_interaction_character_id)
 	if character_node == null:
-		return
+		return ""
 	var best_id := ""
 	var best_distance := INF
 	for object_variant in _interactables.keys():
@@ -530,13 +613,38 @@ func _try_interaction() -> void:
 				continue
 		best_id = object_id
 		best_distance = distance
-	if best_id.is_empty():
+	return best_id
+
+func _interaction_prompt(object_id: String) -> String:
+	if object_id.is_empty() or not _interactables.has(object_id):
+		return ""
+	return String(_interactables[object_id].get("prompt", ""))
+
+func _set_interaction_prompt(text: String) -> void:
+	if text.is_empty() and _interaction_prompt_label == null:
 		return
-	_interaction_counts[best_id] = int(_interaction_counts.get(best_id, 0)) + 1
-	interacted.emit(best_id)
-	var callback: Callable = _interactables[best_id].get("callback", Callable())
-	if callback.is_valid():
-		callback.call()
+	_ensure_interaction_prompt()
+	_interaction_prompt_label.text = text
+	_interaction_prompt_layer.visible = not text.is_empty()
+
+func _ensure_interaction_prompt() -> void:
+	if _interaction_prompt_layer != null:
+		return
+	_interaction_prompt_layer = CanvasLayer.new()
+	_interaction_prompt_layer.layer = 900
+	add_child(_interaction_prompt_layer)
+	_interaction_prompt_label = Label.new()
+	_interaction_prompt_label.position = Vector2(220, 430)
+	_interaction_prompt_label.size = Vector2(200, 36)
+	_interaction_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_interaction_prompt_label.add_theme_font_size_override("font_size", 18)
+	_interaction_prompt_layer.add_child(_interaction_prompt_label)
+
+func _read_dialogue(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return parsed if parsed is Dictionary else {}
 
 func _is_facing_position(character_node: CharacterBody2D, target: Vector2) -> bool:
 	var offset := target - character_node.position

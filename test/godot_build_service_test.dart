@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:deltarune_studio/data/project_repository.dart';
 import 'package:deltarune_studio/domain/project_settings.dart';
+import 'package:deltarune_studio/domain/project_manifest.dart';
 import 'package:deltarune_studio/godot/godot_build_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -60,6 +61,12 @@ void main() {
         isTrue,
       );
       expect(
+        File(
+          '${result.directory}/runtime/project_content_runtime.gd',
+        ).existsSync(),
+        isTrue,
+      );
+      expect(
         File('${result.directory}/export_presets.cfg').existsSync(),
         isTrue,
       );
@@ -82,6 +89,32 @@ void main() {
           '${result.directory}/runtime/dialogue/dark_world.png',
         ).existsSync(),
         isTrue,
+      );
+      expect(
+        File(
+          '${result.directory}/runtime/save_point/save_point_0.png',
+        ).existsSync(),
+        isTrue,
+      );
+      expect(
+        File(
+          '${result.directory}/runtime/save_point/save_point_1.png',
+        ).existsSync(),
+        isTrue,
+      );
+      for (var frame = 2; frame < 6; frame++) {
+        expect(
+          File(
+            '${result.directory}/runtime/save_point/save_point_$frame.png',
+          ).existsSync(),
+          isTrue,
+        );
+      }
+      expect(
+        await File(
+          '${result.directory}/runtime/project_content_runtime.gd',
+        ).readAsString(),
+        contains('AnimatedSprite2D.new()'),
       );
       final runtimeApi = await File(
         '${result.directory}/runtime/drs.gd',
@@ -114,6 +147,9 @@ void main() {
         'load_game',
         'has_save',
         'delete_save',
+        'create_save_point',
+        'dialogue',
+        'refresh_scene_interactables',
       ]) {
         expect(runtimeApi, contains('func $method'));
       }
@@ -137,6 +173,58 @@ void main() {
         File('${source.path}/scenes/main/scene.json').existsSync(),
         isTrue,
       );
+      expect(runtimeMain, contains('drs_hot_reload_current_room'));
+      expect(runtimeMain, contains('add_tile_map(scene_data, room_root)'));
+      final edited = source.copyWith(
+        mainScene: source.mainScene.copyWith(
+          objects: const [
+            ProjectSceneObject(
+              id: 'hot_reload_prop',
+              type: 'prop',
+              name: 'Hot reload prop',
+              asset: '',
+              x: 120,
+              y: 90,
+              zIndex: 1,
+            ),
+          ],
+        ),
+      );
+      await repository.save(edited);
+      expect(await GodotBuildService().syncHotReload(edited), isTrue);
+      expect(
+        File('${result.directory}/drs_project/.hot_reload').existsSync(),
+        isTrue,
+      );
+      expect(
+        await File(
+          '${result.directory}/drs_project/scenes/main/scene.json',
+        ).readAsString(),
+        contains('hot_reload_prop'),
+      );
     },
   );
+
+  test('export preflight reports packaged and unsupported files', () async {
+    final parent = await Directory.systemTemp.createTemp('drs_preflight_');
+    addTearDown(() => parent.delete(recursive: true));
+    final repository = ProjectRepository();
+    final document = await repository.create(
+      parentPath: parent.path,
+      name: 'Preflight Test',
+    );
+    final unsupported = File('${document.path}/resources/props/data.psd');
+    await unsupported.writeAsBytes([1, 2, 3]);
+    final reopened = await repository.open(document.path);
+
+    final report = await GodotBuildService().preflight(reopened);
+
+    expect(report.files.map((file) => file.path), contains('project.godot'));
+    expect(report.unsupportedFiles, contains('resources/props/data.psd'));
+    expect(
+      report.files.map((file) => file.path),
+      isNot(contains('drs_project/resources/props/data.psd')),
+    );
+    expect(report.totalBytes, greaterThan(0));
+  });
 }

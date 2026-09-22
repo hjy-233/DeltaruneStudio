@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:deltarune_studio/data/project_asset_geometry.dart';
 import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_content.dart';
 import 'package:deltarune_studio/domain/project_manifest.dart';
 
 class ProjectRepository {
@@ -42,6 +44,8 @@ class ProjectRepository {
         'resources/props',
       ],
       characters: const [],
+      prefabs: const [],
+      dialogues: const [],
     );
     await _writeProjectFiles(document);
     await _ensureEntryScript(document);
@@ -62,12 +66,15 @@ class ProjectRepository {
         : manifest.rooms;
     final rooms = <ProjectRoom>[];
     for (final roomPath in roomPaths) {
-      rooms.add(
-        ProjectRoom(
-          path: roomPath,
-          scene: await _readScene(projectDirectory, roomPath),
-        ),
-      );
+      final loadedScene = await _readScene(projectDirectory, roomPath);
+      final scene = await _migrateSceneDefaults(projectDirectory, loadedScene);
+      if (scene.formatVersion != loadedScene.formatVersion) {
+        await _writeJson(
+          File(p.join(projectDirectory.path, roomPath)),
+          scene.toJson(),
+        );
+      }
+      rooms.add(ProjectRoom(path: roomPath, scene: scene));
     }
     final scene = rooms
         .firstWhere(
@@ -83,6 +90,8 @@ class ProjectRepository {
       assets: await _readAssets(projectDirectory),
       resourceFolders: await _readResourceFolders(projectDirectory),
       characters: await _readCharacters(projectDirectory),
+      prefabs: await _readPrefabs(projectDirectory),
+      dialogues: await _readDialogues(projectDirectory),
     );
   }
 
@@ -219,6 +228,88 @@ class ProjectRepository {
     );
     await _writeCharacter(document.path, character);
     return updated;
+  }
+
+  Future<ProjectDocument> savePrefab(
+    ProjectDocument document, {
+    required String name,
+    required ProjectSceneObject object,
+  }) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      throw const FormatException('Prefab name cannot be empty.');
+    }
+    final id = _identifier(trimmed);
+    final path = p.join('prefabs', '$id.json');
+    final prefab = ProjectPrefab(
+      path: path,
+      id: id,
+      name: trimmed,
+      object: object,
+    );
+    await _writeJson(File(p.join(document.path, path)), prefab.toJson());
+    final prefabs = [
+      ...document.prefabs.where((item) => item.path != path),
+      prefab,
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return document.copyWith(prefabs: prefabs);
+  }
+
+  Future<ProjectDocument> deletePrefab(
+    ProjectDocument document,
+    ProjectPrefab prefab,
+  ) async {
+    final file = File(p.join(document.path, prefab.path));
+    if (await file.exists()) await file.delete();
+    return document.copyWith(
+      prefabs: document.prefabs
+          .where((item) => item.path != prefab.path)
+          .toList(growable: false),
+    );
+  }
+
+  Future<ProjectDocument> saveDialogue(
+    ProjectDocument document,
+    ProjectDialogue dialogue,
+  ) async {
+    await _writeJson(
+      File(p.join(document.path, dialogue.path)),
+      dialogue.toJson(),
+    );
+    final dialogues = [
+      ...document.dialogues.where((item) => item.path != dialogue.path),
+      dialogue,
+    ]..sort((a, b) => a.id.toLowerCase().compareTo(b.id.toLowerCase()));
+    return document.copyWith(dialogues: dialogues);
+  }
+
+  Future<ProjectDocument> createDialogue(
+    ProjectDocument document,
+    String id,
+  ) async {
+    final resolvedId = _identifier(id);
+    if (document.dialogues.any((item) => item.id == resolvedId)) {
+      throw StateError('Dialogue already exists: $resolvedId');
+    }
+    final dialogue = ProjectDialogue(
+      path: p.join('dialogues', '$resolvedId.json'),
+      id: resolvedId,
+      translations: const {'en': '', 'zh': ''},
+    );
+    return saveDialogue(document, dialogue);
+  }
+
+  Future<ProjectDocument> deleteDialogue(
+    ProjectDocument document,
+    ProjectDialogue dialogue,
+  ) async {
+    final file = File(p.join(document.path, dialogue.path));
+    if (await file.exists()) await file.delete();
+    return document.copyWith(
+      dialogues: document.dialogues
+          .where((item) => item.path != dialogue.path)
+          .toList(growable: false),
+    );
   }
 
   Future<ProjectDocument> deleteCharacter(
@@ -461,6 +552,8 @@ class ProjectRepository {
       'scripts/generated',
       'visual_scripts',
       'settings',
+      'prefabs',
+      'dialogues',
     ]) {
       await Directory(p.join(root.path, path)).create(recursive: true);
     }
@@ -499,6 +592,15 @@ class ProjectRepository {
     for (final character in document.characters) {
       await _writeCharacter(document.path, character);
     }
+    for (final prefab in document.prefabs) {
+      await _writeJson(File(p.join(root.path, prefab.path)), prefab.toJson());
+    }
+    for (final dialogue in document.dialogues) {
+      await _writeJson(
+        File(p.join(root.path, dialogue.path)),
+        dialogue.toJson(),
+      );
+    }
   }
 
   Future<void> _writeCharacter(
@@ -518,6 +620,29 @@ class ProjectRepository {
     }
     final json = jsonDecode(await file.readAsString());
     return ProjectScene.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<ProjectScene> _migrateSceneDefaults(
+    Directory root,
+    ProjectScene scene,
+  ) async {
+    if (scene.formatVersion >= 3) return scene;
+    final objects = <ProjectSceneObject>[];
+    for (final object in scene.objects) {
+      if (object.type != 'prop' ||
+          object.asset.isEmpty ||
+          object.collision != null) {
+        objects.add(object);
+        continue;
+      }
+      final collision = await readOpaqueCollisionBox(
+        p.join(root.path, object.asset),
+      );
+      objects.add(
+        collision == null ? object : object.copyWith(collision: collision),
+      );
+    }
+    return scene.copyWith(formatVersion: 3, objects: objects);
   }
 
   Future<List<ProjectAsset>> _readAssets(Directory root) async {
@@ -604,6 +729,48 @@ class ProjectRepository {
     return characters;
   }
 
+  Future<List<ProjectPrefab>> _readPrefabs(Directory root) async {
+    final directory = Directory(p.join(root.path, 'prefabs'));
+    if (!await directory.exists()) return const [];
+    final prefabs = <ProjectPrefab>[];
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is! File || p.extension(entity.path) != '.json') continue;
+      final json = jsonDecode(await entity.readAsString());
+      if (json is Map<String, dynamic>) {
+        prefabs.add(
+          ProjectPrefab.fromJson(
+            p.relative(entity.path, from: root.path),
+            json,
+          ),
+        );
+      }
+    }
+    prefabs.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return prefabs;
+  }
+
+  Future<List<ProjectDialogue>> _readDialogues(Directory root) async {
+    final directory = Directory(p.join(root.path, 'dialogues'));
+    if (!await directory.exists()) return const [];
+    final dialogues = <ProjectDialogue>[];
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is! File || p.extension(entity.path) != '.json') continue;
+      final json = jsonDecode(await entity.readAsString());
+      if (json is Map<String, dynamic>) {
+        dialogues.add(
+          ProjectDialogue.fromJson(
+            p.relative(entity.path, from: root.path),
+            json,
+          ),
+        );
+      }
+    }
+    dialogues.sort((a, b) => a.id.toLowerCase().compareTo(b.id.toLowerCase()));
+    return dialogues;
+  }
+
   Directory _resourceDirectory(ProjectDocument document, String relativePath) {
     final root = p.normalize(p.join(document.path, 'resources'));
     final resolved = p.normalize(p.join(document.path, relativePath));
@@ -635,6 +802,18 @@ class ProjectRepository {
         objects: scene.objects
             .map((object) => object.copyWith(asset: transform(object.asset)))
             .toList(growable: false),
+        tileMap: scene.tileMap.copyWith(
+          cells: scene.tileMap.cells
+              .map(
+                (cell) => ProjectTileCell(
+                  column: cell.column,
+                  row: cell.row,
+                  kind: cell.kind,
+                  asset: transform(cell.asset),
+                ),
+              )
+              .toList(growable: false),
+        ),
       );
     }
 
@@ -665,10 +844,32 @@ class ProjectRepository {
           ),
         )
         .toList(growable: false);
+    final prefabs = document.prefabs
+        .map(
+          (prefab) => ProjectPrefab(
+            path: prefab.path,
+            id: prefab.id,
+            name: prefab.name,
+            object: prefab.object.copyWith(
+              asset: transform(prefab.object.asset),
+            ),
+          ),
+        )
+        .toList(growable: false);
+    final dialogues = document.dialogues
+        .map(
+          (dialogue) => dialogue.copyWith(
+            portrait: transform(dialogue.portrait),
+            sound: transform(dialogue.sound),
+          ),
+        )
+        .toList(growable: false);
     return document.copyWith(
       mainScene: mainScene,
       rooms: rooms,
       characters: characters,
+      prefabs: prefabs,
+      dialogues: dialogues,
     );
   }
 

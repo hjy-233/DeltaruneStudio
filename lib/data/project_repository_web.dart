@@ -1,4 +1,5 @@
 import 'package:deltarune_studio/domain/project_character.dart';
+import 'package:deltarune_studio/domain/project_content.dart';
 import 'package:deltarune_studio/domain/project_manifest.dart';
 
 class ProjectRepository {
@@ -128,6 +129,49 @@ class ProjectRepository {
   ) {
     return Future.error(
       UnsupportedError('Resource folders are not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> savePrefab(
+    ProjectDocument document, {
+    required String name,
+    required ProjectSceneObject object,
+  }) {
+    return Future.error(
+      UnsupportedError('Prefab editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> deletePrefab(
+    ProjectDocument document,
+    ProjectPrefab prefab,
+  ) {
+    return Future.error(
+      UnsupportedError('Prefab editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> createDialogue(ProjectDocument document, String id) {
+    return Future.error(
+      UnsupportedError('Dialogue editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> saveDialogue(
+    ProjectDocument document,
+    ProjectDialogue dialogue,
+  ) {
+    return Future.error(
+      UnsupportedError('Dialogue editing is not available on the web yet.'),
+    );
+  }
+
+  Future<ProjectDocument> deleteDialogue(
+    ProjectDocument document,
+    ProjectDialogue dialogue,
+  ) {
+    return Future.error(
+      UnsupportedError('Dialogue editing is not available on the web yet.'),
     );
   }
 }

@@ -28,6 +28,8 @@ void main() {
       await Directory(p.join(created.path, 'resources/characters')).exists(),
       isTrue,
     );
+    expect(await Directory(p.join(created.path, 'prefabs')).exists(), isTrue);
+    expect(await Directory(p.join(created.path, 'dialogues')).exists(), isTrue);
     expect(created.manifest.formatVersion, 2);
     expect(created.manifest.entryScript, 'scripts/manual/main.gd');
     expect(

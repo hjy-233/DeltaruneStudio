@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 
 import 'package:deltarune_studio/domain/project_manifest.dart';
+import 'package:deltarune_studio/domain/project_audit.dart';
 
 import 'godot_build_models.dart';
 
@@ -17,6 +18,87 @@ class GodotBuildResult {
 }
 
 class GodotBuildService {
+  static const _supportedProjectExtensions = {
+    '.json',
+    '.gd',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.webp',
+    '.gif',
+    '.wav',
+    '.mp3',
+    '.ogg',
+    '.mp4',
+    '.webm',
+    '.mov',
+    '.ttf',
+    '.otf',
+  };
+
+  Future<GodotExportPreflight> preflight(ProjectDocument document) async {
+    final result = await prepare(document);
+    final files = <GodotPackedFile>[];
+    await for (final entity in Directory(
+      result.directory,
+    ).list(recursive: true, followLinks: false)) {
+      if (entity is! File) continue;
+      final relative = p.relative(entity.path, from: result.directory);
+      if (p.isWithin('drs_project/resources', relative) &&
+          !_supportedProjectExtensions.contains(
+            p.extension(relative).toLowerCase(),
+          )) {
+        continue;
+      }
+      files.add(GodotPackedFile(path: relative, bytes: await entity.length()));
+    }
+    files.sort((a, b) => a.path.compareTo(b.path));
+    final audit = auditProject(document);
+    final missing = audit.issues
+        .where((issue) => issue.code == 'missing_resource')
+        .map((issue) => '${issue.subject} (${issue.detail})')
+        .toSet()
+        .toList(growable: false);
+    final unsupported = document.assets
+        .where(
+          (asset) => !_supportedProjectExtensions.contains(
+            p.extension(asset.path).toLowerCase(),
+          ),
+        )
+        .map((asset) => asset.path)
+        .toList(growable: false);
+    return GodotExportPreflight(
+      files: files,
+      missingResources: missing,
+      unsupportedFiles: unsupported,
+    );
+  }
+
+  Future<bool> syncHotReload(ProjectDocument document) async {
+    final output = Directory(p.join(document.path, '.build', 'godot'));
+    if (!await File(p.join(output.path, 'project.godot')).exists()) {
+      return false;
+    }
+    final target = Directory(p.join(output.path, 'drs_project'));
+    for (final name in ['project.json', 'scenes', 'characters', 'dialogues']) {
+      final sourcePath = p.join(document.path, name);
+      final file = File(sourcePath);
+      if (await file.exists()) {
+        await file.copy(p.join(target.path, name));
+        continue;
+      }
+      final directory = Directory(sourcePath);
+      if (await directory.exists()) {
+        await _copyDirectory(directory, Directory(p.join(target.path, name)));
+      }
+    }
+    final marker = File(p.join(target.path, '.hot_reload'));
+    await marker.writeAsString(
+      DateTime.now().microsecondsSinceEpoch.toString(),
+    );
+    return true;
+  }
+
   Future<GodotBuildResult> prepare(ProjectDocument document) async {
     await _validateProject(document);
     final template = await _findTemplate();
@@ -198,6 +280,8 @@ class GodotBuildService {
       'scripts',
       'visual_scripts',
       'settings',
+      'prefabs',
+      'dialogues',
     ]) {
       final item = File(p.join(source.path, name));
       if (await item.exists()) {
@@ -300,8 +384,15 @@ class GodotBuildService {
       'runtime/drs.gd',
       'runtime/debug_overlay.gd',
       'runtime/variable_debugger.gd',
+      'runtime/project_content_runtime.gd',
       'runtime/dialogue/light_world.png',
       'runtime/dialogue/dark_world.png',
+      'runtime/save_point/save_point_0.png',
+      'runtime/save_point/save_point_1.png',
+      'runtime/save_point/save_point_2.png',
+      'runtime/save_point/save_point_3.png',
+      'runtime/save_point/save_point_4.png',
+      'runtime/save_point/save_point_5.png',
     ];
     try {
       for (final relativePath in files) {

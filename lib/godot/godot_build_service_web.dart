@@ -10,6 +10,14 @@ class GodotBuildResult {
 }
 
 class GodotBuildService {
+  Future<GodotExportPreflight> preflight(ProjectDocument document) {
+    return Future.error(
+      UnsupportedError('Godot desktop exports are not available on the web.'),
+    );
+  }
+
+  Future<bool> syncHotReload(ProjectDocument document) async => false;
+
   Future<GodotBuildResult> prepare(ProjectDocument document) {
     return Future.error(
       UnsupportedError('Godot desktop builds are not available on the web.'),

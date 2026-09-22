@@ -47,6 +47,12 @@ ProjectAuditResult auditProject(ProjectDocument document) {
 
   for (final room in document.rooms) {
     reference(room.scene.background ?? '', '${room.scene.name} / background');
+    for (final cell in room.scene.tileMap.cells) {
+      reference(
+        cell.asset,
+        '${room.scene.name} / tile ${cell.column},${cell.row}',
+      );
+    }
     for (final object in room.scene.objects) {
       reference(object.asset, '${room.scene.name} / ${object.name}');
       if (object.characterPath.isNotEmpty &&
@@ -76,6 +82,13 @@ ProjectAuditResult auditProject(ProjectDocument document) {
         );
       }
     }
+  }
+  for (final prefab in document.prefabs) {
+    reference(prefab.object.asset, 'Prefab / ${prefab.name}');
+  }
+  for (final dialogue in document.dialogues) {
+    reference(dialogue.portrait, 'Dialogue / ${dialogue.id} / portrait');
+    reference(dialogue.sound, 'Dialogue / ${dialogue.id} / sound');
   }
   for (final asset in document.assets) {
     if (!references.containsKey(asset.path)) {

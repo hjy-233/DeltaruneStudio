@@ -1,4 +1,5 @@
 import 'project_character.dart';
+import 'project_content.dart';
 import 'project_settings.dart';
 
 const defaultProjectSceneLayers = [
@@ -177,38 +178,47 @@ class ProjectManifest {
 
 class ProjectScene {
   const ProjectScene({
+    this.formatVersion = 3,
     required this.id,
     required this.name,
     this.background,
     this.objects = const [],
     this.layers = defaultProjectSceneLayers,
+    this.tileMap = const ProjectTileMap(),
   });
 
+  final int formatVersion;
   final String id;
   final String name;
   final String? background;
   final List<ProjectSceneObject> objects;
   final List<ProjectSceneLayer> layers;
+  final ProjectTileMap tileMap;
 
   ProjectScene copyWith({
+    int? formatVersion,
     String? id,
     String? name,
     String? background,
     bool clearBackground = false,
     List<ProjectSceneObject>? objects,
     List<ProjectSceneLayer>? layers,
+    ProjectTileMap? tileMap,
   }) {
     return ProjectScene(
+      formatVersion: formatVersion ?? this.formatVersion,
       id: id ?? this.id,
       name: name ?? this.name,
       background: clearBackground ? null : background ?? this.background,
       objects: objects ?? this.objects,
       layers: layers ?? this.layers,
+      tileMap: tileMap ?? this.tileMap,
     );
   }
 
   factory ProjectScene.fromJson(Map<String, dynamic> json) {
     return ProjectScene(
+      formatVersion: (json['formatVersion'] as num?)?.toInt() ?? 1,
       id: json['id'] as String? ?? 'main',
       name: json['name'] as String? ?? 'Main',
       background: json['background'] as String?,
@@ -217,17 +227,21 @@ class ProjectScene {
           .map(ProjectSceneObject.fromJson)
           .toList(growable: false),
       layers: _sceneLayersFromJson(json['layers']),
+      tileMap: ProjectTileMap.fromJson(
+        json['tileMap'] as Map<String, dynamic>?,
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'formatVersion': 2,
+      'formatVersion': formatVersion,
       'id': id,
       'name': name,
       'background': background,
       'objects': objects.map((object) => object.toJson()).toList(),
       'layers': layers.map((layer) => layer.toJson()).toList(),
+      'tileMap': tileMap.toJson(),
       'triggers': <Object?>[],
       'eventChains': <Object?>[],
     };
@@ -256,6 +270,8 @@ class ProjectSceneObject {
     this.transitionColor = '#FF000000',
     this.fadeOutSeconds = 0.15,
     this.fadeInSeconds = 0.15,
+    this.collision,
+    this.interaction = const ProjectInteraction(),
   });
 
   final String id;
@@ -278,8 +294,11 @@ class ProjectSceneObject {
   final String transitionColor;
   final double fadeOutSeconds;
   final double fadeInSeconds;
+  final ProjectCollisionBox? collision;
+  final ProjectInteraction interaction;
 
   ProjectSceneObject copyWith({
+    String? id,
     String? type,
     String? name,
     String? asset,
@@ -299,9 +318,12 @@ class ProjectSceneObject {
     String? transitionColor,
     double? fadeOutSeconds,
     double? fadeInSeconds,
+    ProjectCollisionBox? collision,
+    bool clearCollision = false,
+    ProjectInteraction? interaction,
   }) {
     return ProjectSceneObject(
-      id: id,
+      id: id ?? this.id,
       type: type ?? this.type,
       name: name ?? this.name,
       asset: asset ?? this.asset,
@@ -321,6 +343,8 @@ class ProjectSceneObject {
       transitionColor: transitionColor ?? this.transitionColor,
       fadeOutSeconds: fadeOutSeconds ?? this.fadeOutSeconds,
       fadeInSeconds: fadeInSeconds ?? this.fadeInSeconds,
+      collision: clearCollision ? null : collision ?? this.collision,
+      interaction: interaction ?? this.interaction,
     );
   }
 
@@ -347,6 +371,14 @@ class ProjectSceneObject {
       transitionColor: json['transitionColor'] as String? ?? '#FF000000',
       fadeOutSeconds: (json['fadeOutSeconds'] as num?)?.toDouble() ?? 0.15,
       fadeInSeconds: (json['fadeInSeconds'] as num?)?.toDouble() ?? 0.15,
+      collision: json['collision'] is Map<String, dynamic>
+          ? ProjectCollisionBox.fromJson(
+              json['collision'] as Map<String, dynamic>,
+            )
+          : null,
+      interaction: ProjectInteraction.fromJson(
+        json['interaction'] as Map<String, dynamic>?,
+      ),
     );
   }
 
@@ -372,8 +404,42 @@ class ProjectSceneObject {
       if (type == 'door') 'transitionColor': transitionColor,
       if (type == 'door') 'fadeOutSeconds': fadeOutSeconds,
       if (type == 'door') 'fadeInSeconds': fadeInSeconds,
+      if (collision != null) 'collision': collision!.toJson(),
+      if (interaction.enabled) 'interaction': interaction.toJson(),
     };
   }
+}
+
+class ProjectPrefab {
+  const ProjectPrefab({
+    required this.path,
+    required this.id,
+    required this.name,
+    required this.object,
+  });
+
+  final String path;
+  final String id;
+  final String name;
+  final ProjectSceneObject object;
+
+  factory ProjectPrefab.fromJson(String path, Map<String, dynamic> json) {
+    return ProjectPrefab(
+      path: path,
+      id: json['id'] as String? ?? 'prefab',
+      name: json['name'] as String? ?? 'Prefab',
+      object: ProjectSceneObject.fromJson(
+        json['object'] as Map<String, dynamic>? ?? const {},
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'formatVersion': 1,
+    'id': id,
+    'name': name,
+    'object': object.toJson(),
+  };
 }
 
 String _defaultLayerForType(String type) {
@@ -401,6 +467,8 @@ class ProjectDocument {
     this.assets = const [],
     this.resourceFolders = const [],
     this.characters = const [],
+    this.prefabs = const [],
+    this.dialogues = const [],
   });
 
   final ProjectManifest manifest;
@@ -410,6 +478,8 @@ class ProjectDocument {
   final List<ProjectAsset> assets;
   final List<String> resourceFolders;
   final List<ProjectCharacterFile> characters;
+  final List<ProjectPrefab> prefabs;
+  final List<ProjectDialogue> dialogues;
 
   ProjectDocument copyWith({
     ProjectManifest? manifest,
@@ -418,6 +488,8 @@ class ProjectDocument {
     List<ProjectAsset>? assets,
     List<String>? resourceFolders,
     List<ProjectCharacterFile>? characters,
+    List<ProjectPrefab>? prefabs,
+    List<ProjectDialogue>? dialogues,
   }) {
     return ProjectDocument(
       manifest: manifest ?? this.manifest,
@@ -427,6 +499,8 @@ class ProjectDocument {
       assets: assets ?? this.assets,
       resourceFolders: resourceFolders ?? this.resourceFolders,
       characters: characters ?? this.characters,
+      prefabs: prefabs ?? this.prefabs,
+      dialogues: dialogues ?? this.dialogues,
     );
   }
 }

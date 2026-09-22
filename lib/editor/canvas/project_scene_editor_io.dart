@@ -3,6 +3,13 @@ import 'dart:io';
 import 'package:deltarune_studio/domain/project_character.dart';
 import 'package:deltarune_studio/domain/project_manifest.dart';
 import 'package:deltarune_studio/editor/panels/project_room_layer_inspector.dart';
+import 'package:deltarune_studio/data/project_asset_geometry.dart';
+import 'package:deltarune_studio/editor/project_feature_strings.dart';
+import 'package:deltarune_studio/editor/widgets/project_interaction_inspector.dart';
+import 'package:deltarune_studio/editor/widgets/project_editor_panel_divider.dart';
+import 'package:deltarune_studio/editor/widgets/project_save_point_icon.dart';
+import 'package:deltarune_studio/editor/widgets/project_tilemap_layer.dart';
+import 'package:deltarune_studio/editor/widgets/project_tilemap_editor.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -51,7 +58,7 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _EditorToolbar(onAdd: _addObject),
+        _EditorToolbar(onAdd: _addObject, onTileMap: _editTileMap),
         const SizedBox(height: 8),
         Expanded(
           child: Row(
@@ -77,7 +84,7 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
                   ),
                 ),
               ),
-              _EditorPanelDivider(
+              ProjectEditorPanelDivider(
                 onDrag: (delta) => widget.onInspectorWidthChanged(
                   (widget.inspectorWidth - delta)
                       .clamp(240.0, 420.0)
@@ -130,7 +137,7 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
     final dimensions = switch (type) {
       'collision' => const Size(128, 64),
       'door' => const Size(32, 48),
-      'savePoint' => const Size(28, 28),
+      'savePoint' => const Size(20, 19),
       'spawn' => const Size(16, 16),
       _ => const Size(-1, -1),
     };
@@ -150,6 +157,15 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
     );
     _selectedId = object.id;
     _emit(_scene.copyWith(objects: [..._scene.objects, object]));
+  }
+
+  Future<void> _editTileMap() async {
+    final scene = await showDialog<ProjectScene>(
+      context: context,
+      builder: (context) =>
+          ProjectTileMapEditor(document: widget.document, scene: _scene),
+    );
+    if (scene != null) _emit(scene);
   }
 
   void _moveObject(String id, Offset delta) {
@@ -231,31 +247,11 @@ class _ProjectSceneEditorState extends State<ProjectSceneEditor> {
   }
 }
 
-class _EditorPanelDivider extends StatelessWidget {
-  const _EditorPanelDivider({required this.onDrag});
-
-  final ValueChanged<double> onDrag;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeColumn,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragUpdate: (details) => onDrag(details.delta.dx),
-        child: const SizedBox(
-          width: 12,
-          child: Center(child: VerticalDivider(width: 1, thickness: 1)),
-        ),
-      ),
-    );
-  }
-}
-
 class _EditorToolbar extends StatelessWidget {
-  const _EditorToolbar({required this.onAdd});
+  const _EditorToolbar({required this.onAdd, required this.onTileMap});
 
   final ValueChanged<String> onAdd;
+  final VoidCallback onTileMap;
 
   @override
   Widget build(BuildContext context) {
@@ -297,6 +293,11 @@ class _EditorToolbar extends StatelessWidget {
           onPressed: () => onAdd('savePoint'),
           icon: const Icon(Icons.save_outlined),
           label: Text(l10n.addSavePoint),
+        ),
+        OutlinedButton.icon(
+          onPressed: onTileMap,
+          icon: const Icon(Icons.grid_on_outlined),
+          label: Text(ProjectFeatureStrings.of(context).tileMap),
         ),
       ],
     );
@@ -352,6 +353,13 @@ class _SceneCanvas extends StatelessWidget {
         children: [
           if (document.mainScene.background != null)
             Positioned.fill(child: _image(document.mainScene.background!)),
+          Positioned.fill(
+            child: ProjectTileMapLayer(
+              projectPath: document.path,
+              tileMap: document.mainScene.tileMap,
+              scale: scale,
+            ),
+          ),
           for (final object in objects)
             Positioned(
               left: object.x * scale,
@@ -483,7 +491,9 @@ class _DraggableObject extends StatelessWidget {
                     width: selected ? 2 : 1,
                   ),
                 ),
-                child: Icon(_markerIcon(object.type), color: color, size: 16),
+                child: object.type == 'savePoint'
+                    ? ProjectSavePointIcon(scale: scale)
+                    : Icon(_markerIcon(object.type), color: color, size: 16),
               ),
             ),
           ),
@@ -616,16 +626,7 @@ class _ObjectInspector extends StatelessWidget {
                   .toList(growable: false),
               onChanged: (value) {
                 if (value != null) {
-                  onChanged(
-                    object.copyWith(
-                      asset: value,
-                      width: -1,
-                      height: -1,
-                      characterPath: object.type == 'character'
-                          ? ''
-                          : object.characterPath,
-                    ),
-                  );
+                  _applyAsset(value);
                 }
               },
             ),
@@ -695,12 +696,30 @@ class _ObjectInspector extends StatelessWidget {
             value: object.locked,
             onChanged: (value) => onChanged(object.copyWith(locked: value)),
           ),
+          if (!marker)
+            ProjectInteractionInspector(object: object, onChanged: onChanged),
           FilledButton.tonalIcon(
             onPressed: onDelete,
             icon: const Icon(Icons.delete),
             label: Text(l10n.delete),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _applyAsset(String value) async {
+    final collision = object.type == 'prop'
+        ? await readOpaqueCollisionBox('${document.path}/$value')
+        : null;
+    onChanged(
+      object.copyWith(
+        asset: value,
+        width: -1,
+        height: -1,
+        characterPath: object.type == 'character' ? '' : object.characterPath,
+        collision: collision,
+        clearCollision: collision == null,
       ),
     );
   }
@@ -943,7 +962,6 @@ IconData _markerIcon(String type) {
   return switch (type) {
     'collision' => Icons.crop_square,
     'spawn' => Icons.place,
-    'savePoint' => Icons.save_outlined,
     _ => Icons.meeting_room,
   };
 }

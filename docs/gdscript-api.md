@@ -136,9 +136,10 @@ await DRS.save_game(1)
 await DRS.load_game(1)
 DRS.has_save(1)
 DRS.delete_save(1)
+await DRS.create_save_point("temporary_save", Vector2(320, 360), 1)
 ```
 
-槽位范围为 1–3。存档按项目 ID 隔离，包含 Flag、Value、当前房间、角色位置与朝向、当前受控角色。房间中放置 `savePoint` 对象后，Runtime 会自动把它注册为交互对象；玩家靠近并按确认键即可写入该对象指定的槽位。
+槽位范围为 1–3。存档按项目 ID 隔离，包含 Flag、Value、当前房间、角色位置与朝向、当前受控角色。房间中放置 `savePoint` 对象后，Runtime 会自动把它注册为交互对象；玩家靠近并按确认键即可写入该对象指定的槽位。`create_save_point` 可在脚本中动态创建使用内置六帧动画和 20×19 碰撞的标准存档点，位置参数表示图标中心。
 
 ## 场景对象
 

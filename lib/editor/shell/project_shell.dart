@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:deltarune_studio/data/project_repository.dart';
+import 'package:deltarune_studio/data/project_asset_geometry.dart';
 import 'package:deltarune_studio/data/recent_projects.dart';
 import 'package:deltarune_studio/domain/project_character.dart';
 import 'package:deltarune_studio/domain/project_manifest.dart';
@@ -12,17 +13,22 @@ import 'package:deltarune_studio/editor/panels/project_resource_browser.dart';
 import 'package:deltarune_studio/editor/panels/project_selection_inspector.dart';
 import 'package:deltarune_studio/editor/widgets/project_settings_dialog.dart';
 import 'package:deltarune_studio/editor/widgets/project_room_graph_dialog.dart';
+import 'package:deltarune_studio/editor/widgets/project_dialogue_editor.dart';
+import 'package:deltarune_studio/editor/widgets/project_export_preflight_dialog.dart';
+import 'package:deltarune_studio/editor/widgets/project_prefab_library.dart';
 import 'package:deltarune_studio/godot/godot_build_service.dart';
 import 'package:deltarune_studio/l10n/generated/app_localizations.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 part 'project_shell_widgets.dart';
 part 'project_shell_character_actions.dart';
 part 'project_shell_runtime_actions.dart';
 part 'project_shell_settings_actions.dart';
+part 'project_shell_content_actions.dart';
 
 class ProjectShell extends StatefulWidget {
   const ProjectShell({super.key});
@@ -47,6 +53,7 @@ class _ProjectShellState extends State<ProjectShell> {
   final ValueNotifier<List<String>> _runtimeLogs = ValueNotifier([]);
   GodotRunSession? _runSession;
   StreamSubscription<String>? _runLogSubscription;
+  Timer? _hotReloadTimer;
 
   @override
   void initState() {
@@ -62,6 +69,7 @@ class _ProjectShellState extends State<ProjectShell> {
       unawaited(session.stop());
     }
     _runtimeLogs.dispose();
+    _hotReloadTimer?.cancel();
     super.dispose();
   }
 
@@ -160,6 +168,8 @@ class _ProjectShellState extends State<ProjectShell> {
                 onNewCharacter: _newCharacter,
                 onCharacterChanged: _saveCharacter,
                 onCharacterDeleted: _deleteCharacter,
+                onPrefabs: _showPrefabLibrary,
+                onDialogues: _showDialogueEditor,
                 onLayoutChanged: _updateLayout,
               ),
       ),
@@ -539,9 +549,10 @@ class _ProjectShellState extends State<ProjectShell> {
       );
       _message = 'Scene changed. Save to write it to disk.';
     });
+    _scheduleHotReload();
   }
 
-  void _replaceSelectedAsset(ProjectAsset asset) {
+  Future<void> _replaceSelectedAsset(ProjectAsset asset) async {
     final document = _document;
     final selectedId = _selectedObjectId;
     if (document == null) {
@@ -566,6 +577,10 @@ class _ProjectShellState extends State<ProjectShell> {
     if (selected == null) {
       return;
     }
+    final collision = selected.type == 'prop'
+        ? await readOpaqueCollisionBox('${document.path}/${asset.path}')
+        : null;
+    if (!mounted) return;
     _updateScene(
       current.copyWith(
         objects: current.objects
@@ -578,6 +593,8 @@ class _ProjectShellState extends State<ProjectShell> {
                       characterPath: object.type == 'character'
                           ? ''
                           : object.characterPath,
+                      collision: collision,
+                      clearCollision: collision == null,
                     )
                   : object,
             )
@@ -588,11 +605,11 @@ class _ProjectShellState extends State<ProjectShell> {
 
   void _selectAsset(ProjectAsset asset) {
     if (_selectedObjectId != null) {
-      _replaceSelectedAsset(asset);
+      unawaited(_replaceSelectedAsset(asset));
       return;
     }
     if (asset.type == 'backgrounds') {
-      _replaceSelectedAsset(asset);
+      unawaited(_replaceSelectedAsset(asset));
     }
     setState(() {
       _selectedAssetPath = asset.path;
@@ -734,32 +751,6 @@ class _ProjectShellState extends State<ProjectShell> {
       },
     );
   }
-
-  Future<String?> _askRoomName() {
-    final controller = TextEditingController(text: 'New Room');
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.newRoom),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final value = controller.text.trim();
-              if (value.isNotEmpty) {
-                Navigator.of(context).pop(value);
-              }
-            },
-            child: Text(AppLocalizations.of(context)!.create),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ProjectOverview extends StatefulWidget {
@@ -787,6 +778,8 @@ class _ProjectOverview extends StatefulWidget {
     required this.onNewCharacter,
     required this.onCharacterChanged,
     required this.onCharacterDeleted,
+    required this.onPrefabs,
+    required this.onDialogues,
     required this.onLayoutChanged,
   });
 
@@ -813,6 +806,8 @@ class _ProjectOverview extends StatefulWidget {
   final VoidCallback onNewCharacter;
   final ValueChanged<ProjectCharacterFile> onCharacterChanged;
   final ValueChanged<ProjectCharacterFile> onCharacterDeleted;
+  final VoidCallback onPrefabs;
+  final VoidCallback onDialogues;
   final ValueChanged<ProjectLayout> onLayoutChanged;
 
   @override
@@ -864,6 +859,8 @@ class _ProjectOverviewState extends State<_ProjectOverview> {
                   onRoomContextMenu: widget.onRoomContextMenu,
                   onCharacterSelected: widget.onCharacterSelected,
                   onNewCharacter: widget.onNewCharacter,
+                  onPrefabs: widget.onPrefabs,
+                  onDialogues: widget.onDialogues,
                 ),
               ),
               _PanelDivider(

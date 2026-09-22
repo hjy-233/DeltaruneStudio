@@ -1,9 +1,8 @@
 extends Node2D
-
 const PROJECT_ROOT := "res://drs_project"
 const DEBUG_OVERLAY_SCRIPT := preload("res://runtime/debug_overlay.gd")
 const VARIABLE_DEBUGGER_SCRIPT := preload("res://runtime/variable_debugger.gd")
-
+const PROJECT_CONTENT_RUNTIME_SCRIPT := preload("res://runtime/project_content_runtime.gd")
 var project_data: Dictionary = {}
 var scene_data: Dictionary = {}
 var room_root: Node2D
@@ -18,7 +17,8 @@ var _follow_rules: Dictionary = {}
 var _follow_paths: Dictionary = {}
 var _current_scene_path := ""
 var _view_size := Vector2(640, 480)
-
+var _content_runtime: Node
+var _project_script_runner: Node
 func _ready() -> void:
 	project_data = _read_json(PROJECT_ROOT.path_join("project.json"))
 	var game_settings: Dictionary = project_data.get("gameSettings", {})
@@ -34,6 +34,9 @@ func _ready() -> void:
 	room_root = Node2D.new()
 	room_root.name = "Room"
 	add_child(room_root)
+	_content_runtime = PROJECT_CONTENT_RUNTIME_SCRIPT.new()
+	add_child(_content_runtime)
+	_content_runtime.setup(self)
 	_runtime_camera = Camera2D.new()
 	_runtime_camera.name = "RuntimeCamera"
 	_runtime_camera.position = _camera_position
@@ -42,6 +45,7 @@ func _ready() -> void:
 	_add_scene_visuals()
 	_add_runtime_label()
 	DRS.register_runtime(self)
+	DRS.refresh_scene_interactables()
 	var debug_overlay := DEBUG_OVERLAY_SCRIPT.new()
 	debug_overlay.name = "DebugOverlay"
 	add_child(debug_overlay)
@@ -51,7 +55,6 @@ func _ready() -> void:
 	add_child(variable_debugger)
 	variable_debugger.setup()
 	_run_entry_script.call_deferred()
-
 func drs_current_room() -> String:
 	return _current_scene_path
 
@@ -90,10 +93,19 @@ func _run_entry_script() -> void:
 	runner.name = "ProjectScript"
 	runner.set_script(script)
 	add_child(runner)
+	_project_script_runner = runner
 	if not runner.has_method("run"):
 		push_error("DRS entry script must define func run() -> void")
 		return
 	runner.call("run")
+
+func drs_call_project_function(function_name: String) -> void:
+	if _project_script_runner == null or not is_instance_valid(_project_script_runner):
+		return
+	if not _project_script_runner.has_method(function_name):
+		push_error("DRS project function was not found: " + function_name)
+		return
+	_project_script_runner.call(function_name)
 
 func _read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
@@ -107,6 +119,7 @@ func _read_json(path: String) -> Dictionary:
 	return parsed if parsed is Dictionary else {}
 
 func _add_scene_visuals() -> void:
+	_content_runtime.add_tile_map(scene_data, room_root)
 	var background: Variant = scene_data.get("background")
 	if typeof(background) == TYPE_STRING and not String(background).is_empty():
 		_add_sprite(String(background), {
@@ -261,8 +274,11 @@ func _add_sprite(asset: String, object: Dictionary) -> void:
 		_add_character(sprite, position, object)
 	else:
 		sprite.position = position
-		_register_runtime_object(sprite, object)
-		room_root.add_child(sprite)
+		if object.get("collision") is Dictionary:
+			_content_runtime.add_collidable_sprite(sprite, object, position, room_root)
+		else:
+			_register_runtime_object(sprite, object)
+			room_root.add_child(sprite)
 
 func _add_character(sprite: Sprite2D, position: Vector2, object: Dictionary) -> void:
 	var body := CharacterBody2D.new()
@@ -305,33 +321,14 @@ func _add_door(object: Dictionary) -> void:
 	area.body_entered.connect(_on_door_body_entered.bind(area))
 
 func _add_save_point(object: Dictionary) -> void:
-	var area := Area2D.new()
-	area.name = _string_value(object, "name")
-	area.position = _rect_center(object)
-	area.set_meta("save_slot", clampi(int(object.get("saveSlot", 1)), 1, 3))
-	_register_runtime_object(area, object)
-	area.add_to_group("drs_save_point")
-	room_root.add_child(area)
-	_add_rect_shape(area, object)
-	var marker := Polygon2D.new()
-	var radius := maxf(minf(
-		_number_value(object, "width", 28.0),
-		_number_value(object, "height", 28.0)
-	) / 2.0, 6.0)
-	marker.polygon = PackedVector2Array([
-		Vector2(0, -radius),
-		Vector2(radius, 0),
-		Vector2(0, radius),
-		Vector2(-radius, 0),
-	])
-	marker.color = Color(1.0, 0.85, 0.2, 0.9)
-	area.add_child(marker)
+	_content_runtime.add_save_point(object, room_root)
 
 func _register_runtime_object(node: Node2D, object: Dictionary) -> void:
 	var object_id := _string_value(object, "id")
 	if object_id.is_empty():
 		return
 	node.set_meta("object_id", object_id)
+	node.set_meta("interaction", object.get("interaction", {}))
 	node.add_to_group("drs_object")
 
 func _add_collision_shape(parent: Node2D, collision: Dictionary) -> void:
@@ -418,6 +415,7 @@ func _change_room(
 	_current_scene_path = room_path
 	_add_scene_visuals()
 	DRS.refresh_save_points()
+	DRS.refresh_scene_interactables()
 	var target := _find_runtime_character(traveler_id)
 	if target == null and traveler != null:
 		room_root.add_child(traveler)
@@ -428,6 +426,9 @@ func _change_room(
 		_apply_spawn(spawn_id, target)
 	_reset_follow_paths()
 	_room_changing = false
+
+func drs_hot_reload_current_room() -> void:
+	await _change_room(_current_scene_path, "", null)
 
 func _reset_follow_paths() -> void:
 	_follow_paths.clear()
@@ -828,6 +829,20 @@ func drs_remove_object(object_id: String) -> void:
 	if object == null:
 		return
 	object.queue_free()
+
+func drs_create_save_point(
+	object_id: String,
+	position: Vector2,
+	slot: int = 1
+) -> Area2D:
+	var existing := drs_find_object(object_id)
+	if existing is Area2D:
+		return existing
+	var save_point := _content_runtime.create_save_point(
+		object_id, position, slot, room_root
+	) as Area2D
+	DRS.refresh_save_points()
+	return save_point
 
 func drs_set_object_texture(object_id: String, asset: String) -> void:
 	var object := drs_find_object(object_id)
